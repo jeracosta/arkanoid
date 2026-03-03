@@ -1,22 +1,29 @@
-#include <std:optional>
+#include <optional>
 
 class coord
 {
   public:
     float x, y, z;
 
-  coord(float x, float y, float z) {
-    length = _compute_length();
+  coord(float x, float y, float z)
+    : x(x), y(y), z(z)
+  {
   }
 
   float length() {
-    return _length;
-  }
-  
+      if (!_length_cache)
+          _length_cache = _compute_length();
+      return *_length_cache;
+  } 
+
+  float length() const {
+      return _compute_length();
+  } 
+
   float sqrlength();
   coord operator +(const coord &other) { return coord(x + other.x, y + other.y, z + other.z); }
   coord operator -(const coord &other) { return coord(x - other.x, y - other.y, z - other.z); }
-  coord operator *(float scale) { return coord(x*scale, y*scale, z*sacalar); }
+  coord operator *(float scale) { return coord(x*scale, y*scale, z*scale); }
   coord operator /(float scale);
   coord dot_product (const coord &other);
   coord vec_product (const coord &other);
@@ -24,9 +31,8 @@ class coord
   coord division(const coord &other);
   coord operator -(); //negate vector
   coord normalize();
-  coord vec_product (const coord &other);
  
   private:
-    const std::optional<float> _length = {};
-    const compute_length();
-}
+    std::optional<float> _length_cache = {};
+    float _compute_length() const;
+};

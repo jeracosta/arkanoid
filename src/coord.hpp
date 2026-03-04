@@ -27,6 +27,11 @@ public:
     return _coords[i];
   }
 
+  operator std::array<float, 3>() const
+  {
+    return _coords;
+  }
+
 private:
   std::array<float, 3> _coords;
 };

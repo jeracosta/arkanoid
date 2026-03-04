@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cmath>
 #include <array>
 
@@ -101,4 +102,9 @@ inline Vector3 normal(const Vector3 &vector)
 inline Vector3 operator-(const Vector3 &vector)
 {
   return Vector3(0,0,0) - vector;
+}
+
+inline bool operator==(const Vector3 &left, const Vector3 &right)
+{
+  return std::ranges::equal(left, right);
 }

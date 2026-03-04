@@ -31,6 +31,7 @@ class Vector3
         return coords_[i];
     }
 
+    explicit
     operator std::array<float, 3>() const
     {
         return coords_;

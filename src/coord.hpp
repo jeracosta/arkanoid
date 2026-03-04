@@ -59,7 +59,7 @@ inline float dot_product(const coord &left, const coord &right)
     left[2] * right[2];
 }
 
-inline coord vec_product(const coord &left, const coord &right)
+inline coord cross_product(const coord &left, const coord &right)
 {
   return coord(
     left[1] * right[2] - left[2] * right[1],

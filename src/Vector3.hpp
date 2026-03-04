@@ -4,11 +4,11 @@
 class Vector3
 {
 private:
-  std::array<float, 3> _coords;
+  std::array<float, 3> coords_;
 
 public:
   constexpr Vector3(float x, float y, float z)
-    : _coords{x, y, z}
+    : coords_{x, y, z}
   {
   }
 
@@ -20,19 +20,19 @@ public:
   float sqrlength() const
   {
     return 
-      _coords[0] * _coords[0] +
-      _coords[1] * _coords[1] +
-      _coords[2] * _coords[2];
+      coords_[0] * coords_[0] +
+      coords_[1] * coords_[1] +
+      coords_[2] * coords_[2];
   }
 
   float operator [](int i) const
   {
-    return _coords[i];
+    return coords_[i];
   }
 
   operator std::array<float, 3>() const
   {
-    return _coords;
+    return coords_;
   }
 };
 

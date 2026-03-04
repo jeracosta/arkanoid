@@ -38,22 +38,30 @@ private:
 
 inline coord operator+(const coord &left, const coord &right)
 {
-  return coord(left[0] + right[0], left[1] + right[1], left[2] + right[2]);
+  return coord(left[0] + right[0],
+               left[1] + right[1],
+               left[2] + right[2]);
 }
 
 inline coord operator-(const coord &left, const coord &right)
 {
-  return coord(left[0] - right[0], left[1] - right[1], left[2] - right[2]);
+  return coord(left[0] - right[0],
+               left[1] - right[1],
+               left[2] - right[2]);
 }
 
 inline coord operator*(const coord &coord_p, float scale)
 {
-  return coord(coord_p[0] * scale, coord_p[1] * scale, coord_p[2] * scale);
+  return coord(coord_p[0] * scale,
+               coord_p[1] * scale,
+               coord_p[2] * scale);
 }
 
 inline coord operator/(const coord &coord_p, float scale)
 {
-  return coord(coord_p[0] / scale, coord_p[1] / scale, coord_p[2] / scale);
+  return coord(coord_p[0] / scale,
+               coord_p[1] / scale,
+               coord_p[2] / scale);
 }
 
 inline float dot_product(const coord &left, const coord &right) 
@@ -66,10 +74,9 @@ inline float dot_product(const coord &left, const coord &right)
 
 inline coord cross_product(const coord &left, const coord &right)
 {
-  return coord(
-    left[1] * right[2] - left[2] * right[1],
-    left[2] * right[0] - left[0] * right[2],
-    left[0] * right[1] - left[1] * right[0]);
+  return coord(left[1] * right[2] - left[2] * right[1],
+               left[2] * right[0] - left[0] * right[2],
+               left[0] * right[1] - left[1] * right[0]);
 }
 
 inline float angle(const coord &left, const coord &right)

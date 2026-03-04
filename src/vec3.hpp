@@ -1,9 +1,12 @@
 #include <cmath>
 #include <array>
 
-class vec3 {
-public:
+class vec3 
+{
+private:
+  std::array<float, 3> _coords;
 
+public:
   constexpr vec3(float x, float y, float z)
     : _coords{x, y, z}
   {
@@ -31,9 +34,6 @@ public:
   {
     return _coords;
   }
-
-private:
-  std::array<float, 3> _coords;
 };
 
 inline vec3 operator+(const vec3 &left, const vec3 &right)

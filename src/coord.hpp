@@ -4,9 +4,9 @@
 class coord {
 public:
 
-  coord(float x, float y, float z)
+  constexpr coord(float x, float y, float z)
+    : _coords{x, y, z}
   {
-    _coords = {x,y,z};
   }
 
   float length() const

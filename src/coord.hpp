@@ -22,65 +22,62 @@ public:
       _coords[2] * _coords[2];
   }
 
-  coord operator+(const coord &other) const
-  {
-    return coord(_coords[0] + other[0], _coords[1] + other[1], _coords[2] + other[2]);
-  }
-
-  coord operator-(const coord &other) const
-  {
-    return coord(_coords[0] - other[0], _coords[1] - other[1], _coords[2] - other[2]);
-  }
-
-  coord operator*(float scale) const
-  {
-    return coord(_coords[0] * scale, _coords[1] * scale, _coords[2] * scale);
-  }
-
-  coord operator/(float scale) const
-  {
-    return coord(_coords[0] / scale, _coords[1] / scale, _coords[2] / scale);
-  }
-
-  float dot_product(const coord &other) const 
-  {
-    return
-      _coords[0] * other[0] +
-      _coords[1] * other[1] +
-      _coords[2] * other[2];
-  }
-
   float operator [](int i) const
   {
     return _coords[i];
   }
 
-  coord vec_product(const coord &other) const
-  {
-    return coord(
-      _coords[1] * other[2] - _coords[2] * other[1],
-      _coords[2] * other[0] - _coords[0] * other[2],
-      _coords[0] * other[1] - _coords[1] * other[0]);
-  }
-
-  float angle(const coord &other) const
-  {
-    return dot_product(other) / (length() * other.length());
-  }
-
-  // TODO:
-  // coord division(const coord &other);
-
-  coord operator-() const
-  {
-    return coord(0,0,0) - *this;
-  }   
-
-  coord normalize() const 
-  {
-    return *this / length();
-  }
-
 private:
   std::array<float, 3> _coords;
 };
+
+inline coord operator+(const coord &left, const coord &right)
+{
+  return coord(left[0] + right[0], left[1] + right[1], left[2] + right[2]);
+}
+
+inline coord operator-(const coord &left, const coord &right)
+{
+  return coord(left[0] - right[0], left[1] - right[1], left[2] - right[2]);
+}
+
+inline coord operator*(const coord &coord_p, float scale)
+{
+  return coord(coord_p[0] * scale, coord_p[1] * scale, coord_p[2] * scale);
+}
+
+inline coord operator/(const coord &coord_p, float scale)
+{
+  return coord(coord_p[0] / scale, coord_p[1] / scale, coord_p[2] / scale);
+}
+
+inline float dot_product(const coord &left, const coord &right) 
+{
+  return
+    left[0] * right[0] +
+    left[1] * right[1] +
+    left[2] * right[2];
+}
+
+inline coord vec_product(const coord &left, const coord &right)
+{
+  return coord(
+    left[1] * right[2] - left[2] * right[1],
+    left[2] * right[0] - left[0] * right[2],
+    left[0] * right[1] - left[1] * right[0]);
+}
+
+inline float angle(const coord &left, const coord &right)
+{
+  return dot_product(left, right) / (left.length() * right.length());
+}
+
+inline coord normal(const coord &coord_p)
+{
+  return coord_p / coord_p.length();
+}
+
+inline coord operator-(const coord &coord_p)
+{
+  return coord(0,0,0) - coord_p;
+}

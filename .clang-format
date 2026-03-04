@@ -1,0 +1,18 @@
+---
+Language: Cpp
+BasedOnStyle: GNU
+ColumnLimit: 100
+IndentWidth: 4
+AlignConsecutiveAssignments: true
+FixNamespaceComments: true
+AlignConsecutiveDeclarations: true
+SpaceBeforeParens: ControlStatements
+BreakBeforeConceptDeclarations: Always
+BreakConstructorInitializers: BeforeColon
+BinPackArguments: false
+BinPackParameters: OnePerLine
+BreakArrays: true
+AlwaysBreakAfterReturnType: All
+BreakBeforeBraces: Allman
+AllowShortFunctionsOnASingleLine: None
+PackConstructorInitializers: Never

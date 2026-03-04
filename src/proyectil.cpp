@@ -2,29 +2,28 @@
 #include <array>
 #include <chrono>
 #include <cstdlib>
+#include <print>
 #include <ranges>
 #include <vector>
-#include <print>
 
 using Seconds = std::chrono::duration<float>;
 
-std::vector<Vector3> free_fall_frames(
-  Vector3 initial_position,
-  Vector3 initial_velocity,
-  Seconds time_step)
+std::vector<Vector3>
+free_fall_frames(Vector3 initial_position, Vector3 initial_velocity, Seconds time_step)
 {
-  static_assert(false, "Implementar free_fall_frames");
+    static_assert(false, "Implementar free_fall_frames");
 }
 
 struct TestCase
 {
-  struct {
-    Vector3 initial_position;
-    Vector3 initial_velocity;
-    Seconds time_step;
-  } scenario;
+    struct
+    {
+        Vector3 initial_position;
+        Vector3 initial_velocity;
+        Seconds time_step;
+    } scenario;
 
-  std::vector<Vector3> expected_result;
+    std::vector<Vector3> expected_result;
 };
 
 auto test_cases = std::to_array<TestCase>({
@@ -81,36 +80,41 @@ auto test_cases = std::to_array<TestCase>({
   },
 });
 
-int main()
+int
+main()
 {
-  for (auto [i, test_case] : std::views::enumerate(test_cases))  {
-    std::println("Running test case {}...", (i + 1));
-  
-    auto result = free_fall_frames(
-      test_case.scenario.initial_position,
-      test_case.scenario.initial_velocity,
-      test_case.scenario.time_step
-    );
+    for (auto [i, test_case] : std::views::enumerate(test_cases))
+    {
+        std::println("Running test case {}...", (i + 1));
 
-    bool ok = result.size() == test_case.expected_result.size()
-              && std::ranges::equal(result, test_case.expected_result);
+        auto result = free_fall_frames(test_case.scenario.initial_position,
+                                       test_case.scenario.initial_velocity,
+                                       test_case.scenario.time_step);
 
-    if (ok) {
-      std::println("OK");
-    } else {
-      std::println("Failure!");
-      std::println("Expected:");
-      for (const auto &frame : test_case.expected_result) {
-        std::println("  {}", frame);
-      }
-      std::println("Got:");
-      for (const auto &frame : result) {
-        std::println("  {}", frame);
-      }
+        bool ok = result.size() == test_case.expected_result.size()
+                  && std::ranges::equal(result, test_case.expected_result);
+
+        if (ok)
+        {
+            std::println("OK");
+        }
+        else
+        {
+            std::println("Failure!");
+            std::println("Expected:");
+            for (const auto &frame : test_case.expected_result)
+            {
+                std::println("  {}", frame);
+            }
+            std::println("Got:");
+            for (const auto &frame : result)
+            {
+                std::println("  {}", frame);
+            }
+        }
+
+        std::println();
     }
 
-    std::println();
-  }
-
-  return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }

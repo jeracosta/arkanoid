@@ -1,110 +1,125 @@
 #include <algorithm>
-#include <cmath>
 #include <array>
+#include <cmath>
 
 class Vector3
 {
-private:
-  std::array<float, 3> coords_;
+  private:
+    std::array<float, 3> coords_;
 
-public:
-  constexpr Vector3(float x, float y, float z)
-    : coords_{x, y, z}
-  {
-  }
+  public:
+    constexpr Vector3(float x, float y, float z)
+        : coords_{ x, y, z }
+    {
+    }
 
-  float length() const
-  {
-    return std::sqrt(sqrlength());
-  }
+    float
+    length() const
+    {
+        return std::sqrt(sqrlength());
+    }
 
-  float sqrlength() const
-  {
-    return
-      coords_[0] * coords_[0] +
-      coords_[1] * coords_[1] +
-      coords_[2] * coords_[2];
-  }
+    float
+    sqrlength() const
+    {
+        return coords_[0] * coords_[0] + coords_[1] * coords_[1] + coords_[2] * coords_[2];
+    }
 
-  float operator [](int i) const
-  {
-    return coords_[i];
-  }
+    float
+    operator[](int i) const
+    {
+        return coords_[i];
+    }
 
-  operator std::array<float, 3>() const
-  {
-    return coords_;
-  }
+    operator std::array<float, 3>() const
+    {
+        return coords_;
+    }
 
-  decltype(auto) constexpr begin(this auto &&self) noexcept
-  {
-          return self.coords_.begin();
-  }
-  decltype(auto) constexpr end(this auto &&self) noexcept
-  {
-          return self.coords_.end();
-  }
+    decltype(auto) constexpr begin(this auto &&self) noexcept
+    {
+        return self.coords_.begin();
+    }
+    decltype(auto) constexpr end(this auto &&self) noexcept
+    {
+        return self.coords_.end();
+    }
 };
 
-inline Vector3 operator+(const Vector3 &left, const Vector3 &right)
+inline Vector3
+operator+(const Vector3 &left, const Vector3 &right)
 {
-  return Vector3(left[0] + right[0],
-                 left[1] + right[1],
-                 left[2] + right[2]);
+    return Vector3{
+        left[0] + right[0],
+        left[1] + right[1],
+        left[2] + right[2],
+    };
 }
 
-inline Vector3 operator-(const Vector3 &left, const Vector3 &right)
+inline Vector3
+operator-(const Vector3 &left, const Vector3 &right)
 {
-  return Vector3(left[0] - right[0],
-                 left[1] - right[1],
-                 left[2] - right[2]);
+    return Vector3{
+        left[0] - right[0],
+        left[1] - right[1],
+        left[2] - right[2],
+    };
 }
 
-inline Vector3 operator*(const Vector3 &vector, float scale)
+inline Vector3
+operator*(const Vector3 &vector, float scale)
 {
-  return Vector3(vector[0] * scale,
-                 vector[1] * scale,
-                 vector[2] * scale);
+    return Vector3{
+        vector[0] * scale,
+        vector[1] * scale,
+        vector[2] * scale,
+    };
 }
 
-inline Vector3 operator/(const Vector3 &vector, float scale)
+inline Vector3
+operator/(const Vector3 &vector, float scale)
 {
-  return Vector3(vector[0] / scale,
-                 vector[1] / scale,
-                 vector[2] / scale);
+    return Vector3{
+        vector[0] / scale,
+        vector[1] / scale,
+        vector[2] / scale,
+    };
 }
 
-inline float dot_product(const Vector3 &left, const Vector3 &right) 
+inline float
+dot_product(const Vector3 &left, const Vector3 &right)
 {
-  return
-    left[0] * right[0] +
-    left[1] * right[1] +
-    left[2] * right[2];
+    return (left[0] * right[0]) + (left[1] * right[1]) + (left[2] * right[2]);
 }
 
-inline Vector3 cross_product(const Vector3 &left, const Vector3 &right)
+inline Vector3
+cross_product(const Vector3 &left, const Vector3 &right)
 {
-  return Vector3(left[1] * right[2] - left[2] * right[1],
-                 left[2] * right[0] - left[0] * right[2],
-                 left[0] * right[1] - left[1] * right[0]);
+    return Vector3(left[1] * right[2] - left[2] * right[1],
+                   left[2] * right[0] - left[0] * right[2],
+                   left[0] * right[1] - left[1] * right[0]);
 }
 
-inline float angle(const Vector3 &left, const Vector3 &right)
+inline float
+angle(const Vector3 &left, const Vector3 &right)
 {
-  return dot_product(left, right) / (left.length() * right.length());
+    return dot_product(left, right) / (left.length() * right.length());
 }
 
-inline Vector3 normal(const Vector3 &vector)
+inline Vector3
+normal(const Vector3 &vector)
 {
-  return vector / vector.length();
+    return vector / vector.length();
 }
 
-inline Vector3 operator-(const Vector3 &vector)
+inline Vector3
+operator-(const Vector3 &vector)
 {
-  return Vector3(0,0,0) - vector;
+    return Vector3(0, 0, 0) - vector;
 }
 
-inline bool operator==(const Vector3 &left, const Vector3 &right)
+inline bool
+operator==(const Vector3 &left, const Vector3 &right)
 {
-  return std::ranges::equal(left, right);
+    return std::ranges::equal(left, right);
 }

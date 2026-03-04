@@ -19,7 +19,7 @@ public:
 
   float sqrlength() const
   {
-    return 
+    return
       coords_[0] * coords_[0] +
       coords_[1] * coords_[1] +
       coords_[2] * coords_[2];
@@ -48,29 +48,29 @@ public:
 inline Vector3 operator+(const Vector3 &left, const Vector3 &right)
 {
   return Vector3(left[0] + right[0],
-              left[1] + right[1],
-              left[2] + right[2]);
+                 left[1] + right[1],
+                 left[2] + right[2]);
 }
 
 inline Vector3 operator-(const Vector3 &left, const Vector3 &right)
 {
   return Vector3(left[0] - right[0],
-              left[1] - right[1],
-              left[2] - right[2]);
+                 left[1] - right[1],
+                 left[2] - right[2]);
 }
 
 inline Vector3 operator*(const Vector3 &vector, float scale)
 {
   return Vector3(vector[0] * scale,
-              vector[1] * scale,
-              vector[2] * scale);
+                 vector[1] * scale,
+                 vector[2] * scale);
 }
 
 inline Vector3 operator/(const Vector3 &vector, float scale)
 {
   return Vector3(vector[0] / scale,
-              vector[1] / scale,
-              vector[2] / scale);
+                 vector[1] / scale,
+                 vector[2] / scale);
 }
 
 inline float dot_product(const Vector3 &left, const Vector3 &right) 
@@ -84,8 +84,8 @@ inline float dot_product(const Vector3 &left, const Vector3 &right)
 inline Vector3 cross_product(const Vector3 &left, const Vector3 &right)
 {
   return Vector3(left[1] * right[2] - left[2] * right[1],
-              left[2] * right[0] - left[0] * right[2],
-              left[0] * right[1] - left[1] * right[0]);
+                 left[2] * right[0] - left[0] * right[2],
+                 left[0] * right[1] - left[1] * right[0]);
 }
 
 inline float angle(const Vector3 &left, const Vector3 &right)

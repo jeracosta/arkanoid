@@ -1,49 +1,87 @@
 #include <optional>
+#include <cmath>
+#include <array>
 
 class coord {
 public:
-  float x, y, z;
 
-  coord(float x, float y, float z) : x(x), y(y), z(z) {}
-
-  float length() {
-    if (!_length_cache)
-      _length_cache = _compute_length();
-    return *_length_cache;
+  coord(float x, float y, float z)
+  {
+    _coords = {x,y,z};
   }
 
-  float length() const { return _compute_length(); }
-
-  float sqrlength();
-
-  coord operator+(const coord &other) {
-    return coord(x + other.x, y + other.y, z + other.z);
+  float length() const
+  {
+    return std::sqrt(sqrlength());
   }
 
-  coord operator-(const coord &other) {
-    return coord(x - other.x, y - other.y, z - other.z);
+  float sqrlength() const
+  {
+    return 
+      _coords[0] * _coords[0] +
+      _coords[1] * _coords[1] +
+      _coords[2] * _coords[2];
   }
 
-  coord operator*(float scale) {
-    return coord(x * scale, y * scale, z * scale);
+  coord operator+(const coord &other) const
+  {
+    return coord(_coords[0] + other[0], _coords[1] + other[1], _coords[2] + other[2]);
   }
 
-  coord operator/(float scale);
+  coord operator-(const coord &other) const
+  {
+    return coord(_coords[0] - other[0], _coords[1] - other[1], _coords[2] - other[2]);
+  }
 
-  coord dot_product(const coord &other);
+  coord operator*(float scale) const
+  {
+    return coord(_coords[0] * scale, _coords[1] * scale, _coords[2] * scale);
+  }
 
-  coord vec_product(const coord &other);
+  coord operator/(float scale) const
+  {
+    return coord(_coords[0] / scale, _coords[1] / scale, _coords[2] / scale);
+  }
 
-  coord angle(const coord &other);
+  float dot_product(const coord &other) const 
+  {
+    return
+      _coords[0] * other[0] +
+      _coords[1] * other[1] +
+      _coords[2] * other[2];
+  }
 
-  coord division(const coord &other);
+  float operator [](int i) const
+  {
+    return _coords[i];
+  }
 
-  // negate vector
-  coord operator-();
+  coord vec_product(const coord &other) const
+  {
+    return coord(
+      _coords[1] * other[2] - _coords[2] * other[1],
+      _coords[2] * other[0] - _coords[0] * other[2],
+      _coords[0] * other[1] - _coords[1] * other[0]);
+  }
 
-  coord normalize();
+  float angle(const coord &other) const
+  {
+    return dot_product(other) / (length() * other.length());
+  }
+
+  // TODO:
+  // coord division(const coord &other);
+
+  coord operator-() const
+  {
+    return coord(0,0,0) - *this;
+  }   
+
+  coord normalize() const 
+  {
+    return *this / length();
+  }
 
 private:
-  std::optional<float> _length_cache = {};
-  float _compute_length() const;
+  std::array<float, 3> _coords;
 };

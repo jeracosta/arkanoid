@@ -34,6 +34,15 @@ public:
   {
     return coords_;
   }
+
+  decltype(auto) constexpr begin(this auto &&self) noexcept
+  {
+          return self.coords_.begin();
+  }
+  decltype(auto) constexpr end(this auto &&self) noexcept
+  {
+          return self.coords_.end();
+  }
 };
 
 inline Vector3 operator+(const Vector3 &left, const Vector3 &right)

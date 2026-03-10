@@ -9,9 +9,29 @@
 using Seconds = std::chrono::duration<float>;
 
 std::vector<Vector3>
-free_fall_frames(Vector3 initial_position, Vector3 initial_velocity, Seconds time_step)
+free_fall_frames(Vector3 initial_velocity, Seconds time_step, Vector3 initial_position = {0.0f, 0.0f, 0.0f},)
 {
-    static_assert(false, "Implementar free_fall_frames");
+    Vector3 acceleration = {0.0f, 0.0f , -9.81f};
+    float dt = time_step.count();
+
+    Vector3 delta_velocity = acceleration * dt;
+
+    std::vector<Vector3> positions;
+    Vector3 velocity = initial_velocity;
+    Vector3 position = initial_position;
+  
+    while(position[2] > 0.0f && velocity[2] <= 0.0f)
+    {
+      positions.push_back(position);
+
+      position += velocity * dt;
+      velocity += delta_velocity;
+
+    }
+    positions.push_back(Vector3(0.0f, 0.0f, 0.0f));
+
+    return positions;
+
 }
 
 struct TestCase

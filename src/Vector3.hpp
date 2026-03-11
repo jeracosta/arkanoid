@@ -16,7 +16,7 @@ class Vector3
     float
     length() const
     {
-        return std::hypot(coords_[0], coords_[1], coords_[2]);
+        return std::sqrt(sqrlength());
     }
 
     float

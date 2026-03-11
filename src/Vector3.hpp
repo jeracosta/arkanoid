@@ -3,6 +3,8 @@
 #include <cassert>
 #include <cmath>
 
+class UnitVector3;
+
 class Vector3
 {
   protected:
@@ -127,8 +129,6 @@ operator==(const Vector3 &left, const Vector3 &right)
     return std::ranges::equal(left, right);
 }
 
-class UnitVector3;
-
 UnitVector3
 normalize(const Vector3 &);
 
@@ -138,30 +138,39 @@ class UnitVector3 : public Vector3
     constexpr UnitVector3(const Vector3 &vector)
         : Vector3(vector)
     {
+        assert(sqrlength(vector) == 1.0f);
     }
 
   public:
     friend UnitVector3
     normalize(const Vector3 &vector)
     {
-        return { vector / vector.length() };
+        return { vector / length(vector) };
     }
 
     friend std::optional<UnitVector3>
     safe_normalize(const Vector3 &vector)
     {
-        if (vector.length() == 0.0f)
-        {
-            return std::nullopt;
-        }
-        return { normalize(vector) };
+        return (sqrlength(vector) != 0.0f) ? std::make_optional(normalize(vector)) : std::nullopt;
     }
 };
+
+float
+sqrlength(const UnitVector3 &)
+{
+    return 1.0f;
+}
+
+float
+length(const Vector3)
+{
+    return 1.0f;
+}
 
 Vector3
 project(const Vector3 &vector, const Vector3 &onto)
 {
-    auto scalar_projection = dot(onto, vector) / onto.sqrlength();
+    auto scalar_projection = dot(onto, vector) / sqrlength(onto);
     return onto * scalar_projection;
 }
 

@@ -25,7 +25,12 @@ class Vector3
         return coords_[0] * coords_[0] + coords_[1] * coords_[1] + coords_[2] * coords_[2];
     }
 
-    // pre: normal is normalized
+    bool
+    isNormalized() const
+    {
+        return length() == 1;
+    }
+
     Vector3
     mirrorBy(const Vector3 &normal)
     {

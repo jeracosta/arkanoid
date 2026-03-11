@@ -121,7 +121,7 @@ angle(const Vector3 &left, const Vector3 &right)
 }
 
 inline Vector3
-normal(const Vector3 &vector)
+normalize(const Vector3 &vector)
 {
     return vector / vector.length();
 }

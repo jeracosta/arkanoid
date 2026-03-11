@@ -158,8 +158,15 @@ class UnitVector3 : public Vector3
     }
 };
 
-inline bool
-operator==(const Vector3 &left, const Vector3 &right)
+Vector3
+project(const Vector3 &vector, const Vector3 &onto)
 {
-    return std::ranges::equal(left, right);
+    auto scalar_projection = dot(onto, vector) / onto.sqrlength();
+    return onto * scalar_projection;
+}
+
+Vector3
+project(const Vector3 &vector, const UnitVector3 &onto)
+{
+    return onto * dot(onto, vector);
 }

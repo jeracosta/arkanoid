@@ -167,15 +167,15 @@ length(const Vector3)
     return 1.0f;
 }
 
-Vector3
-project(const Vector3 &vector, const Vector3 &onto)
+// FIXME: No usa la versión de UnitVector3. Usar polimorfismo estático
+constexpr float
+project_scalar(const Vector3 &vector, const Vector3 &onto)
 {
-    auto scalar_projection = dot(onto, vector) / sqrlength(onto);
-    return onto * scalar_projection;
+    return dot(onto, vector) / sqrlength(onto);
 }
 
-Vector3
-project(const Vector3 &vector, const UnitVector3 &onto)
+constexpr Vector3
+project(const Vector3 &vector, const Vector3 &onto)
 {
-    return onto * dot(onto, vector);
+    return onto * project_scalar(vector, onto);
 }

@@ -107,7 +107,7 @@ dot(const Vector3 &left, const Vector3 &right)
 }
 
 inline Vector3
-cross_product(const Vector3 &left, const Vector3 &right)
+cross(const Vector3 &left, const Vector3 &right)
 {
     return Vector3(left[1] * right[2] - left[2] * right[1],
                    left[2] * right[0] - left[0] * right[2],

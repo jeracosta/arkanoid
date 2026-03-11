@@ -1,10 +1,11 @@
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <cmath>
 
 class Vector3
 {
-  private:
+  protected:
     std::array<float, 3> coords_;
 
   public:
@@ -23,12 +24,6 @@ class Vector3
     sqrlength() const
     {
         return coords_[0] * coords_[0] + coords_[1] * coords_[1] + coords_[2] * coords_[2];
-    }
-
-    bool
-    isNormalized() const
-    {
-        return length() == 1;
     }
 
     Vector3
@@ -121,16 +116,47 @@ angle(const Vector3 &left, const Vector3 &right)
 }
 
 inline Vector3
-normalize(const Vector3 &vector)
-{
-    return vector / vector.length();
-}
-
-inline Vector3
 operator-(const Vector3 &vector)
 {
     return Vector3(0, 0, 0) - vector;
 }
+
+inline bool
+operator==(const Vector3 &left, const Vector3 &right)
+{
+    return std::ranges::equal(left, right);
+}
+
+class UnitVector3;
+
+UnitVector3
+normalize(const Vector3 &);
+
+class UnitVector3 : public Vector3
+{
+  private:
+    constexpr UnitVector3(const Vector3 &vector)
+        : Vector3(vector)
+    {
+    }
+
+  public:
+    friend UnitVector3
+    normalize(const Vector3 &vector)
+    {
+        return { vector / vector.length() };
+    }
+
+    friend std::optional<UnitVector3>
+    safe_normalize(const Vector3 &vector)
+    {
+        if (vector.length() == 0.0f)
+        {
+            return std::nullopt;
+        }
+        return { normalize(vector) };
+    }
+};
 
 inline bool
 operator==(const Vector3 &left, const Vector3 &right)

@@ -14,18 +14,6 @@ class Vector3
     {
     }
 
-    float
-    length() const
-    {
-        return std::sqrt(sqrlength());
-    }
-
-    float
-    sqrlength() const
-    {
-        return coords_[0] * coords_[0] + coords_[1] * coords_[1] + coords_[2] * coords_[2];
-    }
-
     Vector3
     mirrorBy(const Vector3 &normal)
     {
@@ -54,6 +42,18 @@ class Vector3
         return self.coords_.end();
     }
 };
+
+float
+sqrlength(const Vector3 &vector)
+{
+    return vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2];
+}
+
+float
+length(const Vector3 &vector)
+{
+    return std::sqrt(sqrlength(vector));
+}
 
 inline Vector3
 operator+(const Vector3 &left, const Vector3 &right)
@@ -112,7 +112,7 @@ cross(const Vector3 &left, const Vector3 &right)
 inline float
 angle(const Vector3 &left, const Vector3 &right)
 {
-    return dot(left, right) / (left.length() * right.length());
+    return dot(left, right) / (length(left) * length(right));
 }
 
 inline Vector3

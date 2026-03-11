@@ -101,7 +101,7 @@ operator/(const Vector3 &vector, float scale)
 }
 
 inline float
-dot_product(const Vector3 &left, const Vector3 &right)
+dot(const Vector3 &left, const Vector3 &right)
 {
     return (left[0] * right[0]) + (left[1] * right[1]) + (left[2] * right[2]);
 }
@@ -117,7 +117,7 @@ cross_product(const Vector3 &left, const Vector3 &right)
 inline float
 angle(const Vector3 &left, const Vector3 &right)
 {
-    return dot_product(left, right) / (left.length() * right.length());
+    return dot(left, right) / (left.length() * right.length());
 }
 
 inline Vector3

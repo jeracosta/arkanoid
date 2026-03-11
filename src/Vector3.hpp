@@ -29,12 +29,6 @@ class Vector3
         return coords_[i];
     }
 
-    explicit
-    operator std::array<float, 3>() const
-    {
-        return coords_;
-    }
-
     decltype(auto) constexpr begin(this auto &&self) noexcept
     {
         return self.coords_.begin();

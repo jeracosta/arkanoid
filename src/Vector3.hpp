@@ -40,18 +40,6 @@ class Vector3
     }
 };
 
-constexpr float
-sqrlength(const Vector3 &vector)
-{
-    return vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2];
-}
-
-constexpr float
-length(const Vector3 &vector)
-{
-    return std::sqrt(sqrlength(vector));
-}
-
 constexpr Vector3
 operator+(const Vector3 &left, const Vector3 &right) noexcept
 {
@@ -108,6 +96,18 @@ cross(const Vector3 &left, const Vector3 &right) noexcept
     return Vector3(left[1] * right[2] - left[2] * right[1],
                    left[2] * right[0] - left[0] * right[2],
                    left[0] * right[1] - left[1] * right[0]);
+}
+
+constexpr float
+sqrlength(const Vector3 &vector)
+{
+    return dot(vector, vector);
+}
+
+constexpr float
+length(const Vector3 &vector)
+{
+    return std::sqrt(sqrlength(vector));
 }
 
 constexpr float

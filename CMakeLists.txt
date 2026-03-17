@@ -19,6 +19,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(OpenGL REQUIRED)
 find_package(SDL2 REQUIRED)
+find_package(glm REQUIRED)
 
 include(FetchContent)
 
@@ -34,6 +35,7 @@ target_link_libraries(lib
     PRIVATE
     OpenGL::GL
     SDL2::SDL2
+    glm::glm
 )
 
 foreach(source_file ${SOURCES})

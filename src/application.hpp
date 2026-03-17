@@ -7,7 +7,7 @@
 class Application
 {
   public:
-    using TimeUnit = std::chrono::duration<float, std::ratio<1>>;
+    using TimeUnit = std::chrono::duration<float, std::ratio<1>>; // Seconds as float
 
     struct ExcecutionContext
     {

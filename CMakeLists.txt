@@ -6,13 +6,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build" FORCE)
+  set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build" FORCE)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra -Wpedantic")
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native -flto")
-    add_compile_options(-Wno-changes-meaning)
+  set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra -Wpedantic")
+  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native -flto")
+  add_compile_options(-Wno-changes-meaning)
 endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -29,13 +29,16 @@ file(GLOB_RECURSE SOURCES src/*.cpp)
 
 add_library(lib STATIC ${SOURCES})
 
-target_link_libraries(lib PRIVATE OpenGL::GL)
+target_link_libraries(lib
+    PRIVATE
+    OpenGL::GL
+)
 
 foreach(source_file ${SOURCES})
-    file(READ ${source_file} CONTENTS)
-    if(CONTENTS MATCHES "main\\s*\\(")
-        get_filename_component(name ${source_file} NAME_WE)
-        add_executable(${name} ${source_file})
-        target_link_libraries(${name} PRIVATE lib)
-    endif()
+  file(READ ${source_file} CONTENTS)
+  if(CONTENTS MATCHES "main\\s*\\(")
+    get_filename_component(name ${source_file} NAME_WE)
+    add_executable(${name} ${source_file})
+    target_link_libraries(${name} PRIVATE lib)
+  endif()
 endforeach()

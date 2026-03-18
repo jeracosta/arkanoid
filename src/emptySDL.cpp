@@ -71,22 +71,23 @@ main()
           { Key{ SDL_SCANCODE_ESCAPE }, { Action::Quit } },
       },
 
-      .frame_logic = [](auto& ctx) {
-        auto color = mix(noise_color(ctx.time.elapsed), flash);
-        flash.update(ctx.time.delta);
+      .frame_logic = [](auto& context)
+      {
+          if (context.actions[Action::Flash])
+          {
+              flash.trigger();
+          }
 
-        if (ctx.actions[Action::Flash])
-        {
-            flash.trigger();
-        }
+          if (context.actions[Action::Quit])
+          {
+              context.stop();
+          }
 
-        if (ctx.actions[Action::Quit])
-        {
-            ctx.stop();
-        }
+          auto color = mix(noise_color(context.time.elapsed), flash);
+          flash.update(context.time.delta);
 
-        glClearColor(color.r, color.g, color.b, color.a);
-        glClear(GL_COLOR_BUFFER_BIT);
+          glClearColor(color.r, color.g, color.b, color.a);
+          glClear(GL_COLOR_BUFFER_BIT);
       }
     });
 

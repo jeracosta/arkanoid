@@ -1,4 +1,5 @@
 #include "chronometer.hpp"
+#include "inputs.hpp"
 #include <GL/gl.h>
 #include <SDL2/SDL.h>
 #include <glm/gtc/noise.hpp>
@@ -13,6 +14,8 @@ class Application
     {
         const Chronometer<TimeUnit>::Reading &time;
 
+        const ActionsState &&actions;
+
         // Triggers a graceful shutdown of the application at the end of the current frame.
         std::function<void()> stop;
     };
@@ -25,7 +28,7 @@ class Application
             glm::uvec2  size;
         } window;
 
-        std::function<void(const ExcecutionContext &, const SDL_Event &)> event_logic;
+        InputMap input_map;
 
         std::function<void(const ExcecutionContext &)> frame_logic;
     };
@@ -75,8 +78,9 @@ class Application
         while (running_)
         {
             auto context = ExcecutionContext{
-                .time = chronometer.read(),
-                .stop = [this]() { running_ = false; },
+                .time    = chronometer.read(),
+                .actions = config_.input_map.get_triggered_actions_mask(),
+                .stop    = [this]() { running_ = false; },
             };
 
             auto event = SDL_Event{};
@@ -86,8 +90,7 @@ class Application
                 {
                     context.stop();
                 }
-
-                config_.event_logic(context, event);
+                config_.input_map.handle(event);
             }
 
             config_.frame_logic(context);

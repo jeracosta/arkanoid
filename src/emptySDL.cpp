@@ -51,29 +51,41 @@ class FlashColor
     }
 } flash;
 
+enum class Action : uint8_t
+{
+    Quit,
+    Flash,
+};
+
 int
 main()
 {
+    // TODO: fluent API for input mapping.
+    auto input_map = InputMap{};
+    input_map[Key{ SDL_SCANCODE_SPACE }].bind(Action::Flash);
+    input_map[Key{ SDL_SCANCODE_ESCAPE }].bind(Action::Quit);
+
     auto app = Application({
       .window = {
         .title = "Test SDL app",
         .size  = {640, 480},
       },
 
-      .event_logic = [](auto& ctx, auto& event) {
-        if (event.type == SDL_KEYDOWN) {
-          switch (event.key.keysym.sym) {
-            case SDLK_ESCAPE:
-                ctx.stop();
-            case SDLK_SPACE:
-                flash.trigger();
-          }
-        }
-      },
+      .input_map = input_map,
 
       .frame_logic = [](auto& ctx) {
         auto color = mix(noise_color(ctx.time.elapsed), flash);
         flash.update(ctx.time.delta);
+
+        if (ctx.actions[Action::Flash])
+        {
+            flash.trigger();
+        }
+
+        if (ctx.actions[Action::Quit])
+        {
+            ctx.stop();
+        }
 
         glClearColor(color.r, color.g, color.b, color.a);
         glClear(GL_COLOR_BUFFER_BIT);

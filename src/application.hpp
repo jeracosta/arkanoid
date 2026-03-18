@@ -10,10 +10,12 @@ class Application
   public:
     using TimeUnit = std::chrono::duration<float, std::ratio<1>>; // Seconds as float
 
-    struct ExcecutionContext
+    struct FrameContext
     {
+        // Time measured at the start of the current frame.
         const Chronometer<TimeUnit>::Reading &time;
 
+        // State of actions at the start of the current frame.
         const ActionsState &&actions;
 
         // Triggers a graceful shutdown of the application at the end of the current frame.
@@ -30,7 +32,7 @@ class Application
 
         InputMap input_map;
 
-        std::function<void(const ExcecutionContext &)> frame_logic;
+        std::function<void(const FrameContext &)> frame_logic;
     };
 
   private:
@@ -77,7 +79,7 @@ class Application
 
         while (running_)
         {
-            auto context = ExcecutionContext{
+            auto context = FrameContext{
                 .time    = chronometer.read(),
                 .actions = config_.input_map.get_triggered_actions_mask(),
                 .stop    = [this]() { running_ = false; },

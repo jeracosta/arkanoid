@@ -60,18 +60,16 @@ enum class Action : uint8_t
 int
 main()
 {
-    // TODO: fluent API for input mapping.
-    auto input_map = InputMap{};
-    input_map[Key{ SDL_SCANCODE_SPACE }].bind(Action::Flash);
-    input_map[Key{ SDL_SCANCODE_ESCAPE }].bind(Action::Quit);
-
     auto app = Application({
       .window = {
         .title = "Test SDL app",
         .size  = {640, 480},
       },
 
-      .input_map = input_map,
+      .input_map = {
+          { Key{ SDL_SCANCODE_SPACE }, { Action::Flash } },
+          { Key{ SDL_SCANCODE_ESCAPE }, { Action::Quit } },
+      },
 
       .frame_logic = [](auto& ctx) {
         auto color = mix(noise_color(ctx.time.elapsed), flash);

@@ -102,6 +102,28 @@ class InputMap
     DiscreteInputStateStorage<MouseButton> mouse_buttons;
 
   public:
+    using Binding = std::pair<DiscreteInput, std::initializer_list<Action>>;
+
+    InputMap(std::initializer_list<Binding> init)
+    {
+        for (auto const &b : init)
+        {
+            std::visit(
+                [this, &b](auto const &input)
+                {
+                    using T = std::decay_t<decltype(input)>;
+                    for (Action a : b.second)
+                    {
+                        if constexpr (std::is_same_v<T, Key>)
+                            keys[input.code].bind(a);
+                        else
+                            mouse_buttons[input.code].bind(a);
+                    }
+                },
+                b.first);
+        }
+    }
+
     auto
     operator[](Key key)
     {

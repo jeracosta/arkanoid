@@ -18,3 +18,4 @@ AllowShortFunctionsOnASingleLine: None
 PackConstructorInitializers: Never
 AlwaysBreakAfterDefinitionReturnType: All
 AlwaysBreakTemplateDeclarations: true
+LambdaBodyIndentation: OuterScope

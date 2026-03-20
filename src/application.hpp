@@ -1,27 +1,12 @@
 #include "chronometer.hpp"
-#include "inputs.hpp"
+#include "frame_context.hpp"
 #include <GL/gl.h>
 #include <SDL2/SDL.h>
-#include <glm/gtc/noise.hpp>
-#include <ratio>
+#include <glm/glm.hpp>
 
 class Application
 {
   public:
-    using TimeUnit = std::chrono::duration<float, std::ratio<1>>; // Seconds as float
-
-    struct FrameContext
-    {
-        // Time measured at the start of the current frame.
-        const Chronometer<TimeUnit>::Reading &time;
-
-        // State of actions at the start of the current frame.
-        const ActionsState &&actions;
-
-        // Triggers a graceful shutdown of the application at the end of the current frame.
-        std::function<void()> stop;
-    };
-
     struct Configuration
     {
         struct
@@ -73,7 +58,7 @@ class Application
 
         gl_context_ = SDL_GL_CreateContext(window_);
 
-        auto chronometer = Chronometer<TimeUnit>{};
+        auto chronometer = Chronometer<FrameContext::TimeUnit>{};
 
         running_ = true;
 

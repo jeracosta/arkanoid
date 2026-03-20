@@ -1,4 +1,3 @@
-#include "action.hpp"
 #include "chronometer.hpp"
 #include "frame_context.hpp"
 #include <GL/gl.h>
@@ -16,7 +15,7 @@ class Application
             glm::uvec2  size;
         } window;
 
-        InputMapper input_mapper;
+        InputMap input_map;
 
         std::function<void(const FrameContext &)> frame_logic;
     };
@@ -66,8 +65,9 @@ class Application
         while (running_)
         {
             auto context = FrameContext{
-                .time = chronometer.read(),
-                .stop = [this]() { running_ = false; },
+                .time    = chronometer.read(),
+                .actions = config_.input_map.get_triggered_actions_mask(),
+                .stop    = [this]() { running_ = false; },
             };
 
             auto event = SDL_Event{};
@@ -77,7 +77,7 @@ class Application
                 {
                     context.stop();
                 }
-                config_.input_mapper.handle(event, context);
+                config_.input_map.handle(event);
             }
 
             config_.frame_logic(context);

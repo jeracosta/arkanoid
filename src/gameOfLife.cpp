@@ -1,4 +1,3 @@
-#include "action.hpp"
 #include "application.hpp"
 
 #include <GL/gl.h>
@@ -7,11 +6,24 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <cstdint>
 #include <cstdlib>
 #include <glm/vec2.hpp>
 #include <print>
-#include <utility>
 #include <vector>
+
+enum class Action : uint8_t
+{
+    Quit,
+    Pause,
+    Resume,
+    Clear,
+    Randomize,
+    IncreaseResolution,
+    DecreaseResolution,
+    IncreaseSpeed,
+    DecreaseSpeed,
+};
 
 struct Cell
 {
@@ -21,8 +33,13 @@ struct Cell
 class Board
 {
   private:
-    std::size_t       resolution_;
+    // Determines board size; cells per side.
+    std::size_t resolution_;
+
+    // Vectorized cell matrix. Includes phantom border of dead cells to optimize neighbor counting.
     std::vector<Cell> cells_;
+
+    // Double buffer to store next state of the board while updating.
     std::vector<Cell> cells_buffer_;
 
     std::size_t
@@ -92,16 +109,19 @@ class Board
     {
         return resolution_;
     }
+
     std::size_t
     row_count() const
     {
         return resolution_;
     }
+
     std::size_t
     column_count() const
     {
         return resolution_;
     }
+
     std::size_t
     cell_count() const
     {
@@ -128,25 +148,56 @@ class Board
         return cells_[index_(glm::ivec2{ static_cast<int>(pos.x), static_cast<int>(pos.y) })];
     }
 
+    auto
+    begin()
+    {
+        return cells_.begin();
+    }
+
+    auto
+    end()
+    {
+        return cells_.end();
+    }
+
+    auto
+    begin() const
+    {
+        return cells_.begin();
+    }
+
+    auto
+    end() const
+    {
+        return cells_.end();
+    }
+
     void
     update()
     {
         std::fill(cells_buffer_.begin(), cells_buffer_.end(), Cell{});
 
-        for_each_cell_([this](glm::ivec2 pos)
-        {
-            const auto &cell      = cells_[index_(pos)];
-            auto       &next_cell = cells_buffer_[index_(pos)];
-
-            int alive_neighbors = 0;
-            for (const Cell *neighbor : neighbors_(pos))
+        for_each_cell_(
+            [this](glm::ivec2 pos)
             {
-                alive_neighbors += neighbor->alive ? 1 : 0;
-            }
+                auto &cell      = cells_[index_(pos)];
+                auto &next_cell = cells_buffer_[index_(pos)];
 
-            next_cell.alive = cell.alive ? (alive_neighbors == 2 || alive_neighbors == 3)
-                                         : (alive_neighbors == 3);
-        });
+                int alive_neighbors = 0;
+                for (const Cell *neighbor : neighbors_(pos))
+                {
+                    alive_neighbors += neighbor->alive ? 1 : 0;
+                }
+
+                if (cell.alive)
+                {
+                    next_cell.alive = alive_neighbors == 2 || alive_neighbors == 3;
+                }
+                else
+                {
+                    next_cell.alive = alive_neighbors == 3;
+                }
+            });
 
         std::swap(cells_, cells_buffer_);
     }
@@ -172,11 +223,13 @@ class Game
     {
         paused_ = true;
     }
+
     void
     resume()
     {
         paused_ = false;
     }
+
     bool
     is_paused() const
     {
@@ -188,6 +241,7 @@ class Game
     {
         speed_ = std::min(speed_ * speed_factor, max_speed);
     }
+
     void
     decrease_speed()
     {
@@ -246,6 +300,58 @@ class Game
         }
     }
 
+    void
+    process(const ActionsState &actions)
+    {
+        if (actions[Action::Pause] && !is_paused())
+        {
+            std::println("Paused");
+            pause();
+        }
+
+        if (actions[Action::Resume] && is_paused())
+        {
+            std::println("Resumed");
+            resume();
+        }
+
+        if (actions[Action::Clear])
+        {
+            std::println("Cleared");
+            clear();
+        }
+
+        if (actions[Action::Randomize])
+        {
+            std::println("Randomized");
+            randomize();
+        }
+
+        if (actions[Action::IncreaseSpeed])
+        {
+            std::println("Increased speed");
+            increase_speed();
+        }
+
+        if (actions[Action::DecreaseSpeed])
+        {
+            std::println("Decreased speed");
+            decrease_speed();
+        }
+
+        if (actions[Action::IncreaseResolution])
+        {
+            std::println("Increased resolution");
+            increase_resolution();
+        }
+
+        if (actions[Action::DecreaseResolution])
+        {
+            std::println("Decreased resolution");
+            decrease_resolution();
+        }
+    }
+
     friend void
     render(const Game &game)
     {
@@ -287,88 +393,6 @@ class Game
         }
         glEnd();
     }
-
-    struct InputActions
-    {
-        InputAction toggle_pause;
-        InputAction clear;
-        InputAction randomize;
-        InputAction increase_speed;
-        InputAction decrease_speed;
-        InputAction increase_resolution;
-        InputAction decrease_resolution;
-    };
-
-    InputActions actions = {
-
-        .toggle_pause = { [this](auto trigger)
-    {
-        if (trigger == InputAction::Trigger::Press)
-        {
-            std::println("Paused");
-            pause();
-        }
-        else if (trigger == InputAction::Trigger::Release)
-        {
-            std::println("Resumed");
-            resume();
-        }
-    } },
-
-        .clear = { [this](auto trigger)
-    {
-        if (trigger == InputAction::Trigger::Press)
-        {
-            std::println("Cleared");
-            clear();
-        }
-    } },
-
-        .randomize = { [this](auto trigger)
-    {
-        if (trigger == InputAction::Trigger::Press)
-        {
-            std::println("Randomized");
-            randomize();
-        }
-    } },
-
-        .increase_speed = { [this](auto trigger)
-    {
-        if (trigger == InputAction::Trigger::Press)
-        {
-            std::println("Increased speed");
-            increase_speed();
-        }
-    } },
-
-        .decrease_speed = { [this](auto trigger)
-    {
-        if (trigger == InputAction::Trigger::Press)
-        {
-            std::println("Decreased speed");
-            decrease_speed();
-        }
-    } },
-
-        .increase_resolution = { [this](auto trigger)
-    {
-        if (trigger == InputAction::Trigger::Press)
-        {
-            std::println("Increased resolution");
-            increase_resolution();
-        }
-    } },
-
-        .decrease_resolution = { [this](auto trigger)
-    {
-        if (trigger == InputAction::Trigger::Press)
-        {
-            std::println("Decreased resolution");
-            decrease_resolution();
-        }
-    } },
-    };
 };
 
 int
@@ -377,36 +401,38 @@ main()
     auto game = Game{};
 
     auto app = Application({
-        .window = {
-            .title = "Game of life",
-            .size  = { 640, 640 },
-        },
+      .window = {
+        .title = "Game of life",
+        .size  = { 640, 640 },
+      },
 
-        .input_mapper = {
-            { game.actions.toggle_pause, { InputChannel::Key(SDL_SCANCODE_SPACE) }},
-            { game.actions.clear, { InputChannel::Key(SDL_SCANCODE_C) }},
-            { game.actions.randomize, { InputChannel::Key(SDL_SCANCODE_R) }},
-            { game.actions.increase_speed, { InputChannel::Key(SDL_SCANCODE_UP) }},
-            { game.actions.decrease_speed, { InputChannel::Key(SDL_SCANCODE_DOWN) }},
-            { game.actions.increase_resolution, { InputChannel::Key(SDL_SCANCODE_RIGHT) }},
-            { game.actions.decrease_resolution, { InputChannel::Key(SDL_SCANCODE_LEFT) }},
-            { {[](auto trigger, auto, auto &context)
-              {
-                  if (trigger == InputAction::Trigger::Press)
-                  {
-                      context.stop();
-                  }
-              }},
-              { InputChannel::Key(SDL_SCANCODE_ESCAPE) } }
-        },
+      .input_map = {
+          { Key{ SDL_SCANCODE_ESCAPE }, { Action::Quit } },
+          { Key{ SDL_SCANCODE_SPACE }, { Action::Pause, Action::Resume } },
+          { Key{ SDL_SCANCODE_C }, { Action::Clear } },
+          { Key{ SDL_SCANCODE_R }, { Action::Randomize } },
+          { Key{ SDL_SCANCODE_UP }, { Action::IncreaseSpeed } },
+          { Key{ SDL_SCANCODE_DOWN }, { Action::DecreaseSpeed } },
+          { Key{ SDL_SCANCODE_RIGHT }, { Action::IncreaseResolution } },
+          { Key{ SDL_SCANCODE_LEFT }, { Action::DecreaseResolution } },
+      },
 
-        .frame_logic = [&game](auto &context)
-        {
-            game.tick(context.time.delta);
-            render(game);
-        }
+      .frame_logic = [&game](auto &context)
+      {
+          if (context.actions[Action::Quit])
+          {
+              context.stop();
+          }
+
+          game.process(context.actions);
+
+          game.tick(context.time.delta);
+
+          render(game);
+      }
     });
 
     app.run();
+
     return EXIT_SUCCESS;
 }

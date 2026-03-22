@@ -1,4 +1,5 @@
 #include "application.hpp"
+#include "world.hpp"
 
 #include <GL/gl.h>
 #include <SDL2/SDL.h>
@@ -177,27 +178,26 @@ class Board
     {
         std::fill(cells_buffer_.begin(), cells_buffer_.end(), Cell{});
 
-        for_each_cell_(
-            [this](glm::ivec2 pos)
+        for_each_cell_([this](glm::ivec2 pos)
+        {
+            auto &cell      = cells_[index_(pos)];
+            auto &next_cell = cells_buffer_[index_(pos)];
+
+            int alive_neighbors = 0;
+            for (const Cell *neighbor : neighbors_(pos))
             {
-                auto &cell      = cells_[index_(pos)];
-                auto &next_cell = cells_buffer_[index_(pos)];
+                alive_neighbors += neighbor->alive ? 1 : 0;
+            }
 
-                int alive_neighbors = 0;
-                for (const Cell *neighbor : neighbors_(pos))
-                {
-                    alive_neighbors += neighbor->alive ? 1 : 0;
-                }
-
-                if (cell.alive)
-                {
-                    next_cell.alive = alive_neighbors == 2 || alive_neighbors == 3;
-                }
-                else
-                {
-                    next_cell.alive = alive_neighbors == 3;
-                }
-            });
+            if (cell.alive)
+            {
+                next_cell.alive = alive_neighbors == 2 || alive_neighbors == 3;
+            }
+            else
+            {
+                next_cell.alive = alive_neighbors == 3;
+            }
+        });
 
         std::swap(cells_, cells_buffer_);
     }
@@ -219,15 +219,10 @@ class Game
     static constexpr auto random_chance = 0.5f;
 
     void
-    pause()
+    toggle_pause()
     {
-        paused_ = true;
-    }
-
-    void
-    resume()
-    {
-        paused_ = false;
+        paused_ = !paused_;
+        std::println("{}", paused_ ? "Paused" : "Resumed");
     }
 
     bool
@@ -240,18 +235,21 @@ class Game
     increase_speed()
     {
         speed_ = std::min(speed_ * speed_factor, max_speed);
+        std::println("Speed: {:.2f} steps/s", speed_);
     }
 
     void
     decrease_speed()
     {
         speed_ = std::max(speed_ / speed_factor, min_speed);
+        std::println("Speed: {:.2f} steps/s", speed_);
     }
 
     void
     increase_resolution()
     {
         board_ = Board{ board_.resolution() + 1 };
+        std::println("Resolution: {}x{}", board_.resolution(), board_.resolution());
     }
 
     void
@@ -261,12 +259,14 @@ class Game
         {
             board_ = Board{ board_.resolution() - 1 };
         }
+        std::println("Resolution: {}x{}", board_.resolution(), board_.resolution());
     }
 
     void
     clear()
     {
         board_ = Board{ board_.resolution() };
+        std::println("Cleared");
     }
 
     void
@@ -280,6 +280,7 @@ class Game
                     = (std::rand() / static_cast<float>(RAND_MAX)) < random_chance;
             }
         }
+        std::println("Randomized");
     }
 
     void
@@ -297,58 +298,6 @@ class Game
         {
             board_.update();
             accumulator_ -= step;
-        }
-    }
-
-    void
-    process(const ActionsState &actions)
-    {
-        if (actions[Action::Pause] && !is_paused())
-        {
-            std::println("Paused");
-            pause();
-        }
-
-        if (actions[Action::Resume] && is_paused())
-        {
-            std::println("Resumed");
-            resume();
-        }
-
-        if (actions[Action::Clear])
-        {
-            std::println("Cleared");
-            clear();
-        }
-
-        if (actions[Action::Randomize])
-        {
-            std::println("Randomized");
-            randomize();
-        }
-
-        if (actions[Action::IncreaseSpeed])
-        {
-            std::println("Increased speed");
-            increase_speed();
-        }
-
-        if (actions[Action::DecreaseSpeed])
-        {
-            std::println("Decreased speed");
-            decrease_speed();
-        }
-
-        if (actions[Action::IncreaseResolution])
-        {
-            std::println("Increased resolution");
-            increase_resolution();
-        }
-
-        if (actions[Action::DecreaseResolution])
-        {
-            std::println("Decreased resolution");
-            decrease_resolution();
         }
     }
 
@@ -401,35 +350,34 @@ main()
     auto game = Game{};
 
     auto app = Application({
-      .window = {
-        .title = "Game of life",
-        .size  = { 640, 640 },
-      },
+        .window = {
+            .title = "Game of life",
+            .size  = { 640, 640 },
+        },
 
-      .input_map = {
-          { Key{ SDL_SCANCODE_ESCAPE }, { Action::Quit } },
-          { Key{ SDL_SCANCODE_SPACE }, { Action::Pause, Action::Resume } },
-          { Key{ SDL_SCANCODE_C }, { Action::Clear } },
-          { Key{ SDL_SCANCODE_R }, { Action::Randomize } },
-          { Key{ SDL_SCANCODE_UP }, { Action::IncreaseSpeed } },
-          { Key{ SDL_SCANCODE_DOWN }, { Action::DecreaseSpeed } },
-          { Key{ SDL_SCANCODE_RIGHT }, { Action::IncreaseResolution } },
-          { Key{ SDL_SCANCODE_LEFT }, { Action::DecreaseResolution } },
-      },
+        .keyboard_input_mapper = [&]
+        {
+            using enum KeyInput;
+            KeyboardInputMapper inputs;
 
-      .frame_logic = [&game](auto &context)
-      {
-          if (context.actions[Action::Quit])
-          {
-              context.stop();
-          }
+            inputs.bind(SDLK_ESCAPE,   Release        , [] { WORLD->stop(); }            );
+            inputs.bind(SDLK_SPACE ,   Press          , &Game::toggle_pause       , &game);
+            inputs.bind(SDLK_c     ,   Press          , &Game::clear              , &game);
+            inputs.bind(SDLK_r     , { Press, Repeat }, &Game::randomize          , &game);
+            inputs.bind(SDLK_UP    , { Press, Repeat }, &Game::increase_speed     , &game);
+            inputs.bind(SDLK_DOWN  , { Press, Repeat }, &Game::decrease_speed     , &game);
+            inputs.bind(SDLK_RIGHT , { Press, Repeat }, &Game::increase_resolution, &game);
+            inputs.bind(SDLK_LEFT  , { Press, Repeat }, &Game::decrease_resolution, &game);
 
-          game.process(context.actions);
+            return inputs;
+        }(),
 
-          game.tick(context.time.delta);
+        .frame_logic = [&game](auto &context)
+        {
+            game.tick(context.time.delta);
 
-          render(game);
-      }
+            render(game);
+        }
     });
 
     app.run();

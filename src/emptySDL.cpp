@@ -1,4 +1,5 @@
 #include "application.hpp"
+#include "world.hpp"
 #include <GL/gl.h>
 #include <SDL2/SDL.h>
 #include <cstdlib>
@@ -60,31 +61,23 @@ enum class Action : uint8_t
 int
 main()
 {
+
+    KeyboardInputMapper inputs;
+    inputs.bind(SDLK_ESCAPE, KeyInput::Release, [] { WORLD->stop(); });
+    inputs.bind(SDLK_SPACE, KeyInput::Release, [] { flash.trigger(); });
+
     auto app = Application({
       .window = {
         .title = "Test SDL app",
         .size  = {640, 480},
       },
 
-      .input_map = {
-          { Key{ SDL_SCANCODE_SPACE }, { Action::Flash } },
-          { Key{ SDL_SCANCODE_ESCAPE }, { Action::Quit } },
-      },
+      .keyboard_input_mapper = inputs,
 
-      .frame_logic = [](auto& context)
+      .frame_logic = [](auto &frame)
       {
-          if (context.actions[Action::Flash])
-          {
-              flash.trigger();
-          }
-
-          if (context.actions[Action::Quit])
-          {
-              context.stop();
-          }
-
-          auto color = mix(noise_color(context.time.elapsed), flash);
-          flash.update(context.time.delta);
+          auto color = mix(noise_color(frame.time.elapsed), flash);
+          flash.update(frame.time.delta);
 
           glClearColor(color.r, color.g, color.b, color.a);
           glClear(GL_COLOR_BUFFER_BIT);

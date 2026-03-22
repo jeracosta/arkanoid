@@ -1,10 +1,10 @@
 #pragma once
 
 #include "chronometer.hpp"
+#include "input.hpp"
 #include <GL/gl.h>
 #include <SDL2/SDL.h>
 #include <glm/glm.hpp>
-#include <stop_token>
 
 class Application
 {
@@ -14,7 +14,7 @@ class Application
         using TimeUnit = std::chrono::duration<float, std::ratio<1>>; // Seconds as float
 
         // Time measured at the start of the current frame.
-        Chronometer<TimeUnit>::Reading &time;
+        Chronometer<TimeUnit>::Reading time;
 
         // Triggers a graceful shutdown of the application at the end of the current frame.
         std::function<void()> stop;
@@ -27,7 +27,7 @@ class Application
             glm::uvec2  size;
         } window;
 
-        InputMap input_map;
+        KeyboardInputMapper keyboard_input_mapper;
 
         std::function<void(const RuntimeContext &)> frame_logic;
     };

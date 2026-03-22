@@ -1,5 +1,3 @@
-#pragma once
-
 #include "application.hpp"
 #include "chronometer.hpp"
 #include <GL/gl.h>
@@ -40,12 +38,15 @@ Application::run()
 
     bool stop_requested = false;
 
-    global_runtime_context_ = { .time    = chronometer.read(),
-                                .actions = config_.input_map.get_triggered_actions_mask(),
-                                .stop    = [&stop_requested]() { stop_requested = true; } };
+    global_runtime_context_ = RuntimeContext{
+        .time = {},
+        .stop = [&stop_requested]() { stop_requested = true; },
+    };
 
     while (!stop_requested)
     {
+
+        global_runtime_context_->time = chronometer.read();
 
         auto event = SDL_Event{};
         while (SDL_PollEvent(&event))
@@ -54,10 +55,10 @@ Application::run()
             {
                 stop_requested = true;
             }
-            config_.input_map.handle(event);
+            config_.keyboard_input_mapper.handle(event);
         }
 
-        config_.frame_logic(WORLD);
+        config_.frame_logic(*WORLD);
 
         SDL_GL_SwapWindow(window_);
     }

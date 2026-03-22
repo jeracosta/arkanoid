@@ -19,6 +19,7 @@ class Application
         // Triggers a graceful shutdown of the application at the end of the current frame.
         std::function<void()> stop;
     };
+
     struct Configuration
     {
         struct
@@ -27,7 +28,7 @@ class Application
             glm::uvec2  size;
         } window;
 
-        KeyboardInputMapper keyboard_input_mapper;
+        std::function<void(KeyboardInputMapper &, const RuntimeContext &)> input_setup;
 
         std::function<void(const RuntimeContext &)> frame_logic;
     };
@@ -43,7 +44,9 @@ class Application
     run();
 
   private:
-    SDL_Window   *window_;
-    SDL_GLContext gl_context_;
-    Configuration config_;
+    SDL_Window         *window_;
+    SDL_GLContext       gl_context_;
+    Configuration       config_;
+    KeyboardInputMapper input_mapper_;
+    bool                running_ = false;
 };

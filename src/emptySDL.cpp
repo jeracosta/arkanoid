@@ -1,5 +1,4 @@
 #include "application.hpp"
-#include "world.hpp"
 #include <GL/gl.h>
 #include <SDL2/SDL.h>
 #include <cstdlib>
@@ -61,18 +60,17 @@ enum class Action : uint8_t
 int
 main()
 {
-
-    KeyboardInputMapper inputs;
-    inputs.bind(SDLK_ESCAPE, KeyInput::Release, [] { WORLD->stop(); });
-    inputs.bind(SDLK_SPACE, KeyInput::Release, [] { flash.trigger(); });
-
     auto app = Application({
       .window = {
         .title = "Test SDL app",
         .size  = {640, 480},
       },
 
-      .keyboard_input_mapper = inputs,
+      .input_setup = [](auto &inputs, auto &context)
+      {
+          inputs.bind(SDLK_ESCAPE, KeyInput::Release, InputAction{context.stop});
+          inputs.bind(SDLK_SPACE,  KeyInput::Press,   []{ flash.trigger(); }   );
+      },
 
       .frame_logic = [](auto &frame)
       {

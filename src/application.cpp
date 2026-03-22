@@ -4,9 +4,6 @@
 #include <SDL2/SDL.h>
 #include <glm/glm.hpp>
 
-static std::optional<Application::RuntimeContext> global_runtime_context_;
-const auto                                       &WORLD = global_runtime_context_; // see world.hpp
-
 Application::Application(Configuration config)
     : config_(std::move(config))
 {
@@ -22,8 +19,7 @@ Application::Application(Configuration config)
 void
 Application::run()
 {
-    assert(!global_runtime_context_.has_value()
-           && "Tried to run multiple applications at the same time; global runtime context clash");
+    assert(!running_ && "Must not run an already running application.");
 
     window_ = SDL_CreateWindow(config_.window.title,
                                SDL_WINDOWPOS_CENTERED,
@@ -36,29 +32,31 @@ Application::run()
 
     auto chronometer = Chronometer<RuntimeContext::TimeUnit>{};
 
-    bool stop_requested = false;
-
-    global_runtime_context_ = RuntimeContext{
+    auto context = RuntimeContext{
         .time = {},
-        .stop = [&stop_requested]() { stop_requested = true; },
+        .stop = [this] { running_ = false; },
     };
 
-    while (!stop_requested)
+    config_.input_setup(input_mapper_, context);
+
+    running_ = true;
+
+    while (running_)
     {
 
-        global_runtime_context_->time = chronometer.read();
+        context.time = chronometer.read();
 
         auto event = SDL_Event{};
         while (SDL_PollEvent(&event))
         {
             if (event.type == SDL_QUIT)
             {
-                stop_requested = true;
+                running_ = true;
             }
-            config_.keyboard_input_mapper.handle(event);
+            input_mapper_.handle(event);
         }
 
-        config_.frame_logic(*WORLD);
+        config_.frame_logic(context);
 
         SDL_GL_SwapWindow(window_);
     }
@@ -69,6 +67,5 @@ Application::run()
 
 Application::~Application()
 {
-    global_runtime_context_.reset();
     SDL_Quit();
 }

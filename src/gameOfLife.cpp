@@ -1,5 +1,4 @@
 #include "application.hpp"
-#include "world.hpp"
 
 #include <GL/gl.h>
 #include <SDL2/SDL.h>
@@ -355,22 +354,18 @@ main()
             .size  = { 640, 640 },
         },
 
-        .keyboard_input_mapper = [&]
+        .input_setup = [&](auto &inputs, const auto & context)
         {
             using enum KeyInput;
-            KeyboardInputMapper inputs;
-
-            inputs.bind(SDLK_ESCAPE,   Release        , [] { WORLD->stop(); }            );
-            inputs.bind(SDLK_SPACE ,   Press          , &Game::toggle_pause       , &game);
-            inputs.bind(SDLK_c     ,   Press          , &Game::clear              , &game);
-            inputs.bind(SDLK_r     , { Press, Repeat }, &Game::randomize          , &game);
-            inputs.bind(SDLK_UP    , { Press, Repeat }, &Game::increase_speed     , &game);
-            inputs.bind(SDLK_DOWN  , { Press, Repeat }, &Game::decrease_speed     , &game);
-            inputs.bind(SDLK_RIGHT , { Press, Repeat }, &Game::increase_resolution, &game);
-            inputs.bind(SDLK_LEFT  , { Press, Repeat }, &Game::decrease_resolution, &game);
-
-            return inputs;
-        }(),
+            inputs.bind(SDLK_ESCAPE,   Release,         InputAction{context.stop }       );
+            inputs.bind(SDLK_SPACE,    Press,           &Game::toggle_pause,        &game);
+            inputs.bind(SDLK_c,        Press,           &Game::clear,               &game);
+            inputs.bind(SDLK_r,      { Press, Repeat }, &Game::randomize,           &game);
+            inputs.bind(SDLK_UP,     { Press, Repeat }, &Game::increase_speed,      &game);
+            inputs.bind(SDLK_DOWN,   { Press, Repeat }, &Game::decrease_speed,      &game);
+            inputs.bind(SDLK_RIGHT,  { Press, Repeat }, &Game::increase_resolution, &game);
+            inputs.bind(SDLK_LEFT,   { Press, Repeat }, &Game::decrease_resolution, &game);
+        },
 
         .frame_logic = [&game](auto &context)
         {

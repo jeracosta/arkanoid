@@ -18,6 +18,11 @@ class Application
 
         // Triggers a graceful shutdown of the application at the end of the current frame.
         std::function<void()> stop;
+
+        struct
+        {
+            glm::uvec2 size;
+        } window;
     };
 
     struct Configuration

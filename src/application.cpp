@@ -14,12 +14,6 @@ Application::Application(Configuration config)
     }
 
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, true);
-}
-
-void
-Application::run()
-{
-    assert(!running_ && "Must not run an already running application.");
 
     window_ = SDL_CreateWindow(config_.window.title,
                                SDL_WINDOWPOS_CENTERED,
@@ -29,12 +23,19 @@ Application::run()
                                SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
 
     gl_context_ = SDL_GL_CreateContext(window_);
+}
+
+void
+Application::run()
+{
+    assert(!running_ && "Must not run an already running application.");
 
     auto chronometer = Chronometer<RuntimeContext::TimeUnit>{};
 
     auto context = RuntimeContext{
         .time = {},
         .stop = [this] { running_ = false; },
+        .window  = { .size = config_.window.size },
     };
 
     config_.input_setup(input_mapper_, context);

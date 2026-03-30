@@ -102,14 +102,39 @@ struct Camera
 
 std::chrono::seconds second;
 
+float
+smin(float a, float b, float k)
+{
+    float h = glm::clamp(0.5f + 0.5f * (b - a) / k, 0.0f, 1.0f);
+    return glm::mix(b, a, h) - k * h * (1.0f - h);
+}
+
+float
+smin(std::initializer_list<float> values, float k)
+{
+    auto it = values.begin();
+    if (it == values.end())
+        return 0.0f;
+
+    float result = *it++;
+    for (; it != values.end(); ++it)
+    {
+        float a = result;
+        float b = *it;
+        float h = glm::clamp(0.5f + 0.5f * (b - a) / k, 0.0f, 1.0f);
+        result  = glm::mix(b, a, h) - k * h * (1.0f - h);
+    }
+    return result;
+}
+
 void
 frame(const Application::RuntimeContext &context)
 {
 
-    float time = context.time.elapsed * 0.5;
-
     auto camera = Camera{
-        .position = { 1.5, 0, 2.5 },
+        .position = { 3 * std::cos(context.time.elapsed * 0.5f),
+                      0,
+                      3 * std::sin(context.time.elapsed * 0.5f) },
         .target   = { 0, 0, 0 },
         .up       = { 0, 1, 0 },
         .fov      = 45.0,
@@ -122,11 +147,23 @@ frame(const Application::RuntimeContext &context)
 
     PixelBuffer pixels(texture.size);
 
-    auto fractal = MengerSponge{};
-    auto pyramid = Pyramid{ 1, 1 };
+    auto cube    = Cube{ 0.5f };
+    auto pyramid = Pyramid{ 1.0f, 1.0f };
+    auto fractal = MengerSponge{ .levels = 2, .iteration_scale = 3.0f, .fold_offset = vec3(-1.0f) };
+
+    auto t = std::sin(context.time.elapsed * 0.5f) * 0.5 + 0.5;
 
     auto sdf = [&](vec3 p)
-    { return pyramid.distance(twist_y(p, sin(context.time.elapsed * 0.2) * 10)); };
+    {
+        return smin(
+            {
+                Sphere{ 0.3 }.distance(p - vec3{ 0, 0.5, 0 }),
+                Sphere{ 0.5 }.distance(p - vec3{ 0, -0.5, 0 }),
+                Cube{ 0.6 }.distance(p - vec3{ 0.5, -0.2, 0 }),
+                Pyramid{ 0.6, 0.4 }.distance(p - vec3{ -0.8, 0.8, 0 }),
+            },
+            t);
+    };
 
     for (auto coords : pixels.coords_range())
     {

@@ -27,6 +27,23 @@ class Cube
     }
 };
 
+class Sphere
+{
+    float radius_;
+
+  public:
+    Sphere(float radius)
+        : radius_(radius)
+    {
+    }
+
+    float
+    distance(glm::vec3 p) const
+    {
+        return length(p) - radius_;
+    }
+};
+
 // Consider the space as a tesselation of cubes of `cell_size` side length, this function maps any
 // point `p` to the corresponding point in the cube centered at the origin.
 inline glm::vec3

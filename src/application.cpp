@@ -33,8 +33,9 @@ Application::run()
     auto chronometer = Chronometer<RuntimeContext::TimeUnit>{};
 
     auto context = RuntimeContext{
-        .time = {},
-        .stop = [this] { running_ = false; },
+        .time        = {},
+        .frame_count = 0,
+        .stop        = [this] { running_ = false; },
         .window  = { .size = config_.window.size },
     };
 
@@ -60,6 +61,8 @@ Application::run()
         config_.frame_logic(context);
 
         SDL_GL_SwapWindow(window_);
+
+        context.frame_count++;
     }
 
     SDL_GL_DeleteContext(gl_context_);

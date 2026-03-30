@@ -16,6 +16,9 @@ class Application
         // Time measured at the start of the current frame.
         Chronometer<TimeUnit>::Reading time;
 
+        // How many frames have been rendered since the application started.
+        uint frame_count;
+
         // Triggers a graceful shutdown of the application at the end of the current frame.
         std::function<void()> stop;
 

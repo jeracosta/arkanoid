@@ -4,9 +4,26 @@
 #include <SDL2/SDL.h>
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <cstdlib>
 
 using namespace glm;
+
+glm::vec3
+hsv2rgb(float h)
+{
+    float r = glm::clamp(std::abs(h * 6.0f - 3.0f) - 1.0f, 0.0f, 1.0f);
+    float g = glm::clamp(2.0f - std::abs(h * 6.0f - 2.0f), 0.0f, 1.0f);
+    float b = glm::clamp(2.0f - std::abs(h * 6.0f - 4.0f), 0.0f, 1.0f);
+    return glm::vec3(r, g, b);
+}
+
+glm::vec3
+rainbow(float distance, float repeatFactor = 1.0f)
+{
+    float t = glm::fract(distance * repeatFactor); // repeat every 1/repeatFactor units
+    return hsv2rgb(t);
+}
 
 struct Pixel
 {
@@ -92,7 +109,7 @@ frame(const Application::RuntimeContext &context)
     float time = context.time.elapsed * 0.5;
 
     auto camera = Camera{
-        .position = { 2.5 * sin(time), 0, 2.5 * cos(time) },
+        .position = { 1.5, 0, 2.5 },
         .target   = { 0, 0, 0 },
         .up       = { 0, 1, 0 },
         .fov      = 45.0,
@@ -108,7 +125,8 @@ frame(const Application::RuntimeContext &context)
     auto fractal = MengerSponge{};
     auto pyramid = Pyramid{ 1, 1 };
 
-    auto sdf = [&](vec3 p) { return pyramid.distance(p); };
+    auto sdf = [&](vec3 p)
+    { return pyramid.distance(twist_y(p, sin(context.time.elapsed * 0.2) * 10)); };
 
     for (auto coords : pixels.coords_range())
     {
@@ -119,22 +137,33 @@ frame(const Application::RuntimeContext &context)
         vec3 ray_direction = normalize(basis.forward + basis.right * uv.x * aspect * scale
                                        + basis.up * uv.y * scale);
 
-        float epsilon = 0.025f;
+        float epsilon = 0.001f;
 
         auto ray_march_result
             = ray_march(camera.position, ray_direction, sdf, 200, 100.0f, epsilon);
 
-        vec3 color(0.0f); // background color
+        auto color = vec3{ 0 };
+
         if (ray_march_result.hit)
         {
-            color      = vec3(1.0f, 0.7f, 0.3f) * 28.0f;
-            float glow = std::exp(-ray_march_result.closest_distance * 1.2f);
-            color *= glow;
-        }
-        else
-        {
-            float glow = std::exp(-ray_march_result.closest_distance * 5.2f) * 1.2f;
-            color      = vec3(1.0f, 0.7f, 0.3f) * glow;
+            glm::vec3 p = ray_march_result.hit->point;
+            glm::vec3 n = ray_march_result.hit->normal;
+
+            // simple directional light
+            glm::vec3 light_dir = glm::normalize(glm::vec3(1.0f, 1.0f, -1.0f));
+            float     diff      = glm::clamp(glm::dot(n, light_dir), 0.0f, 1.0f);
+
+            // ambient + diffuse
+            glm::vec3 ambient = 0.1f * glm::vec3(1.0f);
+            glm::vec3 diffuse = diff * glm::vec3(1.0f, 0.9f, 0.7f);
+
+            // rim lighting
+            glm::vec3 view_dir  = glm::normalize(camera.position - p);
+            float     rim       = pow(1.0f - glm::dot(n, view_dir), 2.0f);
+            glm::vec3 rim_color = rim * glm::vec3(0.8f, 0.9f, 1.0f);
+
+            color = ambient + diffuse + rim_color;
+            color = glm::clamp(color, 0.0f, 1.0f);
         }
 
         // Convert to 8-bit color

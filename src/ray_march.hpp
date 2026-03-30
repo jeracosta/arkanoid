@@ -6,6 +6,7 @@
 #include <GL/gl.h>
 #include <SDL2/SDL.h>
 #include <glm/glm.hpp>
+#include <optional>
 
 class Cube
 {
@@ -68,10 +69,29 @@ struct MengerSponge
     }
 };
 
+glm::vec3
+twist_y(const glm::vec3 &p, float angle, float plane_y = 0.0f)
+{
+    float dy    = p.y - plane_y;
+    float scale = 1.0f / (1.0f + std::abs(dy));
+    float theta = angle * dy * scale; // opposite rotation above/below plane
+
+    float c = std::cos(theta);
+    float s = std::sin(theta);
+
+    return glm::vec3(c * p.x + s * p.z, p.y, -s * p.x + c * p.z);
+}
+
 struct RayMarchResult
 {
-    bool  hit;
-    float closest_distance;
+    struct Hit
+    {
+        glm::vec3 point;
+        glm::vec3 normal;
+    };
+
+    std::optional<Hit> hit;
+    float              closest_distance;
 };
 
 RayMarchResult
@@ -82,21 +102,31 @@ ray_march(glm::vec3 origin,
           float     max_ray_length,
           float     epsilon)
 {
-
-    float ray_length   = 0.0;
+    float ray_length   = 0.0f;
     float min_distance = std::numeric_limits<float>::infinity();
+
     for (int i = 0; i < max_steps; i++)
     {
-        glm::vec3 ray_endpoint = origin + direction * ray_length;
-        float     distance     = field(ray_endpoint);
-        min_distance           = glm::min(min_distance, distance);
-        if (distance < epsilon)
-            return { true, ray_length };
-        ray_length += distance;
+        glm::vec3 p  = origin + direction * ray_length;
+        float     d  = field(p);
+        min_distance = glm::min(min_distance, d);
+
+        if (d < epsilon)
+        {
+            const float h = 1e-4f;
+            glm::vec3   n = glm::normalize(
+                glm::vec3(field(p + glm::vec3(h, 0, 0)) - field(p - glm::vec3(h, 0, 0)),
+                          field(p + glm::vec3(0, h, 0)) - field(p - glm::vec3(0, h, 0)),
+                          field(p + glm::vec3(0, 0, h)) - field(p - glm::vec3(0, 0, h))));
+            return { RayMarchResult::Hit{ p, n }, ray_length };
+        }
+
+        ray_length += d;
         if (ray_length > max_ray_length)
             break;
     }
-    return { false, min_distance };
+
+    return { std::nullopt, min_distance };
 }
 
 class Pyramid

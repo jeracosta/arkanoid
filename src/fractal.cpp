@@ -1,75 +1,12 @@
 #include "application.hpp"
+#include "ray_march.hpp"
 #include <GL/gl.h>
 #include <SDL2/SDL.h>
 #include <algorithm>
+#include <chrono>
 #include <cstdlib>
-#include <functional>
 
 using namespace glm;
-
-class Box
-{
-  private:
-    vec3 half_extent_;
-
-  public:
-    Box(float side_length)
-        : half_extent_(side_length / 2)
-    {
-    }
-
-    float
-    distance(vec3 p) const
-    {
-        vec3 q = abs(p) - vec3(half_extent_);
-        return length(max(q, 0.0f)) + min(max(q.x, max(q.y, q.z)), 0.0f);
-    }
-};
-
-// Consider the space as a tesselation of cubes of `cell_size` side length, this function maps any
-// point `p` to the corresponding point in the cube centered at the origin.
-vec3
-repeat_centered(vec3 p, float cell_size)
-{
-    return mod(p + cell_size / 2, cell_size) - cell_size / 2;
-}
-
-struct MengerSponge
-{
-    float tile_period     = 2.0f;        // space repetition period
-    int   levels          = 4;           // fractal iterations
-    float iteration_scale = 2.7f;        // scale applied each fold
-    vec3  fold_offset     = vec3(-1.0f); // translation after scaling
-
-    float
-    distance(vec3 p) const
-    {
-        p = repeat_centered(p, tile_period);
-
-        float de_scale = 1.0f;
-
-        for (int i = 0; i < levels; ++i)
-        {
-            p = abs(p);
-
-            if (p.x < p.y)
-                std::swap(p.x, p.y);
-            if (p.x < p.z)
-                std::swap(p.x, p.z);
-            if (p.y < p.z)
-                std::swap(p.y, p.z);
-
-            p = p * iteration_scale + fold_offset;
-
-            if (p.z > 1.0f)
-                p.z -= 2.0f;
-
-            de_scale *= iteration_scale;
-        }
-
-        return Box(1.0f).distance(p) / de_scale;
-    }
-};
 
 struct Pixel
 {
@@ -124,29 +61,6 @@ struct
     glm::uvec2 size;
 } texture;
 
-float
-ray_march(vec3   origin,
-          vec3   direction,
-          auto &&distance_field, // simil `float(*)(vec3)`
-          int    max_step_count,
-          float  max_step_size,
-          float  max_ray_length,
-          float  epsilon)
-{
-    float ray_length = 0.0;
-    for (int i = 0; i < max_step_count; i++)
-    {
-        vec3  ray      = origin + direction * ray_length;
-        float distance = distance_field(ray);
-        if (distance < epsilon)
-            return ray_length;
-        ray_length += std::min(distance, max_step_size);
-        if (ray_length > max_ray_length)
-            break;
-    }
-    return std::numeric_limits<float>::infinity();
-}
-
 struct Camera
 {
     vec3  position;
@@ -169,6 +83,8 @@ struct Camera
     }
 };
 
+std::chrono::seconds second;
+
 void
 frame(const Application::RuntimeContext &context)
 {
@@ -176,7 +92,7 @@ frame(const Application::RuntimeContext &context)
     float time = context.time.elapsed * 0.5;
 
     auto camera = Camera{
-        .position = { 2.5 * sin(time), 1.0, 2.5 * cos(time) },
+        .position = { 2.5 * sin(time), 0, 2.5 * cos(time) },
         .target   = { 0, 0, 0 },
         .up       = { 0, 1, 0 },
         .fov      = 45.0,
@@ -190,28 +106,35 @@ frame(const Application::RuntimeContext &context)
     PixelBuffer pixels(texture.size);
 
     auto fractal = MengerSponge{};
+    auto pyramid = Pyramid{ 1, 1 };
 
-    auto sdf = [&](vec3 p) { return fractal.distance(p); };
+    auto sdf = [&](vec3 p) { return pyramid.distance(p); };
 
     for (auto coords : pixels.coords_range())
     {
         // Normalize coords to [-1,1] screen space
         vec2 uv = (vec2(coords) / vec2(texture.size)) * 2.0f - 1.0f;
-        uv.y *= -1.0f; // (camera space increases upwards, screen space increases downwards)
 
         // Ray direction in camera space
         vec3 ray_direction = normalize(basis.forward + basis.right * uv.x * aspect * scale
                                        + basis.up * uv.y * scale);
 
-        float distance
-            = ray_march(camera.position, ray_direction, sdf, 200, 100.0f, 100.0f, 0.0015f);
+        float epsilon = 0.025f;
+
+        auto ray_march_result
+            = ray_march(camera.position, ray_direction, sdf, 200, 100.0f, epsilon);
 
         vec3 color(0.0f); // background color
-        if (distance != std::numeric_limits<float>::infinity())
+        if (ray_march_result.hit)
         {
-            vec3 point = camera.position + ray_direction * distance;
-
-            color = vec3(1.0f, 0.7f, 0.3f) * std::exp(-distance * 0.6f) * 3.0f;
+            color      = vec3(1.0f, 0.7f, 0.3f) * 28.0f;
+            float glow = std::exp(-ray_march_result.closest_distance * 1.2f);
+            color *= glow;
+        }
+        else
+        {
+            float glow = std::exp(-ray_march_result.closest_distance * 5.2f) * 1.2f;
+            color      = vec3(1.0f, 0.7f, 0.3f) * glow;
         }
 
         // Convert to 8-bit color
@@ -243,7 +166,21 @@ frame(const Application::RuntimeContext &context)
     glVertex2f(-1, 1);
     glEnd();
 
-    std::printf("Frame time: %.3f seconds\n", context.time.elapsed);
+    {
+        using std::chrono::duration_cast;
+        using std::chrono::seconds;
+        using TimeUnit = Application::RuntimeContext::TimeUnit;
+
+        auto previous_second = second;
+        second               = duration_cast<seconds>(TimeUnit(context.time.elapsed));
+
+        if (previous_second != second)
+        {
+            auto fps = 1.0f / context.time.delta;
+            std::printf("\tFPS: %.3f\r", fps);
+            std::fflush(stdout);
+        }
+    }
 }
 
 int

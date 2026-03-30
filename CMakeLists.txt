@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(CompGraf)
+project(CompGraf LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -9,40 +9,58 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build" FORCE)
 endif()
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-  set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra -Wpedantic")
-  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native -flto")
-  add_compile_options(-Wno-changes-meaning)
-endif()
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(OpenGL REQUIRED)
 find_package(SDL2 REQUIRED)
 find_package(glm REQUIRED)
 
-include(FetchContent)
-
-set(BUILD_SHARED_LIBS OFF)
-
 include_directories(src)
 
-file(GLOB_RECURSE SOURCES src/*.cpp)
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
 
-add_library(lib STATIC ${SOURCES})
+set(LIB_SOURCES "")
+set(MAIN_SOURCES "")
 
-target_link_libraries(lib
-    PRIVATE
+foreach(source_file IN LISTS SOURCES)
+  file(READ "${source_file}" CONTENTS)
+  if(CONTENTS MATCHES "(^|[^A-Za-z0-9_])main[\t\r\n]*\\(")
+    list(APPEND MAIN_SOURCES "${source_file}")
+  else()
+    list(APPEND LIB_SOURCES "${source_file}")
+  endif()
+endforeach()
+
+add_library(core STATIC ${LIB_SOURCES})
+
+target_link_libraries(core
+  PRIVATE
     OpenGL::GL
     SDL2::SDL2
     glm::glm
 )
 
-foreach(source_file ${SOURCES})
-  file(READ ${source_file} CONTENTS)
-  if(CONTENTS MATCHES "main\\s*\\(")
-    get_filename_component(name ${source_file} NAME_WE)
-    add_executable(${name} ${source_file})
-    target_link_libraries(${name} PRIVATE lib)
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  target_compile_options(core PRIVATE -Wall -Wextra -Wpedantic -Wno-changes-meaning)
+
+  target_compile_options(core PRIVATE
+    $<$<CONFIG:Debug>:-g -O0>
+    $<$<CONFIG:Release>:-O3 -DNDEBUG -march=native -flto>
+  )
+endif()
+
+foreach(source_file IN LISTS MAIN_SOURCES)
+  get_filename_component(name "${source_file}" NAME_WE)
+
+  add_executable(${name} "${source_file}")
+  target_link_libraries(${name} PRIVATE core)
+
+  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(${name} PRIVATE -Wall -Wextra -Wpedantic -Wno-changes-meaning)
+
+    target_compile_options(${name} PRIVATE
+      $<$<CONFIG:Debug>:-g -O0>
+      $<$<CONFIG:Release>:-O3 -DNDEBUG -march=native -flto>
+    )
   endif()
 endforeach()

@@ -1,10 +1,13 @@
 #include <SDL2/SDL.h>
+
 #include <cassert>
 #include <cstdint>
 #include <flat_map>
 #include <functional>
 #include <initializer_list>
 #include <memory>
+#include <ranges>
+#include <stdexcept>
 #include <utility>
 
 enum class KeyInput : uint8_t
@@ -22,7 +25,7 @@ struct InputActionTrigger
     KeyInput    input;
 
     constexpr auto
-    operator<=>(const InputActionTrigger &other) const
+    operator<=>(const InputActionTrigger &) const
         = default;
 };
 
@@ -39,44 +42,43 @@ class KeyboardInputMapper
     }
 
   public:
-    constexpr void
-    bind(SDL_KeyCode key, KeyInput input, InputAction &&action)
+    void
+    bind(SDL_Keycode key, KeyInput input, InputAction action)
     {
-        bindings_.emplace(InputActionTrigger{ key, input }, std::forward<InputAction>(action));
+        bindings_.emplace(InputActionTrigger{ key, input }, std::move(action));
     }
 
-    constexpr void
-    bind(SDL_KeyCode key, std::initializer_list<KeyInput> inputs, InputAction &&action)
+    void
+    bind(SDL_Keycode key, std::initializer_list<KeyInput> inputs, InputAction action)
     {
-        for (KeyInput input : inputs)
+        for (auto input : inputs)
         {
-            bind(key, input, std::forward<InputAction>(action));
+            bindings_.emplace(InputActionTrigger{ key, input }, action);
         }
     }
 
-    constexpr void
-    unbind(SDL_KeyCode key, KeyInput input)
+    void
+    unbind(SDL_Keycode key, KeyInput input)
     {
         bindings_.erase(InputActionTrigger{ key, input });
     }
 
     template <class T>
-    constexpr void
-    bind(SDL_KeyCode key, KeyInput input, void (T::*method)(), T *object)
+    void
+    bind(SDL_Keycode key, KeyInput input, void (T::*method)(), T *object)
     {
-        bind(key, input, [object, method]() { (object->*method)(); });
+        bind(key, input, [object, method] { (object->*method)(); });
     }
 
-    template <typename T>
-    constexpr void
-    bind(SDL_KeyCode key, KeyInput input, void (T::*method)(), std::shared_ptr<T> object)
+    template <class T>
+    void
+    bind(SDL_Keycode key, KeyInput input, void (T::*method)(), std::shared_ptr<T> object)
     {
         bind(key,
              input,
-             [this, object = std::weak_ptr(object), method, key, input]()
+             [weak = std::weak_ptr<T>(std::move(object)), method]
         {
-            [[likely]]
-            if (auto obj = object.lock())
+            if (auto obj = weak.lock())
             {
                 (obj.get()->*method)();
             }
@@ -87,11 +89,11 @@ class KeyboardInputMapper
         });
     }
 
-    template <typename Method, typename Object>
-    constexpr void
-    bind(SDL_KeyCode key, std::initializer_list<KeyInput> inputs, Method method, Object object)
+    template <class Method, class Object>
+    void
+    bind(SDL_Keycode key, std::initializer_list<KeyInput> inputs, Method method, Object object)
     {
-        for (KeyInput input : inputs)
+        for (auto input : inputs)
         {
             bind(key, input, method, object);
         }
@@ -115,5 +117,5 @@ class KeyboardInputMapper
         {
             action();
         }
-    };
+    }
 };

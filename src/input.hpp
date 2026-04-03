@@ -29,32 +29,20 @@ struct InputActionTrigger
 class KeyboardInputMapper
 {
   private:
-    std::flat_map<InputActionTrigger, InputAction> bindings_;
+    std::flat_multimap<InputActionTrigger, InputAction> bindings_;
+
+    auto
+    actions_for_(InputActionTrigger trigger) const
+    {
+        auto [begin, end] = bindings_.equal_range(trigger);
+        return std::ranges::subrange(begin, end) | std::views::values;
+    }
 
   public:
-    constexpr auto &
-    operator[](const InputActionTrigger &trigger)
-    {
-        return bindings_[trigger];
-    }
-
-    constexpr auto &
-    operator[](SDL_KeyCode key, KeyInput input)
-    {
-        return bindings_[InputActionTrigger{ key, input }];
-    }
-
     constexpr void
     bind(SDL_KeyCode key, KeyInput input, InputAction &&action)
     {
-        [[unlikely]] if (bindings_.contains({ key, input }))
-        {
-            assert(!"Tried to bind an already bound input action trigger. "
-                    "(multiple actions per trigger are not supported); "
-                    "unbind it first.");
-            return;
-        }
-        (*this)[key, input] = std::forward<InputAction>(action);
+        bindings_.emplace(InputActionTrigger{ key, input }, std::forward<InputAction>(action));
     }
 
     constexpr void
@@ -87,13 +75,14 @@ class KeyboardInputMapper
              input,
              [this, object = std::weak_ptr(object), method, key, input]()
         {
+            [[likely]]
             if (auto obj = object.lock())
             {
                 (obj.get()->*method)();
             }
             else
             {
-                unbind(key, input);
+                throw std::runtime_error("Input binding target expired");
             }
         });
     }
@@ -122,6 +111,9 @@ class KeyboardInputMapper
                          ? KeyInput::Repeat
                          : (event.type == SDL_KEYDOWN ? KeyInput::Press : KeyInput::Release);
 
-        bindings_.contains({ key, input }) ? bindings_.at({ key, input })() : void();
+        for (const auto &action : actions_for_({ key, input }))
+        {
+            action();
+        }
     };
 };

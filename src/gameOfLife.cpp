@@ -354,7 +354,7 @@ main()
             .size  = { 640, 640 },
         },
 
-        .input_setup = [&](auto &inputs, const auto & context)
+        .input_setup = [&](auto &inputs, const Application::RuntimeContext & context)
         {
             using enum KeyInput;
             inputs.bind(SDLK_ESCAPE,   Release,         InputAction{context.stop }       );
@@ -367,7 +367,9 @@ main()
             inputs.bind(SDLK_LEFT,   { Press, Repeat }, &Game::decrease_resolution, &game);
         },
 
-        .frame_logic = [&game](auto &context)
+        .init = []{},
+
+        .frame_logic = [&game](const auto &context)
         {
             game.tick(context.time.delta);
 

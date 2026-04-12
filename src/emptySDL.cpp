@@ -66,7 +66,9 @@ main()
           inputs.bind(SDLK_SPACE,  KeyInput::Press,   []{ flash.trigger(); }   );
       },
 
-      .frame_logic = [](auto &frame)
+      .init = []{},
+
+      .frame_logic = [](const Application::RuntimeContext &frame)
       {
           auto color = mix(noise_color(frame.time.elapsed), flash);
           flash.update(frame.time.delta);

@@ -14,6 +14,10 @@ Application::Application(Configuration config)
     }
 
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, true);
+
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
 }
 
 void
@@ -40,6 +44,8 @@ Application::run()
     config_.input_setup(input_mapper_, context);
 
     running_ = true;
+
+    config_.init();
 
     while (running_)
     {

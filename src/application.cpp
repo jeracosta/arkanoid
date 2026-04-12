@@ -14,6 +14,7 @@ Application::Application(Configuration config)
     }
 
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, true);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
@@ -33,6 +34,9 @@ Application::run()
                                SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
 
     gl_context_ = SDL_GL_CreateContext(window_);
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
 
     auto chronometer = Chronometer<RuntimeContext::TimeUnit>{};
 

@@ -33,12 +33,6 @@ Application::run()
                                SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
 
     gl_context_ = SDL_GL_CreateContext(window_);
-}
-
-void
-Application::run()
-{
-    assert(!running_ && "Must not run an already running application.");
 
     auto chronometer = Chronometer<RuntimeContext::TimeUnit>{};
 

@@ -51,12 +51,6 @@ class FlashColor
     }
 } flash;
 
-enum class Action : uint8_t
-{
-    Quit,
-    Flash,
-};
-
 int
 main()
 {

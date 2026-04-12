@@ -51,7 +51,7 @@ Application::run()
         {
             if (event.type == SDL_QUIT)
             {
-                running_ = true;
+                running_ = false;
             }
             input_mapper_.handle(event);
         }

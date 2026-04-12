@@ -15,6 +15,16 @@ Application::Application(Configuration config)
 
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, true);
 
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
+}
+
+void
+Application::run()
+{
+    assert(!running_ && "Must not run an already running application.");
+
     window_ = SDL_CreateWindow(config_.window.title,
                                SDL_WINDOWPOS_CENTERED,
                                SDL_WINDOWPOS_CENTERED,
@@ -43,6 +53,8 @@ Application::run()
 
     running_ = true;
 
+    config_.init();
+
     while (running_)
     {
 
@@ -53,7 +65,7 @@ Application::run()
         {
             if (event.type == SDL_QUIT)
             {
-                running_ = true;
+                running_ = false;
             }
             input_mapper_.handle(event);
         }

@@ -37,8 +37,11 @@ class Application
         } window;
 
         std::function<void(KeyboardInputMapper &, const RuntimeContext &)> input_setup;
+        
+        std::function<void()> init;
 
         std::function<void(const RuntimeContext &)> frame_logic;
+
     };
 
   public:

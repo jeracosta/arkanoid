@@ -22,9 +22,28 @@ class Application
         // Triggers a graceful shutdown of the application at the end of the current frame.
         std::function<void()> stop;
 
-        struct
+        class WindowContext
         {
-            glm::uvec2 size;
+          public:
+            glm::uvec2
+            size() const;
+
+            double
+            aspect_ratio() const;
+
+            bool
+            is_fullscreen() const;
+
+            void
+            toggle_fullscreen() const;
+
+            WindowContext(SDL_Window *window)
+                : window_(window)
+            {
+            }
+
+          private:
+            SDL_Window *window_;
         } window;
     };
 
@@ -37,11 +56,10 @@ class Application
         } window;
 
         std::function<void(KeyboardInputMapper &, const RuntimeContext &)> input_setup;
-        
+
         std::function<void()> init;
 
         std::function<void(const RuntimeContext &)> frame_logic;
-
     };
 
   public:

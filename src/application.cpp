@@ -21,6 +21,34 @@ Application::Application(Configuration config)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
 }
 
+glm::uvec2
+Application::RuntimeContext::WindowContext::size() const
+{
+    int width, height;
+    SDL_GetWindowSize(window_, &width, &height);
+    return { static_cast<unsigned>(width), static_cast<unsigned>(height) };
+}
+
+double
+Application::RuntimeContext::WindowContext::aspect_ratio() const
+{
+    auto size = this->size();
+    return static_cast<double>(size.x) / static_cast<double>(size.y);
+}
+
+bool
+Application::RuntimeContext::WindowContext::is_fullscreen() const
+{
+    return SDL_GetWindowFlags(window_) & SDL_WINDOW_FULLSCREEN_DESKTOP;
+}
+
+void
+Application::RuntimeContext::WindowContext::toggle_fullscreen() const
+{
+    auto flag = is_fullscreen() ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
+    SDL_SetWindowFullscreen(window_, flag);
+}
+
 void
 Application::run()
 {
@@ -44,7 +72,7 @@ Application::run()
         .time        = {},
         .frame_count = 0,
         .stop        = [this] { running_ = false; },
-        .window  = { .size = config_.window.size },
+        .window  = { window_ },
     };
 
     config_.input_setup(input_mapper_, context);

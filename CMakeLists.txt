@@ -36,6 +36,7 @@ add_library(core STATIC ${LIB_SOURCES})
 target_link_libraries(core
   PRIVATE
     OpenGL::GL
+    OpenGL::GLU
     SDL2::SDL2
     glm::glm
 )

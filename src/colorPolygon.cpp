@@ -25,22 +25,6 @@ frame(const Application::RuntimeContext &frame)
         glVertex3f(-0.5, -1.0, -6.0);
     }
     glEnd();
-
-    glTranslatef(-1.5f, 0.0f, -sin(frame.time.elapsed) / 0.01);
-
-    glBegin(GL_QUADS);
-    {
-        glColor3f(sin(frame.time.elapsed) / 2 + 0.5, 1.0, 0.0);
-
-        glVertex3f(0.5, 1.0, -6.0);
-        glVertex3f(2.5, 1.0, -6.0);
-
-        glColor3f(1.0, 1.0, sin(frame.time.elapsed) / 2 + 0.5);
-
-        glVertex3f(2.5, -1.0, -6.0);
-        glVertex3f(0.5, -1.0, -6.0);
-    }
-    glEnd();
 }
 
 int
@@ -55,6 +39,12 @@ main()
       .input_setup = [](auto &inputs, auto &context)
       {
           inputs.bind(SDLK_ESCAPE, KeyInput::Release, InputAction{context.stop});
+
+          inputs.bind(SDLK_F10, KeyInput::Press, [&]{
+              auto size = context.window.size();
+              std::println("Toggling fullscreen mode. Current size: {} x {}", size.x, size.y);
+              context.window.toggle_fullscreen();
+          });
       },
 
       .init = []

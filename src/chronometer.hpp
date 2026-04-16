@@ -7,15 +7,27 @@ class Chronometer
   private:
     using Clock = std::chrono::steady_clock;
 
-    Clock::time_point start_time_ = Clock::now();
-    Clock::time_point last_time_  = start_time_;
+    Duration::rep     elapsed_time_   = 0;
+    Clock::time_point last_read_time_ = Clock::now();
+    float             speed_          = 1;
 
   public:
     void
     reset()
     {
-        start_time_ = Clock::now();
-        last_time_  = start_time_;
+        elapsed_time_ = 0;
+    }
+
+    float
+    speed() const
+    {
+        return speed_;
+    }
+
+    void
+    speed(float s)
+    {
+        speed_ = s;
     }
 
     struct Reading
@@ -27,20 +39,12 @@ class Chronometer
     Reading
     read()
     {
-        auto now = Clock::now();
+        auto delta_time = Duration(Clock::now() - last_read_time_).count() * speed_;
 
-        auto countSince = [&now](Clock::time_point time)
-        {
-            return std::chrono::duration_cast<Duration>(now - time).count();
-        };
+        elapsed_time_ += delta_time;
 
-        auto reading = Reading{
-            .elapsed = countSince(start_time_),
-            .delta   = countSince(last_time_),
-        };
+        last_read_time_ = Clock::now();
 
-        last_time_ = now;
-
-        return reading;
+        return Reading{ .elapsed = elapsed_time_, .delta = delta_time };
     }
 };

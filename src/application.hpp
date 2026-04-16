@@ -22,7 +22,7 @@ class Application
         // Triggers a graceful shutdown of the application at the end of the current frame.
         std::function<void()> stop;
 
-        class WindowContext
+        class Window
         {
           public:
             glm::uvec2

@@ -1,8 +1,6 @@
-#include "application.hpp"
-
+#include "game.hpp"
 #include <GL/gl.h>
 #include <SDL2/SDL.h>
-
 #include <algorithm>
 #include <array>
 #include <cassert>
@@ -202,7 +200,7 @@ class Board
     }
 };
 
-class Game
+class GameOfLife
 {
   private:
     Board board_{};
@@ -301,7 +299,7 @@ class Game
     }
 
     friend void
-    render(const Game &game)
+    render(const GameOfLife &game)
     {
         const auto &board = game.board_;
 
@@ -346,38 +344,33 @@ class Game
 int
 main()
 {
-    auto game = Game{};
+    auto gol = GameOfLife{};
 
-    auto app = Application({
+    Game::run({
         .window = {
             .title = "Game of life",
             .size  = { 640, 640 },
         },
 
-        .input_setup = [&](auto &inputs, const Application::RuntimeContext & context)
+        .configure_input = [&](auto &inputs, auto &game)
         {
             using enum KeyInput;
-            inputs.bind(SDLK_ESCAPE,   Release,         InputAction{context.stop }       );
-            inputs.bind(SDLK_SPACE,    Press,           &Game::toggle_pause,        &game);
-            inputs.bind(SDLK_c,        Press,           &Game::clear,               &game);
-            inputs.bind(SDLK_r,      { Press, Repeat }, &Game::randomize,           &game);
-            inputs.bind(SDLK_UP,     { Press, Repeat }, &Game::increase_speed,      &game);
-            inputs.bind(SDLK_DOWN,   { Press, Repeat }, &Game::decrease_speed,      &game);
-            inputs.bind(SDLK_RIGHT,  { Press, Repeat }, &Game::increase_resolution, &game);
-            inputs.bind(SDLK_LEFT,   { Press, Repeat }, &Game::decrease_resolution, &game);
+            inputs.bind(SDLK_ESCAPE,   Release,         [&]{ game.stop(); });
+            inputs.bind(SDLK_SPACE,    Press,           &GameOfLife::toggle_pause,        &gol);
+            inputs.bind(SDLK_c,        Press,           &GameOfLife::clear,               &gol);
+            inputs.bind(SDLK_r,      { Press, Repeat }, &GameOfLife::randomize,           &gol);
+            inputs.bind(SDLK_UP,     { Press, Repeat }, &GameOfLife::increase_speed,      &gol);
+            inputs.bind(SDLK_DOWN,   { Press, Repeat }, &GameOfLife::decrease_speed,      &gol);
+            inputs.bind(SDLK_RIGHT,  { Press, Repeat }, &GameOfLife::increase_resolution, &gol);
+            inputs.bind(SDLK_LEFT,   { Press, Repeat }, &GameOfLife::decrease_resolution, &gol);
         },
 
-        .init = []{},
-
-        .frame_logic = [&game](const auto &context)
+        .on_update = [&gol](const auto &context)
         {
-            game.tick(context.time.delta);
-
-            render(game);
+            gol.tick(context.time.delta());
+            render(gol);
         }
     });
-
-    app.run();
 
     return EXIT_SUCCESS;
 }

@@ -4,6 +4,7 @@
 #include <SDL2/SDL.h>
 #include <cmath>
 #include <cstdlib>
+#include <print>
 
 int
 main()
@@ -17,6 +18,27 @@ main()
       .configure_input = [](auto &inputs, auto &game)
       {
           inputs.bind(SDLK_ESCAPE, KeyInput::Release, [&]{ game.stop(); });
+
+          inputs.bind(SDLK_SPACE,  KeyInput::Release, [&]{ 
+            game.time.toggle_pause(); 
+            std::puts(game.time.is_paused() ? "Paused" : "Resumed");
+          });
+
+          inputs.bind(SDLK_UP, KeyInput::Release, [&]{
+            game.time.speed(game.time.speed() * 1.5);
+            std::println("Speed: {:.2f} steps/s", game.time.speed());
+          });
+
+          inputs.bind(SDLK_DOWN, KeyInput::Release, [&]{
+            game.time.speed(game.time.speed() / 1.5);
+            std::println("Speed: {:.2f} steps/s", game.time.speed());
+          });
+
+          inputs.bind(SDLK_r, KeyInput::Release, [&]{
+            game.time.speed(-game.time.speed());
+            std::println("Time direction: {}", game.time.speed() > 0 ? "forward" : "backward");
+          });
+
       },
 
       .on_init = []
@@ -46,7 +68,7 @@ main()
           }
           glEnd();
       
-          glTranslatef(-1.5f, 0.0f, -sin(game.time.elapsed()) / 0.01);
+          glTranslatef(-1.5f, 0.0f, -5 - sin(game.time.elapsed()) / 0.1);
       
           glBegin(GL_QUADS);
           {

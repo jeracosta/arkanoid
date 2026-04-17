@@ -1,4 +1,4 @@
-#include "application.hpp"
+#include "game.hpp"
 #include <GL/gl.h>
 #include <SDL2/SDL.h>
 #include <cstdlib>
@@ -54,31 +54,27 @@ class FlashColor
 int
 main()
 {
-    auto app = Application({
+    Game::run({
       .window = {
         .title = "Test SDL app",
         .size  = {640, 480},
       },
 
-      .input_setup = [](auto &inputs, auto &context)
+      .configure_input = [](auto &inputs, auto &game)
       {
-          inputs.bind(SDLK_ESCAPE, KeyInput::Release, InputAction{context.stop});
-          inputs.bind(SDLK_SPACE,  KeyInput::Press,   []{ flash.trigger(); }   );
+          inputs.bind(SDLK_ESCAPE, KeyInput::Release, [&]{ game.stop(); });
+          inputs.bind(SDLK_SPACE,  KeyInput::Press,   []{ flash.trigger(); });
       },
 
-      .init = []{},
-
-      .frame_logic = [](const Application::RuntimeContext &frame)
+      .on_update = [](auto &game)
       {
-          auto color = mix(noise_color(frame.time.elapsed), flash);
-          flash.update(frame.time.delta);
+          auto color = mix(noise_color(game.time.elapsed()), flash);
+          flash.update(game.time.delta());
 
           glClearColor(color.r, color.g, color.b, color.a);
           glClear(GL_COLOR_BUFFER_BIT);
       }
     });
-
-    app.run();
 
     return EXIT_SUCCESS;
 }

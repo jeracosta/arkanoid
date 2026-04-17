@@ -162,11 +162,11 @@ struct Game::Configuration
     Window::Configuration window;
 
     // Configures the input mapper. Called once at the beginning of the session.
-    std::function<void(KeyboardInputMapper &, Session &)> configure_input;
+    std::function<void(KeyboardInputMapper &, Session &)> configure_input = {};
 
     // Called once at the beginning of the session, after initialization of all internal
     // systems, and before the main loop starts.
-    std::function<void()> on_init;
+    std::function<void()> on_init = {};
 
     // Called once per frame.
     std::function<void(const Session &)> on_update;

@@ -1,4 +1,4 @@
-#include "application.hpp"
+#include "game.hpp"
 #include "ray_march.hpp"
 #include <GL/gl.h>
 #include <SDL2/SDL.h>
@@ -128,13 +128,13 @@ smin(std::initializer_list<float> values, float k)
 }
 
 void
-frame(const Application::RuntimeContext &context)
+frame(const Game::Session &game)
 {
 
     auto camera = Camera{
-        .position = { 3 * std::cos(context.time.elapsed * 0.5f),
+        .position = { 3 * std::cos(game.time.elapsed() * 0.5f),
                       0,
-                      3 * std::sin(context.time.elapsed * 0.5f) },
+                      3 * std::sin(game.time.elapsed() * 0.5f), },
         .target   = { 0, 0, 0 },
         .up       = { 0, 1, 0 },
         .fov      = 45.0,
@@ -151,7 +151,7 @@ frame(const Application::RuntimeContext &context)
     auto pyramid = Pyramid{ 1.0f, 1.0f };
     auto fractal = MengerSponge{ .levels = 2, .iteration_scale = 3.0f, .fold_offset = vec3(-1.0f) };
 
-    auto t = std::sin(context.time.elapsed * 0.5f) * 0.5 + 0.5;
+    auto t = std::sin(game.time.elapsed() * 0.5f) * 0.5 + 0.5;
 
     auto sdf = [&](vec3 p)
     {
@@ -235,14 +235,13 @@ frame(const Application::RuntimeContext &context)
     {
         using std::chrono::duration_cast;
         using std::chrono::seconds;
-        using TimeUnit = Application::RuntimeContext::TimeUnit;
 
         auto previous_second = second;
-        second               = duration_cast<seconds>(TimeUnit(context.time.elapsed));
+        second               = duration_cast<seconds>(Game::Time::Unit(game.time.elapsed()));
 
         if (previous_second != second)
         {
-            auto fps = 1.0f / context.time.delta;
+            auto fps = 1.0f / game.time.delta();
             std::printf("\tFPS: %.3f\r", fps);
             std::fflush(stdout);
         }
@@ -254,37 +253,38 @@ main()
 {
     texture.size = { 512, 512 };
 
-    auto app = Application({
+    Game::run({
       .window = {
         .title = "Test SDL app",
         .size  = texture.size,
       },
 
-      .input_setup = [](auto &inputs, auto &context)
+      .configure_input = [](auto &inputs, auto &game)
       {
-          inputs.bind(SDLK_ESCAPE, KeyInput::Release, InputAction{context.stop});
+          inputs.bind(SDLK_ESCAPE, KeyInput::Release, [&]{ game.stop(); });
       },
 
-      .frame_logic = frame
+      .on_init = []()
+      {
+          glEnable(GL_TEXTURE_2D);
+          glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+          glGenTextures(1, &texture.descriptor);
+          glBindTexture(GL_TEXTURE_2D, texture.descriptor);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+          glTexImage2D(GL_TEXTURE_2D,
+                       0,
+                       GL_RGB,
+                       texture.size.x,
+                       texture.size.y,
+                       0,
+                       GL_RGB,
+                       GL_UNSIGNED_BYTE,
+                       nullptr);
+      },
+  
+      .on_update = frame
     });
-
-    glEnable(GL_TEXTURE_2D);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glGenTextures(1, &texture.descriptor);
-    glBindTexture(GL_TEXTURE_2D, texture.descriptor);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D,
-                 0,
-                 GL_RGB,
-                 texture.size.x,
-                 texture.size.y,
-                 0,
-                 GL_RGB,
-                 GL_UNSIGNED_BYTE,
-                 nullptr);
-
-    app.run();
 
     return EXIT_SUCCESS;
 }

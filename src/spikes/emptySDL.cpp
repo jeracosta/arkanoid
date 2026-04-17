@@ -1,4 +1,4 @@
-#include "game.hpp"
+#include "oh-my-engine/game.hpp"
 #include <GL/gl.h>
 #include <SDL2/SDL.h>
 #include <cstdlib>

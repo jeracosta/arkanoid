@@ -1,5 +1,5 @@
-#include "game.hpp"
-#include "ray_march.hpp"
+#include "oh-my-engine/game.hpp"
+#include "oh-my-engine/ray_march.hpp"
 #include <GL/gl.h>
 #include <SDL2/SDL.h>
 #include <algorithm>

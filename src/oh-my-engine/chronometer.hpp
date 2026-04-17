@@ -1,6 +1,8 @@
 #pragma once
 #include <chrono>
 
+namespace ome {
+
 template <typename Duration>
 class Chronometer
 {
@@ -48,3 +50,5 @@ class Chronometer
         return Reading{ .elapsed = elapsed_time_, .delta = delta_time };
     }
 };
+
+} // namespace ome

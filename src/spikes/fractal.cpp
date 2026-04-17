@@ -128,7 +128,7 @@ smin(std::initializer_list<float> values, float k)
 }
 
 void
-frame(const Game::Session &game)
+frame(const ome::game::Session &game)
 {
 
     auto camera = Camera{
@@ -146,6 +146,8 @@ frame(const Game::Session &game)
     float scale  = tan(radians(camera.fov * 0.5));
 
     PixelBuffer pixels(texture.size);
+
+    using namespace ome::ray_march;
 
     auto cube    = Cube{ 0.5f };
     auto pyramid = Pyramid{ 1.0f, 1.0f };
@@ -237,7 +239,7 @@ frame(const Game::Session &game)
         using std::chrono::seconds;
 
         auto previous_second = second;
-        second               = duration_cast<seconds>(Game::Time::Unit(game.time.elapsed()));
+        second               = duration_cast<seconds>(ome::game::Time::Unit(game.time.elapsed()));
 
         if (previous_second != second)
         {
@@ -253,7 +255,7 @@ main()
 {
     texture.size = { 512, 512 };
 
-    Game::run({
+    ome::game::run({
       .window = {
         .title = "Test SDL app",
         .size  = texture.size,
@@ -261,7 +263,8 @@ main()
 
       .configure_input = [](auto &inputs, auto &game)
       {
-          inputs.bind(SDLK_ESCAPE, KeyInput::Release, [&]{ game.stop(); });
+          using enum ome::input::KeyInput;
+          inputs.bind(SDLK_ESCAPE, Release, [&]{ game.stop(); });
       },
 
       .on_init = []()

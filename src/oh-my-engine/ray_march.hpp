@@ -8,6 +8,8 @@
 #include <glm/glm.hpp>
 #include <optional>
 
+namespace ome::ray_march {
+
 class Cube
 {
   private:
@@ -211,3 +213,5 @@ class Pyramid
         return sdPyramid(p, h_) * base_side_;
     }
 };
+
+} // namespace ome::ray_march

@@ -10,6 +10,8 @@
 #include <stdexcept>
 #include <utility>
 
+namespace ome::input {
+
 enum class KeyInput : uint8_t
 {
     Press,
@@ -119,3 +121,5 @@ class KeyboardInputMapper
         }
     }
 };
+
+} // namespace ome::input

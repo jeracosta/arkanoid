@@ -7,36 +7,22 @@
 #include <glm/glm.hpp>
 #include <memory>
 
-class Game
-{
-  public:
-    class Enviroment;
-    class Time;
-    class Window;
-    struct Configuration;
-    class Session;
+namespace ome::game {
 
-    static void
-    run(const Configuration &config);
+// forward declarations
+struct Configuration;
+class Enviroment;
+class Time;
+class Window;
+class Session;
 
-    static std::shared_ptr<Enviroment>
-    enviroment();
-
-  private:
-    Game() = default; // class is abstract: it cannot be instantiated.
-
-    inline static std::weak_ptr<Enviroment> enviroment_;
-
-    friend class Session;
-};
-
-class Game::Window
+class Window
 {
   private:
     SDL_Window   *window_;
     SDL_GLContext gl_context_;
 
-    friend class Game::Session;
+    friend class Session;
 
   public:
     struct Configuration
@@ -93,7 +79,7 @@ class Game::Window
     }
 };
 
-class Game::Time
+class Time
 {
   public:
     using Unit = std::chrono::duration<float, std::ratio<1>>; // seconds as float
@@ -109,7 +95,7 @@ class Game::Time
         current_time_ = chronometer_.read();
     }
 
-    friend class Game::Session;
+    friend class Session;
 
   public:
     float
@@ -157,12 +143,12 @@ class Game::Time
     }
 };
 
-struct Game::Configuration
+struct Configuration
 {
     Window::Configuration window;
 
     // Configures the input mapper. Called once at the beginning of the session.
-    std::function<void(KeyboardInputMapper &, Session &)> configure_input = {};
+    std::function<void(input::KeyboardInputMapper &, Session &)> configure_input = {};
 
     // Called once at the beginning of the session, after initialization of all internal
     // systems, and before the main loop starts.
@@ -172,7 +158,7 @@ struct Game::Configuration
     std::function<void(const Session &)> on_update;
 };
 
-class Game::Enviroment
+class Enviroment
 {
   private:
     Enviroment()
@@ -190,35 +176,35 @@ class Game::Enviroment
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
     }
 
-    friend class Game;
-
   public:
+    static std::shared_ptr<Enviroment>
+    instance()
+    {
+        static std::weak_ptr<Enviroment> enviroment;
+
+        if (auto ref = enviroment.lock())
+        {
+            return ref;
+        }
+        else
+        {
+            // note: std::make_shared can't used because the constructor of Enviroment is private.
+            auto new_enviroment = std::shared_ptr<Enviroment>(new Enviroment{});
+            enviroment          = new_enviroment;
+            return new_enviroment;
+        }
+    }
+
     ~Enviroment()
     {
         SDL_Quit();
     }
 };
 
-inline std::shared_ptr<Game::Enviroment>
-Game::enviroment()
-{
-    if (auto enviroment = Game::enviroment_.lock())
-    {
-        return enviroment;
-    }
-    else
-    {
-        // note: std::make_shared cannot be used because the constructor of Enviroment is private.
-        auto new_enviroment = std::shared_ptr<Enviroment>(new Enviroment{});
-        Game::enviroment_   = new_enviroment;
-        return new_enviroment;
-    }
-}
-
-class Game::Session
+class Session
 {
   private:
-    Session(const Game::Configuration &config)
+    Session(const Configuration &config)
         : config_(config),
           window(config.window)
     {
@@ -231,13 +217,13 @@ class Game::Session
     }
 
     friend void
-    Game::run(const Configuration &config);
+    run(const Configuration &config);
 
-    Configuration                     config_;
-    KeyboardInputMapper               input_mapper_;
-    bool                              running_     = false;
-    unsigned long                     frame_count_ = 0;
-    std::shared_ptr<Game::Enviroment> enviroment_  = Game::enviroment();
+    Configuration               config_;
+    input::KeyboardInputMapper  input_mapper_;
+    bool                        running_     = false;
+    unsigned long               frame_count_ = 0;
+    std::shared_ptr<Enviroment> enviroment_  = Enviroment::instance();
 
     void
     update_()
@@ -297,7 +283,9 @@ class Game::Session
 };
 
 inline void
-Game::run(const Configuration &config)
+run(const Configuration &config)
 {
-    Game::Session(config).run_();
+    Session(config).run_();
 }
+
+} // namespace ome::game

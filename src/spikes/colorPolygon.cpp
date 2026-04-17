@@ -8,7 +8,7 @@
 int
 main()
 {
-    Game::run({
+    ome::game::run({
       .window = {
             .title = "Test SDL app",
             .size  = {640, 480},
@@ -16,9 +16,11 @@ main()
 
       .configure_input = [](auto &inputs, auto &game)
       {
-          inputs.bind(SDLK_ESCAPE, KeyInput::Release, [&]{ game.stop(); });
+          using enum ome::input::KeyInput;
 
-          inputs.bind(SDLK_F10, KeyInput::Press, [&]{
+          inputs.bind(SDLK_ESCAPE, Release, [&]{ game.stop(); });
+
+          inputs.bind(SDLK_F10, Press, [&]{
               auto size = game.window.size();
               std::println("Toggling fullscreen mode. Current size: {} x {}", size.x, size.y);
               game.window.toggle_fullscreen();

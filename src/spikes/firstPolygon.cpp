@@ -10,7 +10,7 @@
 int
 main()
 {
-    Game::run({
+    ome::game::run({
       .window = {
           .title = "Test SDL app",
           .size  = {640, 480},
@@ -18,24 +18,26 @@ main()
 
       .configure_input = [](auto &inputs, auto &game)
       {
-          inputs.bind(SDLK_ESCAPE, KeyInput::Release, [&]{ game.stop(); });
+          using enum ome::input::KeyInput;
 
-          inputs.bind(SDLK_SPACE,  KeyInput::Release, [&]{ 
+          inputs.bind(SDLK_ESCAPE, Release, [&]{ game.stop(); });
+
+          inputs.bind(SDLK_SPACE,  Release, [&]{ 
             game.time.toggle_pause(); 
             std::puts(game.time.is_paused() ? "Paused" : "Resumed");
           });
 
-          inputs.bind(SDLK_UP, KeyInput::Release, [&]{
+          inputs.bind(SDLK_UP, Release, [&]{
             game.time.speed(game.time.speed() * 1.5);
             std::println("Speed: {:.2f} steps/s", game.time.speed());
           });
 
-          inputs.bind(SDLK_DOWN, KeyInput::Release, [&]{
+          inputs.bind(SDLK_DOWN, Release, [&]{
             game.time.speed(game.time.speed() / 1.5);
             std::println("Speed: {:.2f} steps/s", game.time.speed());
           });
 
-          inputs.bind(SDLK_r, KeyInput::Release, [&]{
+          inputs.bind(SDLK_r, Release, [&]{
             game.time.speed(-game.time.speed());
             std::println("Time direction: {}", game.time.speed() > 0 ? "forward" : "backward");
           });

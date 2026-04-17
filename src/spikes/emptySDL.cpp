@@ -54,7 +54,7 @@ class FlashColor
 int
 main()
 {
-    Game::run({
+    ome::game::run({
       .window = {
         .title = "Test SDL app",
         .size  = {640, 480},
@@ -62,8 +62,9 @@ main()
 
       .configure_input = [](auto &inputs, auto &game)
       {
-          inputs.bind(SDLK_ESCAPE, KeyInput::Release, [&]{ game.stop(); });
-          inputs.bind(SDLK_SPACE,  KeyInput::Press,   []{ flash.trigger(); });
+          using enum ome::input::KeyInput;
+          inputs.bind(SDLK_ESCAPE, Release, [&]{ game.stop(); });
+          inputs.bind(SDLK_SPACE,  Press,   []{ flash.trigger(); });
       },
 
       .on_update = [](auto &game)

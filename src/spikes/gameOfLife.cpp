@@ -346,7 +346,7 @@ main()
 {
     auto gol = GameOfLife{};
 
-    Game::run({
+    ome::game::run({
         .window = {
             .title = "Game of life",
             .size  = { 640, 640 },

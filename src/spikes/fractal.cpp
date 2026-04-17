@@ -264,7 +264,7 @@ main()
       .configure_input = [](auto &inputs, auto &game)
       {
           using enum ome::input::KeyInput;
-          inputs.bind(SDLK_ESCAPE, Release, [&]{ game.stop(); });
+          inputs.keyboard.bind(SDLK_ESCAPE, Release, [&]{ game.stop(); });
       },
 
       .on_init = []()

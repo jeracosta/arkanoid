@@ -148,7 +148,7 @@ struct Configuration
     Window::Configuration window;
 
     // Configures the input mapper. Called once at the beginning of the session.
-    std::function<void(input::KeyboardInputMapper &, Session &)> configure_input = {};
+    std::function<void(input::InputMapper &, Session &)> configure_input = {};
 
     // Called once at the beginning of the session, after initialization of all internal
     // systems, and before the main loop starts.
@@ -220,7 +220,7 @@ class Session
     run(const Configuration &config);
 
     Configuration               config_;
-    input::KeyboardInputMapper  input_mapper_;
+    input::InputMapper          input_mapper_;
     bool                        running_     = false;
     unsigned long               frame_count_ = 0;
     std::shared_ptr<Enviroment> enviroment_  = Enviroment::instance();

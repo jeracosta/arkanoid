@@ -1,9 +1,9 @@
 #include <SDL2/SDL.h>
-
 #include <cassert>
 #include <cstdint>
 #include <flat_map>
 #include <functional>
+#include <glm/ext/vector_float2.hpp>
 #include <initializer_list>
 #include <memory>
 #include <ranges>
@@ -19,25 +19,25 @@ enum class KeyInput : uint8_t
     Release,
 };
 
-using InputAction = std::function<void()>;
+using KeyInputAction = std::function<void()>;
 
-struct InputActionTrigger
+struct KeyInputActionTrigger
 {
     SDL_Keycode key;
     KeyInput    input;
 
     constexpr auto
-    operator<=>(const InputActionTrigger &) const
+    operator<=>(const KeyInputActionTrigger &) const
         = default;
 };
 
 class KeyboardInputMapper
 {
   private:
-    std::flat_multimap<InputActionTrigger, InputAction> bindings_;
+    std::flat_multimap<KeyInputActionTrigger, KeyInputAction> bindings_;
 
     auto
-    actions_for_(InputActionTrigger trigger) const
+    actions_for_(KeyInputActionTrigger trigger) const
     {
         auto [begin, end] = bindings_.equal_range(trigger);
         return std::ranges::subrange(begin, end) | std::views::values;
@@ -45,24 +45,24 @@ class KeyboardInputMapper
 
   public:
     void
-    bind(SDL_Keycode key, KeyInput input, InputAction action)
+    bind(SDL_Keycode key, KeyInput input, KeyInputAction action)
     {
-        bindings_.emplace(InputActionTrigger{ key, input }, std::move(action));
+        bindings_.emplace(KeyInputActionTrigger{ key, input }, std::move(action));
     }
 
     void
-    bind(SDL_Keycode key, std::initializer_list<KeyInput> inputs, InputAction action)
+    bind(SDL_Keycode key, std::initializer_list<KeyInput> inputs, KeyInputAction action)
     {
         for (auto input : inputs)
         {
-            bindings_.emplace(InputActionTrigger{ key, input }, action);
+            bindings_.emplace(KeyInputActionTrigger{ key, input }, action);
         }
     }
 
     void
     unbind(SDL_Keycode key, KeyInput input)
     {
-        bindings_.erase(InputActionTrigger{ key, input });
+        bindings_.erase(KeyInputActionTrigger{ key, input });
     }
 
     template <class T>
@@ -119,6 +119,59 @@ class KeyboardInputMapper
         {
             action();
         }
+    }
+};
+
+struct MouseMotionInput
+{
+    glm::vec2 delta;
+    glm::vec2 position;
+};
+
+using MouseMotionInputAction = std::function<void(const MouseMotionInput &)>;
+
+class MouseMotionInputMapper
+{
+  private:
+    std::vector<MouseMotionInputAction> actions_;
+
+  public:
+    void
+    bind(MouseMotionInputAction action)
+    {
+        actions_.emplace_back(std::move(action));
+    }
+
+    void
+    handle(const SDL_Event &event)
+    {
+        if (event.type != SDL_MOUSEMOTION)
+        {
+            return;
+        }
+
+        auto input = MouseMotionInput{
+            .delta    = { event.motion.xrel, event.motion.yrel },
+            .position = { event.motion.x, event.motion.y },
+        };
+
+        for (const auto &action : actions_)
+        {
+            action(input);
+        }
+    }
+};
+
+struct InputMapper
+{
+    KeyboardInputMapper    keyboard;
+    MouseMotionInputMapper mouse_motion;
+
+    void
+    handle(const SDL_Event &event)
+    {
+        keyboard.handle(event);
+        mouse_motion.handle(event);
     }
 };
 

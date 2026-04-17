@@ -354,15 +354,15 @@ main()
 
         .configure_input = [&](auto &inputs, auto &game)
         {
-            using enum KeyInput;
-            inputs.bind(SDLK_ESCAPE,   Release,         [&]{ game.stop(); });
-            inputs.bind(SDLK_SPACE,    Press,           &GameOfLife::toggle_pause,        &gol);
-            inputs.bind(SDLK_c,        Press,           &GameOfLife::clear,               &gol);
-            inputs.bind(SDLK_r,      { Press, Repeat }, &GameOfLife::randomize,           &gol);
-            inputs.bind(SDLK_UP,     { Press, Repeat }, &GameOfLife::increase_speed,      &gol);
-            inputs.bind(SDLK_DOWN,   { Press, Repeat }, &GameOfLife::decrease_speed,      &gol);
-            inputs.bind(SDLK_RIGHT,  { Press, Repeat }, &GameOfLife::increase_resolution, &gol);
-            inputs.bind(SDLK_LEFT,   { Press, Repeat }, &GameOfLife::decrease_resolution, &gol);
+            using enum ome::input::KeyInput;
+            inputs.keyboard.bind(SDLK_ESCAPE,   Release,         [&]{ game.stop(); });
+            inputs.keyboard.bind(SDLK_SPACE,    Press,           &GameOfLife::toggle_pause,        &gol);
+            inputs.keyboard.bind(SDLK_c,        Press,           &GameOfLife::clear,               &gol);
+            inputs.keyboard.bind(SDLK_r,      { Press, Repeat }, &GameOfLife::randomize,           &gol);
+            inputs.keyboard.bind(SDLK_UP,     { Press, Repeat }, &GameOfLife::increase_speed,      &gol);
+            inputs.keyboard.bind(SDLK_DOWN,   { Press, Repeat }, &GameOfLife::decrease_speed,      &gol);
+            inputs.keyboard.bind(SDLK_RIGHT,  { Press, Repeat }, &GameOfLife::increase_resolution, &gol);
+            inputs.keyboard.bind(SDLK_LEFT,   { Press, Repeat }, &GameOfLife::decrease_resolution, &gol);
         },
 
         .on_update = [&gol](const auto &context)

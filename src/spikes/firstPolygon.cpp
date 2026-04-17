@@ -20,24 +20,24 @@ main()
       {
           using enum ome::input::KeyInput;
 
-          inputs.bind(SDLK_ESCAPE, Release, [&]{ game.stop(); });
+          inputs.keyboard.bind(SDLK_ESCAPE, Release, [&]{ game.stop(); });
 
-          inputs.bind(SDLK_SPACE,  Release, [&]{ 
+          inputs.keyboard.bind(SDLK_SPACE,  Release, [&]{ 
             game.time.toggle_pause(); 
             std::puts(game.time.is_paused() ? "Paused" : "Resumed");
           });
 
-          inputs.bind(SDLK_UP, Release, [&]{
+          inputs.keyboard.bind(SDLK_UP, Release, [&]{
             game.time.speed(game.time.speed() * 1.5);
             std::println("Speed: {:.2f} steps/s", game.time.speed());
           });
 
-          inputs.bind(SDLK_DOWN, Release, [&]{
+          inputs.keyboard.bind(SDLK_DOWN, Release, [&]{
             game.time.speed(game.time.speed() / 1.5);
             std::println("Speed: {:.2f} steps/s", game.time.speed());
           });
 
-          inputs.bind(SDLK_r, Release, [&]{
+          inputs.keyboard.bind(SDLK_r, Release, [&]{
             game.time.speed(-game.time.speed());
             std::println("Time direction: {}", game.time.speed() > 0 ? "forward" : "backward");
           });

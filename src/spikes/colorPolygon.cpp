@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <print>
 
+glm::vec3 color;
+
 int
 main()
 {
@@ -18,12 +20,17 @@ main()
       {
           using enum ome::input::KeyInput;
 
-          inputs.bind(SDLK_ESCAPE, Release, [&]{ game.stop(); });
+          inputs.keyboard.bind(SDLK_ESCAPE, Release, [&]{ game.stop(); });
 
-          inputs.bind(SDLK_F10, Press, [&]{
+          inputs.keyboard.bind(SDLK_F10, Press, [&]{
               auto size = game.window.size();
               std::println("Toggling fullscreen mode. Current size: {} x {}", size.x, size.y);
               game.window.toggle_fullscreen();
+          });
+
+          inputs.mouse_motion.bind([&](auto mouse){
+              color.x = static_cast<float>(mouse.position.x) / game.window.size().x;
+              color.y = static_cast<float>(mouse.position.y) / game.window.size().y;
           });
       },
 
@@ -45,11 +52,9 @@ main()
       
           glBegin(GL_TRIANGLES);
           {
-              glColor3f(1.0, 0.0, 0.0); // Rojo
+              glColor3f(color.x, color.y, color.z);
               glVertex3f(-1.5, 1.0, -6.0);
-              glColor3f(0.0, 1.0, 0.0); // Verde
               glVertex3f(-2.5, -1.0, -6.0);
-              glColor3f(0.0, 0.0, 1.0); // Azul
               glVertex3f(-0.5, -1.0, -6.0);
           }
           glEnd();

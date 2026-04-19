@@ -19,6 +19,7 @@ namespace game {
 struct Configuration;
 class Enviroment;
 class Time;
+class Pause;
 class Session;
 
 class Time
@@ -29,7 +30,27 @@ class Time
   private:
     Chronometer<Unit>          chronometer_;
     Chronometer<Unit>::Reading current_time_;
-    float                      scale_ = 1;
+    float                      unfrozen_time_scale_ = 1;
+
+    bool
+    frozen_() const
+    {
+        return chronometer_.scale() == 0;
+    }
+
+    void
+    freeze_()
+    {
+        chronometer_.scale(0);
+    }
+
+    void
+    unfreeze_()
+    {
+        chronometer_.scale(unfrozen_time_scale_);
+    }
+
+    friend class Pause;
 
   public:
     float
@@ -41,7 +62,8 @@ class Time
     float
     since(const auto &time_point) const
     {
-        return std::chrono::duration<float>(std::chrono::steady_clock::now() - time_point).count();
+        auto now = decltype(chronometer_)::Clock::now();
+        return std::chrono::duration<float>(now - time_point).count();
     }
 
     float
@@ -53,14 +75,14 @@ class Time
     float
     scale() const
     {
-        return scale_;
+        return unfrozen_time_scale_;
     }
 
     void
     scale(float new_value)
     {
         chronometer_.scale(new_value);
-        scale_ = new_value;
+        unfrozen_time_scale_ = new_value;
     }
 
     class
@@ -103,6 +125,8 @@ class Time
 
     friend class Session;
 };
+
+using Chronometer = Chronometer<Time::Unit>;
 
 struct Configuration
 {
@@ -162,6 +186,45 @@ class Enviroment
     }
 };
 
+class Pause
+{
+  private:
+    Time                          &time_;
+    Chronometer::Clock::time_point paused_timestamp_;
+
+  public:
+    Pause(Time &time)
+        : time_(time)
+    {
+    }
+
+    bool
+    is_paused() const
+    {
+        return time_.frozen_();
+    }
+
+    auto
+    paused_at() const
+    {
+        return paused_timestamp_;
+    }
+
+    void
+    toggle()
+    {
+        if (is_paused())
+        {
+            time_.unfreeze_();
+        }
+        else
+        {
+            time_.unfreeze_();
+            paused_timestamp_ = Chronometer::Clock::now();
+        }
+    }
+};
+
 class Session
 {
   private:
@@ -183,12 +246,11 @@ class Session
     friend void
     run(const Configuration &config);
 
-    Configuration                         config_;
-    input::InputMapper                    input_mapper_;
-    bool                                  running_     = false;
-    unsigned long                         frame_count_ = 0;
-    std::shared_ptr<Enviroment>           enviroment_  = Enviroment::instance();
-    std::chrono::steady_clock::time_point pause_time_;
+    Configuration               config_;
+    input::InputMapper          input_mapper_;
+    bool                        running_     = false;
+    unsigned long               frame_count_ = 0;
+    std::shared_ptr<Enviroment> enviroment_  = Enviroment::instance();
 
     void
     update_()
@@ -233,6 +295,8 @@ class Session
 
     Time time;
 
+    Pause pause{ time };
+
     void
     stop()
     {
@@ -249,32 +313,6 @@ class Session
     instant_frame_rate() const
     {
         return 1.0f / time.delta();
-    }
-
-    bool
-    is_paused() const
-    {
-        return time.chronometer_.scale() == 0;
-    }
-
-    auto
-    pause_timestamp() const
-    {
-        return pause_time_;
-    }
-
-    void
-    toggle_pause()
-    {
-        if (is_paused())
-        {
-            time.chronometer_.scale(time.scale_);
-        }
-        else
-        {
-            time.chronometer_.scale(0);
-            pause_time_ = std::chrono::steady_clock::now();
-        }
     }
 };
 

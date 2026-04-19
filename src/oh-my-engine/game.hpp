@@ -7,7 +7,8 @@
 #include <SDL2/SDL.h>
 #include <memory>
 
-namespace ome::game {
+namespace ome {
+namespace game {
 
 // forward declarations
 struct Configuration;
@@ -288,4 +289,12 @@ run(const Configuration &config)
     Session(config).run_();
 }
 
-} // namespace ome::game
+} // namespace game
+
+inline Vec2f
+normalize(const Vec2f &window_coords, const game::Window &window)
+{
+    return { window_coords[0] / window.size()[0], window_coords[1] / window.size()[1] };
+}
+
+} // namespace ome

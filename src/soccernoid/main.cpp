@@ -130,8 +130,8 @@ main()
 
           inputs.keyboard.bind(SDLK_p, Press, [&]
           {
-              game.toggle_pause();
-              std::println("{}", game.is_paused() ? "Paused" : "Resumed");
+              game.pause.toggle();
+              std::println("{}", game.pause.is_paused() ? "Paused" : "Resumed");
           });
 
           inputs.keyboard.bind(SDLK_TAB, Press, [&]
@@ -207,10 +207,10 @@ main()
           auto color_filter = [&](ome::Vec3f color)
           {
               static constexpr auto speed = 7;
-              auto intensity = game.time.since(game.pause_timestamp()) * speed;
+              auto intensity = game.time.since(game.pause.paused_at()) * speed;
               auto gray = grayscale(color);
               auto faded = ome::math::make_smoothstep(color, gray, 0.7)(intensity);
-              return game.is_paused() ? faded : color;
+              return game.pause.is_paused() ? faded : color;
           };
 
           auto set_color = [&](ome::Vec3f color)

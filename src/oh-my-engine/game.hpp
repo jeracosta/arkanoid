@@ -89,15 +89,22 @@ class Time
     using Unit = std::chrono::duration<float, std::ratio<1>>; // seconds as float
 
   private:
-    Chronometer<Unit>          chronometer_;
-    Chronometer<Unit>::Reading current_time_;
-    float                      scale_ = 1;
+    Chronometer<Unit>                     chronometer_;
+    Chronometer<Unit>::Reading            current_time_;
+    float                                 scale_ = 1;
+    std::chrono::steady_clock::time_point pause_time_;
 
   public:
     float
     elapsed() const
     {
         return current_time_.elapsed;
+    }
+
+    float
+    since_last_pause() const
+    {
+        return std::chrono::duration<float>(std::chrono::steady_clock::now() - pause_time_).count();
     }
 
     float
@@ -322,6 +329,7 @@ class Session
         else
         {
             time.chronometer_.scale(0);
+            time.pause_time_ = std::chrono::steady_clock::now();
         }
     }
 };

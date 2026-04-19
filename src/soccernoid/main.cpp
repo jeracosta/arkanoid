@@ -10,6 +10,7 @@
 #include "oh-my-engine/camera.hpp"
 #include "oh-my-engine/game.hpp"
 #include "oh-my-engine/math/functions.hpp"
+#include "oh-my-engine/math/vector.hpp"
 
 // TODO: Que el cambio de view de third a first sea seamless.
 
@@ -76,6 +77,31 @@ main()
         float      speed = 1.5f;
         ome::Vec3f moving_direction{};
     } player;
+
+    static constexpr auto gravity = ome::Vec3f(0.0f, -9.8f, 0.0f) / 2;
+
+    struct
+    {
+        ome::Vec3f position{ 0.0f, 0.5f, 0.0f };
+        ome::Vec3f speed{ 0.0f, 0.2f, 0.0f };
+        float      radius = 0.05f;
+
+        void
+        update(float delta)
+        {
+            auto height       = position[1] - radius;
+            auto acceleration = gravity;
+            speed += acceleration * delta;
+            position += speed * delta;
+
+            if (height < 0.0f)
+            {
+                position[1] = radius;
+                speed[1]    = -speed[1] * 0.95f;
+            }
+        }
+
+    } ball;
 
     ome::game::run({
       .window = {
@@ -148,10 +174,16 @@ main()
               return game.is_paused() ? faded : color;
           };
 
+          auto set_color = [&](ome::Vec3f color)
+          {
+              auto filtered = color_filter(color);
+              glColor3f(filtered[0], filtered[1], filtered[2]);
+          };
+
+          // cancha
           glBegin(GL_QUADS);
           {
-              auto color = color_filter({0.1, 0.8, 0.3});
-              glColor3f(color[0], color[1], color[2]);
+              set_color({0.1, 0.8, 0.1});
               glVertex3f( -1.0  , 0.0 ,  1.0);
               glVertex3f(  1.0  , 0.0 ,  1.0);
               glVertex3f(  1.0  , 0.0 , -1.0);
@@ -159,16 +191,28 @@ main()
           }
           glEnd();
 
+          // arco
           glBegin(GL_QUADS);
           {
-              auto color = color_filter({1.0, 1.0, 1.0});
-              glColor3f(color[0], color[1], color[2]);
+              set_color({1.0, 1.0, 1.0});
               glVertex3f(  .25  , 0.0 , -1.0);
               glVertex3f(  .25  , 0.2 , -1.0);
               glVertex3f( -.25  , 0.2 , -1.0);
               glVertex3f( -.25  , 0.0 , -1.0);
           }
           glEnd();
+
+          // pelota
+          ball.update(game.time.delta());
+          glPushMatrix();
+          {
+              GLUquadric* q = gluNewQuadric();
+              glTranslatef(ball.position[0], ball.position[1], ball.position[2]);
+              set_color({0.9, 0.2, 0.1});
+              gluSphere(q, ball.radius, 32, 32);
+              gluDeleteQuadric(q);
+          }
+          glPopMatrix();
 
       }
     });

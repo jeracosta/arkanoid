@@ -7,81 +7,19 @@
 #include "chronometer.hpp"
 #include "input.hpp"
 #include "oh-my-engine/math/vector.hpp"
+#include "oh-my-engine/window.hpp"
 
 namespace ome {
+
+class Window; // forward declaration
+
 namespace game {
 
 // forward declarations
 struct Configuration;
 class Enviroment;
 class Time;
-class Window;
 class Session;
-
-class Window
-{
-  private:
-    SDL_Window   *window_;
-    SDL_GLContext gl_context_;
-
-    friend class Session;
-
-  public:
-    struct Configuration
-    {
-        const char *title;
-        Vec2u       size;
-    };
-
-    Window(Configuration config)
-        : window_(SDL_CreateWindow(config.title,
-                                   SDL_WINDOWPOS_CENTERED,
-                                   SDL_WINDOWPOS_CENTERED,
-                                   config.size[0],
-                                   config.size[1],
-                                   SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN)),
-          gl_context_(SDL_GL_CreateContext(window_))
-    {
-        glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LESS);
-        SDL_SetRelativeMouseMode(SDL_TRUE);
-        SDL_GL_SetSwapInterval(1);
-    }
-
-    ~Window()
-    {
-        SDL_GL_DeleteContext(gl_context_);
-        SDL_DestroyWindow(window_);
-    }
-
-    Vec2u
-    size() const
-    {
-        int width, height;
-        SDL_GetWindowSize(window_, &width, &height);
-        return { static_cast<unsigned>(width), static_cast<unsigned>(height) };
-    }
-
-    double
-    aspect_ratio() const
-    {
-        auto size = this->size();
-        return static_cast<double>(size[0]) / static_cast<double>(size[1]);
-    }
-
-    bool
-    is_fullscreen() const
-    {
-        return SDL_GetWindowFlags(window_) & SDL_WINDOW_FULLSCREEN_DESKTOP;
-    }
-
-    void
-    toggle_fullscreen() const
-    {
-        auto flag = is_fullscreen() ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
-        SDL_SetWindowFullscreen(window_, flag);
-    }
-};
 
 class Time
 {
@@ -274,7 +212,7 @@ class Session
 
         config_.on_update(*this);
 
-        SDL_GL_SwapWindow(window.window_);
+        SDL_GL_SwapWindow(window);
 
         frame_count_++;
     }
@@ -343,7 +281,7 @@ run(const Configuration &config)
 } // namespace game
 
 inline Vec2f
-normalize(const Vec2f &window_coords, const game::Window &window)
+normalize(const Vec2f &window_coords, const Window &window)
 {
     return { window_coords[0] / window.size()[0], window_coords[1] / window.size()[1] };
 }

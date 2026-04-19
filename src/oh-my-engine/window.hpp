@@ -35,6 +35,17 @@ class Window
         SDL_GL_SetSwapInterval(1);
     }
 
+    Window(const Window &) = delete;
+
+    Window &
+    operator=(const Window &)
+        = delete;
+
+    Window(Window &&) = default;
+    Window &
+    operator=(Window &&)
+        = default;
+
     ~Window()
     {
         SDL_GL_DeleteContext(gl_context_);
@@ -70,7 +81,7 @@ class Window
     }
 
     friend void
-    SDL_GL_SwapWindow(const Window window)
+    SDL_GL_SwapWindow(const Window &window)
     {
         return SDL_GL_SwapWindow(window.window_);
     };

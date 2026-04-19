@@ -114,7 +114,7 @@ class Time
         unscaled.update_();
     }
 
-    friend class game::Session;
+    friend class Game;
 };
 
 } // namespace ome

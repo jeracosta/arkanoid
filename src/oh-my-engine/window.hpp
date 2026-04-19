@@ -76,4 +76,10 @@ class Window
     };
 };
 
+inline Vec2f
+normalize(const Vec2f &window_coords, const Window &window)
+{
+    return { window_coords[0] / window.size()[0], window_coords[1] / window.size()[1] };
+}
+
 } // namespace ome

@@ -107,7 +107,7 @@ main()
 
     } ball;
 
-    ome::game::run({
+    ome::Game::run({
       .window = {
             .title = "Soccernoid",
             .size  = {640, 480},

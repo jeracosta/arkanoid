@@ -12,77 +12,70 @@
 
 namespace ome {
 
-class Window; // forward declaration
-
-namespace game {
-
-// forward declarations
-struct Configuration;
-class Enviroment;
-class Session;
-
-struct Configuration
+class Game
 {
-    Window::Configuration window;
-
-    // Configures the input mapper. Called once at the beginning of the session.
-    std::function<void(input::InputMapper &, Session &)> configure_input = {};
-
-    // Called once at the beginning of the session, after initialization of all internal
-    // systems, and before the main loop starts.
-    std::function<void()> on_init = {};
-
-    // Called once per frame.
-    std::function<void(const Session &)> on_update;
-};
-
-class Enviroment
-{
-  private:
-    Enviroment()
-    {
-        if (SDL_Init(SDL_INIT_VIDEO))
-        {
-            throw std::runtime_error(std::string("Failed to initialize SDL: ") + SDL_GetError());
-        }
-
-        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, true);
-        SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
-    }
-
   public:
-    static std::shared_ptr<Enviroment>
-    instance()
+    class Enviroment
     {
-        static std::weak_ptr<Enviroment> enviroment;
-
-        if (auto ref = enviroment.lock())
+      private:
+        Enviroment()
         {
-            return ref;
-        }
-        else
-        {
-            // note: std::make_shared can't used because the constructor of Enviroment is private.
-            auto new_enviroment = std::shared_ptr<Enviroment>(new Enviroment{});
-            enviroment          = new_enviroment;
-            return new_enviroment;
-        }
-    }
+            if (SDL_Init(SDL_INIT_VIDEO))
+            {
+                throw std::runtime_error(std::string("Failed to initialize SDL: ")
+                                         + SDL_GetError());
+            }
 
-    ~Enviroment()
+            SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, true);
+            SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
+        }
+
+      public:
+        static std::shared_ptr<Enviroment>
+        instance()
+        {
+            static std::weak_ptr<Enviroment> enviroment;
+
+            if (auto ref = enviroment.lock())
+            {
+                return ref;
+            }
+            else
+            {
+                // note: std::make_shared can't used because Enviroment constructor is private.
+                auto new_enviroment = std::shared_ptr<Enviroment>(new Enviroment{});
+                enviroment          = new_enviroment;
+                return new_enviroment;
+            }
+        }
+
+        ~Enviroment()
+        {
+            SDL_Quit();
+        }
+    };
+
+    struct Configuration
     {
-        SDL_Quit();
-    }
-};
+        Window::Configuration window;
 
-class Session
-{
+        // Configures the input mapper. Called once at the beginning of the session.
+        std::function<void(input::InputMapper &, Game &)> configure_input = {};
+
+        // Called once at the beginning of the session, after initialization of all internal
+        // systems, and before the main loop starts.
+        std::function<void()> on_init = {};
+
+        // Called once per frame.
+        std::function<void(const Game &)> on_update;
+    };
+
   private:
-    Session(const Configuration &config)
+    Game(const Configuration &config)
         : config_(config),
           window(config.window)
     {
@@ -168,20 +161,11 @@ class Session
     {
         return 1.0f / time.delta();
     }
+
+    static void
+    run(const Configuration &config)
+    {
+        Game(config).run_();
+    }
 };
-
-inline void
-run(const Configuration &config)
-{
-    Session(config).run_();
-}
-
-} // namespace game
-
-inline Vec2f
-normalize(const Vec2f &window_coords, const Window &window)
-{
-    return { window_coords[0] / window.size()[0], window_coords[1] / window.size()[1] };
-}
-
-} // namespace ome
+}; // namespace ome

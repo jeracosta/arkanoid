@@ -2,9 +2,9 @@
 
 #include "chronometer.hpp"
 #include "input.hpp"
+#include "oh-my-engine/math/vector.hpp"
 #include <GL/gl.h>
 #include <SDL2/SDL.h>
-#include <glm/glm.hpp>
 #include <memory>
 
 namespace ome::game {
@@ -28,15 +28,15 @@ class Window
     struct Configuration
     {
         const char *title;
-        glm::uvec2  size;
+        Vec2u       size;
     };
 
     Window(Configuration config)
         : window_(SDL_CreateWindow(config.title,
                                    SDL_WINDOWPOS_CENTERED,
                                    SDL_WINDOWPOS_CENTERED,
-                                   config.size.x,
-                                   config.size.y,
+                                   config.size[0],
+                                   config.size[1],
                                    SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN)),
           gl_context_(SDL_GL_CreateContext(window_))
     {
@@ -50,7 +50,7 @@ class Window
         SDL_DestroyWindow(window_);
     }
 
-    glm::uvec2
+    Vec2u
     size() const
     {
         int width, height;
@@ -62,7 +62,7 @@ class Window
     aspect_ratio() const
     {
         auto size = this->size();
-        return static_cast<double>(size.x) / static_cast<double>(size.y);
+        return static_cast<double>(size[0]) / static_cast<double>(size[1]);
     }
 
     bool

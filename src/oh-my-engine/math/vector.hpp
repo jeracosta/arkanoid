@@ -249,6 +249,25 @@ BINARY_OPERATOR(*)
 BINARY_OPERATOR(/)
 #undef BINARY_OPERATOR
 
+template <class Vector>
+constexpr auto
+dot(const Vector &lhs, const Vector &rhs)
+{
+    static_assert(lhs.dimension() == rhs.dimension(), "Vectors must have the same dimension");
+
+    using namespace std::ranges;
+
+    auto zipped = std::views::zip(lhs, rhs);
+
+    auto product = [](auto acc, auto pair)
+    {
+        auto &&[a, b] = pair;
+        return acc + a * b;
+    };
+
+    return std::accumulate(zipped.begin(), zipped.end(), 0.0, product);
+}
+
 constexpr auto
 norm(const is_vector auto &vector)
 {

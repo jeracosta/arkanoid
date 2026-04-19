@@ -11,7 +11,7 @@ class Chronometer
 
     Duration::rep     elapsed_time_   = 0;
     Clock::time_point last_read_time_ = Clock::now();
-    float             speed_          = 1;
+    float             scale_          = 1;
 
   public:
     void
@@ -21,15 +21,15 @@ class Chronometer
     }
 
     float
-    speed() const
+    scale() const
     {
-        return speed_;
+        return scale_;
     }
 
     void
-    speed(float s)
+    scale(float s)
     {
-        speed_ = s;
+        scale_ = s;
     }
 
     struct Reading
@@ -41,7 +41,7 @@ class Chronometer
     Reading
     read()
     {
-        auto delta_time = Duration(Clock::now() - last_read_time_).count() * speed_;
+        auto delta_time = Duration(Clock::now() - last_read_time_).count() * scale_;
 
         elapsed_time_ += delta_time;
 

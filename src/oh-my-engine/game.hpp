@@ -91,15 +91,7 @@ class Time
   private:
     Chronometer<Unit>          chronometer_;
     Chronometer<Unit>::Reading current_time_;
-    float                      speed_ = 1; // independent from pause state
-
-    void
-    update_()
-    {
-        current_time_ = chronometer_.read();
-    }
-
-    friend class Session;
+    float                      scale_ = 1;
 
   public:
     float
@@ -115,22 +107,22 @@ class Time
     }
 
     float
-    speed() const
+    scale() const
     {
-        return speed_;
+        return scale_;
     }
 
     void
-    speed(float new_value)
+    scale(float new_value)
     {
-        chronometer_.speed(new_value);
-        speed_ = new_value;
+        chronometer_.scale(new_value);
+        scale_ = new_value;
     }
 
     bool
     is_paused() const
     {
-        return chronometer_.speed() == 0;
+        return chronometer_.scale() == 0;
     }
 
     void
@@ -138,11 +130,11 @@ class Time
     {
         if (is_paused())
         {
-            chronometer_.speed(speed_);
+            chronometer_.scale(scale_);
         }
         else
         {
-            chronometer_.speed(0);
+            chronometer_.scale(0);
         }
     }
 

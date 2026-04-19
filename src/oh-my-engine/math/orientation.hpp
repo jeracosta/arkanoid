@@ -34,33 +34,17 @@ class Orientation
         return glm::mat4_cast(quat_);
     }
 
-    void
-    steer_yaw(float delta)
-    {
-        glm::quat q = glm::angleAxis(delta, glm::vec3(0, 1, 0));
-
-        quat_ = glm::normalize(q * quat_);
+#define DEFINE_STEER(name, x, y, z)                                                                \
+    Orientation &steer_##name(float delta)                                                         \
+    {                                                                                              \
+        glm::quat q = glm::angleAxis(delta, glm::vec3(x, y, z));                                   \
+        quat_       = glm::normalize(q * quat_);                                                   \
+        return *this;                                                                              \
     }
-
-    void
-    steer_pitch(float delta)
-    {
-        glm::vec3 right = quat_ * glm::vec3(1, 0, 0);
-
-        glm::quat q = glm::angleAxis(delta, right);
-
-        quat_ = glm::normalize(q * quat_);
-    }
-
-    void
-    steer_roll(float delta)
-    {
-        glm::vec3 forward = quat_ * glm::vec3(0, 0, 1);
-
-        glm::quat q = glm::angleAxis(delta, forward);
-
-        quat_ = glm::normalize(q * quat_);
-    }
+    DEFINE_STEER(pitch, 1, 0, 0)
+    DEFINE_STEER(yaw, 0, 1, 0)
+    DEFINE_STEER(roll, 0, 0, 1)
+#undef DEFINE_STEER
 
 #define DEFINE_DIR_GETTER(name)                                                                    \
     Vec3f name() const                                                                             \

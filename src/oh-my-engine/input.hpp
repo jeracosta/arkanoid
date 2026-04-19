@@ -21,7 +21,7 @@ enum class KeyInput : uint8_t
     Release,
 };
 
-using KeyInputAction = std::function<void()>;
+using KeyInputAction = std::function<void(KeyInput)>;
 
 struct KeyInputActionTrigger
 {
@@ -47,17 +47,29 @@ class KeyboardInputMapper
 
   public:
     void
-    bind(SDL_Keycode key, KeyInput input, KeyInputAction action)
+    bind(SDL_Keycode key, KeyInput input, auto action)
     {
-        bindings_.emplace(KeyInputActionTrigger{ key, input }, std::move(action));
+
+        KeyInputAction callback;
+
+        if constexpr (std::is_invocable_v<std::decay_t<decltype(action)>>)
+        {
+            callback = [action = std::move(action)](KeyInput) { action(); };
+        }
+        else
+        {
+            callback = std::move(action);
+        }
+
+        bindings_.emplace(KeyInputActionTrigger{ key, input }, std::move(callback));
     }
 
     void
-    bind(SDL_Keycode key, std::initializer_list<KeyInput> inputs, KeyInputAction action)
+    bind(SDL_Keycode key, std::initializer_list<KeyInput> inputs, auto action)
     {
         for (auto input : inputs)
         {
-            bindings_.emplace(KeyInputActionTrigger{ key, input }, action);
+            bind(key, input, action);
         }
     }
 
@@ -119,7 +131,7 @@ class KeyboardInputMapper
 
         for (const auto &action : actions_for_({ key, input }))
         {
-            action();
+            action(input);
         }
     }
 };

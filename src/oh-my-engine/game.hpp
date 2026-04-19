@@ -119,25 +119,6 @@ class Time
         scale_ = new_value;
     }
 
-    bool
-    is_paused() const
-    {
-        return chronometer_.scale() == 0;
-    }
-
-    void
-    toggle_pause()
-    {
-        if (is_paused())
-        {
-            chronometer_.scale(scale_);
-        }
-        else
-        {
-            chronometer_.scale(0);
-        }
-    }
-
     class
     {
       private:
@@ -323,6 +304,25 @@ class Session
     instant_frame_rate() const
     {
         return 1.0f / time.delta();
+    }
+
+    bool
+    is_paused() const
+    {
+        return time.chronometer_.scale() == 0;
+    }
+
+    void
+    toggle_pause()
+    {
+        if (is_paused())
+        {
+            time.chronometer_.scale(time.scale_);
+        }
+        else
+        {
+            time.chronometer_.scale(0);
+        }
     }
 };
 

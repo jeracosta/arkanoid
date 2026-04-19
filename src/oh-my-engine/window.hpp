@@ -74,7 +74,7 @@ class Window
     }
 
     void
-    toggle_fullscreen() const
+    toggle_fullscreen()
     {
         auto flag = is_fullscreen() ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
         SDL_SetWindowFullscreen(window_, flag);
@@ -90,7 +90,8 @@ class Window
 inline Vec2f
 normalize(const Vec2f &window_coords, const Window &window)
 {
-    return { window_coords[0] / window.size()[0], window_coords[1] / window.size()[1] };
+    auto size = window.size();
+    return { window_coords[0] / size[0], window_coords[1] / size[1] };
 }
 
 } // namespace ome

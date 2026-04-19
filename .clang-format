@@ -36,3 +36,10 @@ PackConstructorInitializers: Never
 AlwaysBreakAfterDefinitionReturnType: All
 AlwaysBreakTemplateDeclarations: true
 LambdaBodyIndentation: OuterScope
+IncludeBlocks: Regroup
+SortIncludes: true
+IncludeCategories:
+  - Regex: '^<.*>$'
+    Priority: 1
+  - Regex: '^".*"$'
+    Priority: 2

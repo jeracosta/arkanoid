@@ -44,6 +44,7 @@ class Window
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
         SDL_SetRelativeMouseMode(SDL_TRUE);
+        SDL_GL_SetSwapInterval(1);
     }
 
     ~Window()

@@ -245,9 +245,9 @@ BINARY_OPERATOR(/)
 constexpr auto
 norm(const is_vector auto &vector)
 {
-    auto sum_square = [](auto a, auto b) { return a + b * b; };
+    auto sum_square = [](auto acc, auto x) { return acc + x * x; };
 
-    return std::sqrt(std::accumulate(vector.begin(), vector.end(), {}, sum_square));
+    return std::sqrt(std::accumulate(std::begin(vector), std::end(vector), 0, sum_square));
 }
 
 template <typename Range>
@@ -282,6 +282,7 @@ DEFINE_VEC_N(4)
 DEFINE_VEC_ALIAS(f, float)
 DEFINE_VEC_ALIAS(i, int)
 DEFINE_VEC_ALIAS(u, unsigned)
+DEFINE_VEC_ALIAS(b, bool)
 #undef DEFINE_VEC_ALIAS
 
 } // namespace ome

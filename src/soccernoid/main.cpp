@@ -9,6 +9,7 @@
 
 #include "oh-my-engine/camera.hpp"
 #include "oh-my-engine/game.hpp"
+#include "oh-my-engine/math/functions.hpp"
 
 // TODO: Que el cambio de view de third a first sea seamless.
 
@@ -67,7 +68,7 @@ main()
     auto view = [](auto &game)
     {
         using enum CameraView;
-        return game.time.is_paused() ? FirstPerson : ThirdPerson;
+        return game.is_paused() ? FirstPerson : ThirdPerson;
     };
 
     struct
@@ -99,7 +100,7 @@ main()
 
           inputs.keyboard.bind(SDLK_p, Press, [&]
           {
-              game.time.toggle_pause();
+              game.toggle_pause();
               camera = make_camera(view(game), camera);
           });
 
@@ -134,14 +135,17 @@ main()
       .on_update = [&](auto & game)
       {
           if (view(game) == CameraView::FirstPerson) {
-              camera.target += player.moving_direction * player.speed * game.time.delta();
+              camera.target += player.moving_direction * player.speed * game.time.unscaled.delta();
           }
 
           gluLookAt(camera);
 
           auto color_filter = [&](ome::Vec3f color)
           {
-              return game.time.is_paused() ? grayscale(color) : color;
+              auto intensity = game.time.since_last_pause() * 7;
+              auto gray = grayscale(color);
+              auto faded = ome::math::make_smoothstep(color, gray, 0.7)(intensity);
+              return game.is_paused() ? faded : color;
           };
 
           glBegin(GL_QUADS);

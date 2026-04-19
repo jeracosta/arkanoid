@@ -29,6 +29,17 @@ class Window
                                    SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN)),
           gl_context_(SDL_GL_CreateContext(window_))
     {
+        if (!window_)
+        {
+            throw std::runtime_error(std::string("Failed to create window: ") + SDL_GetError());
+        }
+
+        if (!gl_context_)
+        {
+            throw std::runtime_error(std::string("Failed to create OpenGL context: ")
+                                     + SDL_GetError());
+        }
+
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
         SDL_SetRelativeMouseMode(SDL_TRUE);

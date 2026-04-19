@@ -1,11 +1,12 @@
 #pragma once
 
-#include "chronometer.hpp"
-#include "input.hpp"
-#include "oh-my-engine/math/vector.hpp"
 #include <GL/gl.h>
 #include <SDL2/SDL.h>
 #include <memory>
+
+#include "chronometer.hpp"
+#include "input.hpp"
+#include "oh-my-engine/math/vector.hpp"
 
 namespace ome {
 namespace game {

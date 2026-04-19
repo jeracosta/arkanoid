@@ -1,5 +1,3 @@
-#include "oh-my-engine/game.hpp"
-#include "oh-my-engine/math/functions.hpp"
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <SDL2/SDL.h>
@@ -10,46 +8,18 @@
 #include <limits>
 #include <print>
 
-static float epsilon      = std::numeric_limits<float>::epsilon();
-static float constexpr pi = std::numbers::pi_v<float>;
+#include "oh-my-engine/camera.hpp"
+#include "oh-my-engine/game.hpp"
 
-struct Camera
-{
-    glm::vec3 target;      // point you look at
-    glm::quat orientation; // rotation around target
-    float     distance;    // zoom
-} camera;
-
-void
-render_camera(const Camera &camera)
-{
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(45.0, 640.0 / 480.0, 0.1, 100.0);
-
-    glm::vec3 forward(0.0f, 0.0f, camera.distance);
-
-    glm::vec3 position = camera.target + (camera.orientation * forward);
-
-    glm::vec3 up = camera.orientation * glm::vec3(0.0f, 1.0f, 0.0f);
-
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-
-    gluLookAt(position.x,
-              position.y,
-              position.z,
-              camera.target.x,
-              camera.target.y,
-              camera.target.z,
-              up.x,
-              up.y,
-              up.z);
-}
+static float epsilon = std::numeric_limits<float>::epsilon();
 
 int
 main()
 {
+    auto camera = ome::Camera{
+        .distance = 3,
+    };
+
     ome::game::run({
       .window = {
             .title = "Soccernoid",
@@ -73,37 +43,22 @@ main()
 
           inputs.mouse_motion.bind([&](auto input)
           {
-              auto mouse_coords = ome::normalize(input.position, game.window);
-
-              auto compute_angle = [&](float proportion, auto &interval) {
-                  auto &[from, to] = interval;
-                  auto sigmoid = ome::math::make_sigmoid(5.0f, 0.5f);
-                  auto lerp = ome::math::make_lerp(from, to);
-                  return lerp(sigmoid(proportion));
-              };
-
-              glm::quat yaw = glm::angleAxis(dx * sensitivity, glm::vec3(0,1,0));
-
-
-              auto azimuth = compute_angle(mouse_coords[0], camera.angle.azimuth);
-              auto inclination = compute_angle(mouse_coords[1], camera.angle.inclination);
-
-              using enum ome::math::CoordinateSystem;
-              auto position = ome::Vec3f::Spherical{ camera.distance, inclination, azimuth }.rebased<Cartesian>();
-
-              update_camera(position);
-
+              camera.orientation.steer_yaw(-input.delta[0] * 0.01f);
+              camera.orientation.steer_pitch(input.delta[1] * 0.01f);
           });
       },
 
-      .on_update = [](auto &)
+      .on_init = []
       {
-          glClear(GL_COLOR_BUFFER_BIT);
-          glClear(GL_DEPTH_BUFFER_BIT);
-      
-          glMatrixMode(GL_MODELVIEW);
+          glMatrixMode(GL_PROJECTION);
           glLoadIdentity();
-      
+          gluPerspective(45.0, 640.0 / 480.0, 0.1, 100.0);
+      },
+
+      .on_update = [&](auto &)
+      {
+          gluLookAt(camera);
+
           glBegin(GL_QUADS);
           {
               glColor3f(0.1, 0.8, 0.3);

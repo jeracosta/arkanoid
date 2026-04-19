@@ -207,7 +207,7 @@ main()
           auto color_filter = [&](ome::Vec3f color)
           {
               static constexpr auto speed = 7;
-              auto intensity = game.time.since_last_pause() * speed;
+              auto intensity = game.time.since(game.pause_timestamp()) * speed;
               auto gray = grayscale(color);
               auto faded = ome::math::make_smoothstep(color, gray, 0.7)(intensity);
               return game.is_paused() ? faded : color;

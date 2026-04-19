@@ -27,10 +27,9 @@ class Time
     using Unit = std::chrono::duration<float, std::ratio<1>>; // seconds as float
 
   private:
-    Chronometer<Unit>                     chronometer_;
-    Chronometer<Unit>::Reading            current_time_;
-    float                                 scale_ = 1;
-    std::chrono::steady_clock::time_point pause_time_;
+    Chronometer<Unit>          chronometer_;
+    Chronometer<Unit>::Reading current_time_;
+    float                      scale_ = 1;
 
   public:
     float
@@ -40,9 +39,9 @@ class Time
     }
 
     float
-    since_last_pause() const
+    since(const auto &time_point) const
     {
-        return std::chrono::duration<float>(std::chrono::steady_clock::now() - pause_time_).count();
+        return std::chrono::duration<float>(std::chrono::steady_clock::now() - time_point).count();
     }
 
     float
@@ -184,11 +183,12 @@ class Session
     friend void
     run(const Configuration &config);
 
-    Configuration               config_;
-    input::InputMapper          input_mapper_;
-    bool                        running_     = false;
-    unsigned long               frame_count_ = 0;
-    std::shared_ptr<Enviroment> enviroment_  = Enviroment::instance();
+    Configuration                         config_;
+    input::InputMapper                    input_mapper_;
+    bool                                  running_     = false;
+    unsigned long                         frame_count_ = 0;
+    std::shared_ptr<Enviroment>           enviroment_  = Enviroment::instance();
+    std::chrono::steady_clock::time_point pause_time_;
 
     void
     update_()
@@ -257,6 +257,12 @@ class Session
         return time.chronometer_.scale() == 0;
     }
 
+    auto
+    pause_timestamp() const
+    {
+        return pause_time_;
+    }
+
     void
     toggle_pause()
     {
@@ -267,7 +273,7 @@ class Session
         else
         {
             time.chronometer_.scale(0);
-            time.pause_time_ = std::chrono::steady_clock::now();
+            pause_time_ = std::chrono::steady_clock::now();
         }
     }
 };

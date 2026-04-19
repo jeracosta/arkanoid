@@ -214,7 +214,10 @@ class Session
             config.configure_input(input_mapper_, *this);
         }
 
-        config_.on_init();
+        if (config.on_init)
+        {
+            config_.on_init();
+        }
     }
 
     friend void

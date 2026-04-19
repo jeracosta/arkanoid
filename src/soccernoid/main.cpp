@@ -1,6 +1,7 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <SDL2/SDL.h>
+#include <SDL_keycode.h>
 #include <cstdlib>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -11,8 +12,6 @@
 #include "oh-my-engine/game.hpp"
 #include "oh-my-engine/math/functions.hpp"
 #include "oh-my-engine/math/vector.hpp"
-
-// TODO: Que el cambio de view de third a first sea seamless.
 
 ome::Vec3f
 grayscale(ome::Vec3f color)
@@ -64,13 +63,9 @@ make_camera(CameraView view, ome::Camera camera = {})
 int
 main()
 {
-    auto camera = make_camera(CameraView::ThirdPerson);
+    auto view = CameraView::ThirdPerson;
 
-    auto view = [](auto &game)
-    {
-        using enum CameraView;
-        return game.is_paused() ? FirstPerson : ThirdPerson;
-    };
+    auto camera = make_camera(view);
 
     struct
     {
@@ -78,13 +73,15 @@ main()
         ome::Vec3f moving_direction{};
     } player;
 
-    static constexpr auto gravity = ome::Vec3f(0.0f, -9.8f, 0.0f) / 2;
+    static constexpr auto gravity = ome::Vec3f(0.0f, -9.8f, 0.0f);
 
-    struct
+    struct Ball
     {
-        ome::Vec3f position{ 0.0f, 0.5f, 0.0f };
-        ome::Vec3f speed{ 0.0f, 0.2f, 0.0f };
-        float      radius = 0.05f;
+        ome::Vec3f position            = { 0.0f, 1.0f, 0.0f };
+        ome::Vec3f speed               = { 0.0f, 0.2f, 0.0f };
+        float      elasticity          = 0.75f;
+        float      radius              = 0.05f;
+        float      speed_stop_treshold = 0.4f;
 
         void
         update(float delta)
@@ -97,7 +94,14 @@ main()
             if (height < 0.0f)
             {
                 position[1] = radius;
-                speed[1]    = -speed[1] * 0.95f;
+                if (std::abs(speed[1]) < speed_stop_treshold)
+                {
+                    speed[1] = 0.0f;
+                }
+                else
+                {
+                    speed[1] = -speed[1] * elasticity;
+                }
             }
         }
 
@@ -127,7 +131,38 @@ main()
           inputs.keyboard.bind(SDLK_p, Press, [&]
           {
               game.toggle_pause();
-              camera = make_camera(view(game), camera);
+              std::println("{}", game.is_paused() ? "Paused" : "Resumed");
+          });
+
+          inputs.keyboard.bind(SDLK_TAB, Press, [&]
+          {
+              view = next(view);
+              camera = make_camera(view, camera);
+              std::println("Switched to {} view", view == CameraView::FirstPerson ? "first person" : "third person");
+          });
+
+          inputs.keyboard.bind(SDLK_r, Press, [&]
+          {
+              ball = {};
+              std::println("Ball reset");
+          });
+
+          inputs.keyboard.bind(SDLK_PLUS, Press, [&]
+          {
+              auto scale = game.time.scale();
+              auto new_scale = scale * 1.5f;
+              auto delta = new_scale - scale;
+              game.time.scale(new_scale);
+              std::println("Time scale: {} // {}{}", new_scale, delta > 0 ? "+" : "-", delta);
+          });
+
+          inputs.keyboard.bind(SDLK_MINUS, Press, [&]
+          {
+              auto scale = game.time.scale();
+              auto new_scale = scale / 1.5f;
+              auto delta = new_scale - scale;
+              game.time.scale(new_scale);
+              std::println("Time scale: {} // {}{}", new_scale, delta > 0 ? "+" : "-", delta);
           });
 
           using namespace ome::directions;
@@ -135,13 +170,15 @@ main()
         // clang-format off
           #define BIND_MOVE(KEY, DIR)                                           \
               inputs.keyboard.bind(KEY, { Press, Release }, [&](auto input) {   \
-                  auto dir = camera.orientation.quat() * glm::vec3(DIR);        \
+                  auto dir = DIR;                                               \
                   player.moving_direction += (input == Press ? dir : -dir);     \
               })
           BIND_MOVE(SDLK_w, forward);
           BIND_MOVE(SDLK_s, backward);
           BIND_MOVE(SDLK_a, left);
           BIND_MOVE(SDLK_d, right);
+          BIND_MOVE(SDLK_SPACE, up);
+          BIND_MOVE(SDLK_LCTRL, down);
         // clang-format on
 
           inputs.mouse_motion.bind([&](auto input)
@@ -160,8 +197,9 @@ main()
 
       .on_update = [&](auto & game)
       {
-          if (view(game) == CameraView::FirstPerson) {
-              camera.target += player.moving_direction * player.speed * game.time.unscaled.delta();
+          if (view == CameraView::FirstPerson) {
+              auto dir = camera.orientation.quat() * glm::vec3(player.moving_direction);
+              camera.target += dir * player.speed * game.time.unscaled.delta();
           }
 
           gluLookAt(camera);

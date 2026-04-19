@@ -245,6 +245,9 @@ class Session
             input_mapper_.handle(event);
         }
 
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+
         config_.on_update(*this);
 
         SDL_GL_SwapWindow(window.window_);

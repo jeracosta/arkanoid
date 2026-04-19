@@ -10,6 +10,14 @@
 #include "oh-my-engine/camera.hpp"
 #include "oh-my-engine/game.hpp"
 
+// TODO: Que el cambio de view de third a first sea seamless.
+
+ome::Vec3f
+grayscale(ome::Vec3f color)
+{
+    return { dot(color, ome::Vec3f(0.299, 0.587, 0.114)) };
+}
+
 enum class CameraView
 {
     FirstPerson,
@@ -25,21 +33,27 @@ next(CameraView view)
 }
 
 ome::Camera
-make_camera(CameraView view)
+make_camera(CameraView view, ome::Camera camera = {})
 {
     switch (view)
     {
     case CameraView::FirstPerson:
+    {
+        auto distance      = 0.1f;
+        auto delta_distace = camera.distance - distance;
+        auto delta_target  = camera.orientation.backward() * delta_distace;
         return {
-            .target      = { 0.0f, 2.0f, 2.0f },
-            .orientation = ome::Orientation{}.steer_pitch(-0.7f),
-            .distance    = .1,
+            .target      = camera.target + delta_target,
+            .orientation = camera.orientation,
+            .distance    = distance,
         };
-
+    }
     case CameraView::ThirdPerson:
+    {
         return {
             .distance = 5,
         };
+    }
     default:
         throw std::runtime_error("Unsuported camera view");
     }
@@ -48,9 +62,13 @@ make_camera(CameraView view)
 int
 main()
 {
-    CameraView view = CameraView::ThirdPerson;
-
     auto camera = make_camera(CameraView::ThirdPerson);
+
+    auto view = [](auto &game)
+    {
+        using enum CameraView;
+        return game.time.is_paused() ? FirstPerson : ThirdPerson;
+    };
 
     struct
     {
@@ -79,10 +97,10 @@ main()
               game.window.toggle_fullscreen();
           });
 
-          inputs.keyboard.bind(SDLK_v, Press, [&]
+          inputs.keyboard.bind(SDLK_p, Press, [&]
           {
-              view = next(view);
-              camera = make_camera(view);
+              game.time.toggle_pause();
+              camera = make_camera(view(game), camera);
           });
 
           using namespace ome::directions;
@@ -115,15 +133,21 @@ main()
 
       .on_update = [&](auto & game)
       {
-          if (view == CameraView::FirstPerson) { 
+          if (view(game) == CameraView::FirstPerson) {
               camera.target += player.moving_direction * player.speed * game.time.delta();
           }
 
           gluLookAt(camera);
 
+          auto color_filter = [&](ome::Vec3f color)
+          {
+              return game.time.is_paused() ? grayscale(color) : color;
+          };
+
           glBegin(GL_QUADS);
           {
-              glColor3f(0.1, 0.8, 0.3);
+              auto color = color_filter({0.1, 0.8, 0.3});
+              glColor3f(color[0], color[1], color[2]);
               glVertex3f( -1.0  , 0.0 ,  1.0);
               glVertex3f(  1.0  , 0.0 ,  1.0);
               glVertex3f(  1.0  , 0.0 , -1.0);
@@ -133,7 +157,8 @@ main()
 
           glBegin(GL_QUADS);
           {
-              glColor3f(1,1,1);
+              auto color = color_filter({1.0, 1.0, 1.0});
+              glColor3f(color[0], color[1], color[2]);
               glVertex3f(  .25  , 0.0 , -1.0);
               glVertex3f(  .25  , 0.2 , -1.0);
               glVertex3f( -.25  , 0.2 , -1.0);

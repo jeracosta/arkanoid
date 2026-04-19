@@ -3,17 +3,17 @@
 
 namespace ome {
 
-template <typename Duration>
+template <typename TDuration, class TClock = std::chrono::steady_clock>
 class Chronometer
 {
   private:
-    using Clock = std::chrono::steady_clock;
-
-    Duration::rep     elapsed_time_   = 0;
-    Clock::time_point last_read_time_ = Clock::now();
-    float             scale_          = 1;
+    TDuration::rep     elapsed_time_   = 0;
+    TClock::time_point last_read_time_ = TClock::now();
+    float              scale_          = 1;
 
   public:
+    using Clock = TClock;
+
     void
     reset()
     {
@@ -34,18 +34,18 @@ class Chronometer
 
     struct Reading
     {
-        Duration::rep elapsed; // Time since the chronometer was started
-        Duration::rep delta;   // Time since the last reading
+        TDuration::rep elapsed; // Time since the chronometer was started
+        TDuration::rep delta;   // Time since the last reading
     };
 
     Reading
     read()
     {
-        auto delta_time = Duration(Clock::now() - last_read_time_).count() * scale_;
+        auto delta_time = TDuration(TClock::now() - last_read_time_).count() * scale_;
 
         elapsed_time_ += delta_time;
 
-        last_read_time_ = Clock::now();
+        last_read_time_ = TClock::now();
 
         return Reading{ .elapsed = elapsed_time_, .delta = delta_time };
     }

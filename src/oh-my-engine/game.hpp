@@ -4,10 +4,11 @@
 #include <SDL2/SDL.h>
 #include <memory>
 
-#include "chronometer.hpp"
 #include "input.hpp"
-#include "oh-my-engine/math/vector.hpp"
-#include "oh-my-engine/window.hpp"
+#include "math/vector.hpp"
+#include "pause.hpp"
+#include "time.hpp"
+#include "window.hpp"
 
 namespace ome {
 
@@ -18,115 +19,7 @@ namespace game {
 // forward declarations
 struct Configuration;
 class Enviroment;
-class Time;
-class Pause;
 class Session;
-
-class Time
-{
-  public:
-    using Unit = std::chrono::duration<float, std::ratio<1>>; // seconds as float
-
-  private:
-    Chronometer<Unit>          chronometer_;
-    Chronometer<Unit>::Reading current_time_;
-    float                      unfrozen_time_scale_ = 1;
-
-    bool
-    frozen_() const
-    {
-        return chronometer_.scale() == 0;
-    }
-
-    void
-    freeze_()
-    {
-        chronometer_.scale(0);
-    }
-
-    void
-    unfreeze_()
-    {
-        chronometer_.scale(unfrozen_time_scale_);
-    }
-
-    friend class Pause;
-
-  public:
-    float
-    elapsed() const
-    {
-        return current_time_.elapsed;
-    }
-
-    float
-    since(const auto &time_point) const
-    {
-        auto now = decltype(chronometer_)::Clock::now();
-        return std::chrono::duration<float>(now - time_point).count();
-    }
-
-    float
-    delta() const
-    {
-        return current_time_.delta;
-    }
-
-    float
-    scale() const
-    {
-        return unfrozen_time_scale_;
-    }
-
-    void
-    scale(float new_value)
-    {
-        chronometer_.scale(new_value);
-        unfrozen_time_scale_ = new_value;
-    }
-
-    class
-    {
-      private:
-        Chronometer<Unit>          chronometer_;
-        Chronometer<Unit>::Reading current_time_;
-
-      public:
-        float
-        elapsed() const
-        {
-            return current_time_.elapsed;
-        }
-
-        float
-        delta() const
-        {
-            return current_time_.delta;
-        }
-
-      private:
-        void
-        update_()
-        {
-            current_time_ = chronometer_.read();
-        }
-
-        friend class Time;
-
-    } unscaled;
-
-  private:
-    void
-    update_()
-    {
-        current_time_ = chronometer_.read();
-        unscaled.update_();
-    }
-
-    friend class Session;
-};
-
-using Chronometer = Chronometer<Time::Unit>;
 
 struct Configuration
 {
@@ -183,45 +76,6 @@ class Enviroment
     ~Enviroment()
     {
         SDL_Quit();
-    }
-};
-
-class Pause
-{
-  private:
-    Time                          &time_;
-    Chronometer::Clock::time_point paused_timestamp_;
-
-  public:
-    Pause(Time &time)
-        : time_(time)
-    {
-    }
-
-    bool
-    is_paused() const
-    {
-        return time_.frozen_();
-    }
-
-    auto
-    paused_at() const
-    {
-        return paused_timestamp_;
-    }
-
-    void
-    toggle()
-    {
-        if (is_paused())
-        {
-            time_.unfreeze_();
-        }
-        else
-        {
-            time_.unfreeze_();
-            paused_timestamp_ = Chronometer::Clock::now();
-        }
     }
 };
 

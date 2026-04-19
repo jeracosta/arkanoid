@@ -1,79 +1,55 @@
 #include "oh-my-engine/game.hpp"
+#include "oh-my-engine/math/functions.hpp"
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <SDL2/SDL.h>
 #include <cstdlib>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <limits>
 #include <print>
 
-glm::vec2
-circle_slice_parametric(float t, float from, float to, float radius)
+static float epsilon      = std::numeric_limits<float>::epsilon();
+static float constexpr pi = std::numbers::pi_v<float>;
+
+struct Camera
 {
-    assert(t >= 0.0f && t <= 1.0f);
-    assert(from >= 0.0f && from <= 1.0f);
-    assert(to >= 0.0f && to <= 1.0f);
-
-    t = 1 - t;
-    t = (to - from) * t + from;
-    t *= 2 * std::numbers::pi_v<float>;
-    return { std::sin(t) * radius, std::cos(t) * radius };
-}
-
-static float epsilon = std::numeric_limits<float>::epsilon();
-
-enum class CoordinateSystem
-{
-    Cartesian,
-    Spherical
-};
-
-template <CoordinateSystem From, CoordinateSystem To>
-glm::vec3
-transform(glm::vec3 point);
-
-inline float
-sigmoid(float x, float steepness = 1.0f, float midpoint = 0.0f)
-{
-    return 1.0f / (1.0f + std::exp(-steepness * (x - midpoint)));
-}
+    glm::vec3 target;      // point you look at
+    glm::quat orientation; // rotation around target
+    float     distance;    // zoom
+} camera;
 
 void
-update_camera(glm::vec3 position)
+render_camera(const Camera &camera)
 {
     glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(45.0, 640.0 / 480.0, 0.1, 100.0);
 
+    glm::vec3 forward(0.0f, 0.0f, camera.distance);
+
+    glm::vec3 position = camera.target + (camera.orientation * forward);
+
+    glm::vec3 up = camera.orientation * glm::vec3(0.0f, 1.0f, 0.0f);
+
+    glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    gluPerspective(45, (640.0 / 480.0), 0.1, 100);
-
-    // clang-format off
-    gluLookAt(position.x, position.y, position.z,
-              0.0, 0.0, 0.0,  // Look at point
-              0.0, 1.0, 0.0); // Up vector
-    // clang-format on
+    gluLookAt(position.x,
+              position.y,
+              position.z,
+              camera.target.x,
+              camera.target.y,
+              camera.target.z,
+              up.x,
+              up.y,
+              up.z);
 }
 
 int
 main()
 {
-    struct
-    {
-        float distance = 2.5;
-
-        struct
-        {
-            struct Range
-            {
-                float from, to;
-            };
-
-            Range longitude, latitude;
-
-        } angle{ { .01, .25f - epsilon }, { -0.05, 0.05 } };
-
-    } camera;
-
     ome::game::run({
       .window = {
             .title = "Soccernoid",
@@ -90,38 +66,34 @@ main()
           {
               auto size = game.window.size();
 
-              std::println("Toggling fullscreen mode. Current size: {} x {}", size.x, size.y);
+              std::println("Toggling fullscreen mode. Current size: {} x {}", size[0], size[1]);
 
               game.window.toggle_fullscreen();
           });
 
-          inputs.mouse_motion.bind([&](auto mouse)
+          inputs.mouse_motion.bind([&](auto input)
           {
-              auto longitude = [&] {
-                  auto t = static_cast<float>(mouse.position.y) / game.window.size().y;
-                  t = sigmoid(t, 5.0f, 0.5f);
-                  auto &[from, to] = camera.angle.longitude;
-                  return glm::vec3{0, circle_slice_parametric(t, from, to, camera.distance)};
-              }();
+              auto mouse_coords = ome::normalize(input.position, game.window);
 
-              auto latitude = [&] {
-                  auto t = static_cast<float>(mouse.position.x) / game.window.size().x;
-                  t = 1 - t;
-                  t = sigmoid(t, 5.0f, 0.5f);
-                  auto &[from, to] = camera.angle.latitude;
-                  auto param = circle_slice_parametric(t, from, to, camera.distance);
-                  return glm::vec3{param.x, 0, param.y};
-              }();
+              auto compute_angle = [&](float proportion, auto &interval) {
+                  auto &[from, to] = interval;
+                  auto sigmoid = ome::math::make_sigmoid(5.0f, 0.5f);
+                  auto lerp = ome::math::make_lerp(from, to);
+                  return lerp(sigmoid(proportion));
+              };
 
-              // FIXME: coords should be sumed in Spherical space, not Cartesian
-              // TODO: circle_slice_parametric could be replaced for linear motion in that Spherical space
-              update_camera(longitude /*+ latitude*/);
+              glm::quat yaw = glm::angleAxis(dx * sensitivity, glm::vec3(0,1,0));
+
+
+              auto azimuth = compute_angle(mouse_coords[0], camera.angle.azimuth);
+              auto inclination = compute_angle(mouse_coords[1], camera.angle.inclination);
+
+              using enum ome::math::CoordinateSystem;
+              auto position = ome::Vec3f::Spherical{ camera.distance, inclination, azimuth }.rebased<Cartesian>();
+
+              update_camera(position);
+
           });
-      },
-
-      .on_init = [&]
-      {
-          glClearColor(0.0,0.0,0.0,1.0); // Negro
       },
 
       .on_update = [](auto &)

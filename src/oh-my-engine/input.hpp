@@ -124,8 +124,8 @@ class KeyboardInputMapper
 
 struct MouseMotionInput
 {
-    glm::vec2 delta;
-    glm::vec2 position;
+    Vec2f delta;
+    Vec2u position;
 };
 
 using MouseMotionInputAction = std::function<void(const MouseMotionInput &)>;

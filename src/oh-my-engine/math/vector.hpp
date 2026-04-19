@@ -46,6 +46,12 @@ class Vector
         return TDimension;
     }
 
+    constexpr auto
+    size() const
+    {
+        return dimension();
+    }
+
     static consteval auto
     basis()
     {

@@ -10,6 +10,8 @@
 #include <stdexcept>
 #include <utility>
 
+#include "oh-my-engine/math/vector.hpp"
+
 namespace ome::input {
 
 enum class KeyInput : uint8_t

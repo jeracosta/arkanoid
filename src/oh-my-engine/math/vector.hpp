@@ -169,7 +169,7 @@ class Vector
     }
 
 #define BINARY_ASSIGNMENT_OPERATOR(op, operand_type, transformation)                               \
-    Vector &operator op(const operand_type & operand)                                              \
+    constexpr Vector &operator op(const operand_type & operand)                                    \
     {                                                                                              \
         using std::ranges::transform;                                                              \
         if constexpr (std::same_as<operand_type, Vector>)                                          \

@@ -145,6 +145,46 @@ class Time
             chronometer_.speed(0);
         }
     }
+
+    class
+    {
+      private:
+        Chronometer<Unit>          chronometer_;
+        Chronometer<Unit>::Reading current_time_;
+
+      public:
+        float
+        elapsed() const
+        {
+            return current_time_.elapsed;
+        }
+
+        float
+        delta() const
+        {
+            return current_time_.delta;
+        }
+
+      private:
+        void
+        update_()
+        {
+            current_time_ = chronometer_.read();
+        }
+
+        friend class Time;
+
+    } unscaled;
+
+  private:
+    void
+    update_()
+    {
+        current_time_ = chronometer_.read();
+        unscaled.update_();
+    }
+
+    friend class Session;
 };
 
 struct Configuration

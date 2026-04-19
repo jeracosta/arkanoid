@@ -61,6 +61,13 @@ class Vector
     {
     }
 
+    template <typename T>
+        requires(std::convertible_to<T, Component>)
+    constexpr Vector(const T value)
+    {
+        components_.fill(static_cast<TComponent>(value));
+    }
+
     template <typename U, CoordinateSystem S>
         requires std::convertible_to<U, TComponent>
     explicit constexpr Vector(const Vector<TDimension, U, S> &other)

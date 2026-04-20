@@ -16,4 +16,14 @@ static constexpr Vec3f left     = -right;
 static constexpr Vec3f backward = -forward;
 } // namespace directions
 
+namespace ecs {
+
+#ifndef OME_ECS_MAX_ENTITIES
+#define OME_ECS_MAX_ENTITIES (1 << 8)
+#endif
+
+static constexpr std::size_t max_entities = OME_ECS_MAX_ENTITIES;
+
+} // namespace ecs
+
 } // namespace ome

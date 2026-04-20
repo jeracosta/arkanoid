@@ -50,7 +50,7 @@ function(apply_common_options target)
   target_compile_options(${target} PRIVATE
     -Wall -Wextra -Wpedantic -Wno-changes-meaning
     $<$<CONFIG:Debug>:-g -O0>
-    $<$<CONFIG:Release>:-O3 -DNDEBUG -march=native -flto>
+    $<$<CONFIG:Release>:-O3 -DNDEBUG -march=native -flto=auto>
   )
   target_include_directories(${target} PRIVATE "${PROJECT_SOURCE_DIR}/src")
 endfunction()

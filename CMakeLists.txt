@@ -14,6 +14,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(OpenGL REQUIRED)
 find_package(SDL2 REQUIRED)
 find_package(glm REQUIRED)
+find_package(Boost CONFIG REQUIRED COMPONENTS container)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
   "${PROJECT_SOURCE_DIR}/src/**.cpp"
@@ -37,6 +38,7 @@ target_link_libraries(deps INTERFACE
   OpenGL::GLU
   SDL2::SDL2
   glm::glm
+  Boost::container
 )
 
 function(apply_common_options target)

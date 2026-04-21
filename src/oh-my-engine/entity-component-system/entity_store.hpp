@@ -74,7 +74,7 @@ class EntityStore
     }
 
     std::size_t
-    living_entity_count() const
+    living_count() const
     {
         return living_entity_count_;
     }
@@ -148,7 +148,7 @@ class EntityStore
     }
 
     auto
-    living_entities(this auto &&self)
+    living(this auto &&self)
     {
         using namespace std::views;
 
@@ -162,7 +162,7 @@ class EntityStore
     template <class... Components>
         requires(sizeof...(Components) > 0)
     auto
-    living_entities_with(this auto &&self)
+    living(this auto &&self)
     {
         auto filter = [&](auto entity) { return (entity.template get<Components>() && ...); };
         return self.living_entities() | std::views::filter(filter);

@@ -92,7 +92,7 @@ class Game
 
         if (config_.configure_systems)
         {
-            config_.configure_systems(ecs.systems, *this);
+            config_.configure_systems(systems, *this);
         }
 
         if (config_.on_init)
@@ -130,9 +130,9 @@ class Game
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
 
-        for (auto entity : ecs.entities.living_entities())
+        for (auto entity : entities.living())
         {
-            ecs.systems.update(entity);
+            systems.update(entity);
         }
 
         config_.on_update(*this);
@@ -160,11 +160,9 @@ class Game
 
     Pause pause{ time };
 
-    struct
-    {
-        ecs::EntityStore entities = {};
-        ecs::SystemStore systems;
-    } ecs;
+    ecs::EntityStore entities;
+
+    ecs::SystemStore systems;
 
     void
     stop()

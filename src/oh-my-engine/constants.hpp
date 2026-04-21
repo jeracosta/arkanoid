@@ -1,3 +1,5 @@
+#pragma once
+
 #include <numbers>
 
 #include "oh-my-engine/math/vector.hpp"

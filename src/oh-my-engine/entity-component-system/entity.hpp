@@ -3,6 +3,8 @@
 #include <cstddef>
 #include <format>
 
+#include "oh-my-engine/entity-component-system/component.hpp"
+
 namespace ome::ecs {
 
 class EntityStore; // forward declaration
@@ -52,6 +54,10 @@ class Entity
 
     void
     kill(); // depends on the store
+
+    template <IsComponent Component>
+    Component *
+    get(); // depends on the store
 
     operator Identifier() const
     {

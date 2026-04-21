@@ -3,10 +3,12 @@
 #include <array>
 #include <bitset>
 #include <boost/container/static_vector.hpp>
+#include <boost/mp11.hpp>
 #include <format>
 #include <stack>
 
 #include "oh-my-engine/constants.hpp"
+#include "oh-my-engine/entity-component-system/component_store.hpp"
 #include "oh-my-engine/entity-component-system/entity.hpp"
 
 namespace ome::ecs {
@@ -25,6 +27,11 @@ class EntityStore
     std::size_t living_entity_count_ = 0;
 
     Index next_new_index_ = 0;
+
+    using ComponentStores_ = boost::mp11::mp_apply<std::tuple, Components>;
+    ComponentStores_ component_stores_;
+
+    friend class Entity;
 
     Index
     free_index_()
@@ -69,8 +76,9 @@ class EntityStore
         return living_entity_count_;
     }
 
+    template <IsComponent... Components>
     Entity
-    emplace()
+    emplace(Components &&...components)
     {
         auto index = free_index_();
 
@@ -79,6 +87,10 @@ class EntityStore
 
         ++living_entity_count_;
         // the generation gets incremented on kill
+
+        (std::get<ComponentStore<std::decay_t<Components>>>(component_stores_)
+             .emplace(index, std::forward<Components>(components)),
+         ...);
 
         return entity_handle_(index);
     }
@@ -143,6 +155,13 @@ inline void
 Entity::kill()
 {
     store_.kill(id_);
+}
+
+template <IsComponent Component>
+inline Component *
+Entity::get()
+{
+    return std::get<ComponentStore<std::decay_t<Component>>>(store_.component_stores_).get(id_);
 }
 
 } // namespace ome::ecs

@@ -24,7 +24,12 @@ namespace ecs {
 #define OME_ECS_MAX_ENTITIES (1 << 8)
 #endif
 
-static constexpr std::size_t max_entities = OME_ECS_MAX_ENTITIES;
+#ifndef OME_ECS_MAX_COMPONENT_TYPES
+#define OME_ECS_MAX_COMPONENT_TYPES (1 << 8)
+#endif
+
+static constexpr std::size_t max_entities        = OME_ECS_MAX_ENTITIES;
+static constexpr std::size_t max_component_types = OME_ECS_MAX_COMPONENT_TYPES;
 
 } // namespace ecs
 

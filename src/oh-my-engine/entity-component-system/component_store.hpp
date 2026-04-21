@@ -10,7 +10,7 @@
 
 namespace ome::ecs {
 
-template <IsComponent Component>
+template <class Component>
 class ComponentStore
 {
   private:

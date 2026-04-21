@@ -8,7 +8,7 @@
 #include <stack>
 
 #include "oh-my-engine/constants.hpp"
-#include "oh-my-engine/entity-component-system/component_meta_registry.hpp"
+#include "oh-my-engine/entity-component-system/component.hpp"
 #include "oh-my-engine/entity-component-system/component_store.hpp"
 #include "oh-my-engine/entity-component-system/entity.hpp"
 
@@ -79,7 +79,7 @@ class EntityStore
         return living_entity_count_;
     }
 
-    template <IsComponent... Components>
+    template <class... Components>
     Entity
     emplace(Components &&...components)
     {
@@ -149,7 +149,7 @@ class EntityStore
         return dirty_indices | filter(occupied) | transform(to_entity_view);
     }
 
-    template <IsComponent... Components>
+    template <class... Components>
         requires(sizeof...(Components) > 0)
     auto
     living_entities_with(this auto &&self)
@@ -171,7 +171,7 @@ Entity::kill()
     store_.kill(id_);
 }
 
-template <IsComponent Component>
+template <class Component>
 inline Component *
 Entity::get()
 {

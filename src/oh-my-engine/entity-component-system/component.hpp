@@ -1,25 +1,18 @@
 #pragma once
 
 #include <boost/mp11.hpp>
-#include <concepts>
-#include <cstddef>
+
+#include "oh-my-engine/entity-component-system/components/index.hpp"
 
 namespace ome::ecs {
 
-using ComponentTypeIndex = std::size_t;
+// clang-format off
+#define X(name) components::name,
+#define X_LAST(name) components::name
+using Components = boost::mp11::mp_list<
+    #include "oh-my-engine/entity-component-system/components/index.def"
+>;
+#undef X
+// clang-format on
 
-template <class Derived>
-class BaseComponent
-{
-};
-
-template <class T>
-concept IsComponent = std::derived_from<T, BaseComponent<T>> && requires {
-    typename T::Dependencies;
-} && boost::mp11::mp_is_list<typename T::Dependencies>::value;
-
-template <class T>
-struct is_component : std::bool_constant<IsComponent<T>>
-{
-};
 } // namespace ome::ecs

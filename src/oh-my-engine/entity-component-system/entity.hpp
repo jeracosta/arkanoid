@@ -85,3 +85,20 @@ struct std::formatter<ome::ecs::Entity::Identifier>
         return std::format_to(ctx.out(), "{{index={}, generation={}}}", id.index, id.generation);
     }
 };
+
+template <>
+struct std::formatter<ome::ecs::Entity>
+{
+    constexpr auto
+    parse(std::format_parse_context &ctx)
+    {
+        return ctx.begin();
+    }
+
+    template <class FormatContext>
+    auto
+    format(const ome::ecs::Entity &e, FormatContext &ctx) const
+    {
+        return std::format_to(ctx.out(), "{}", e.id());
+    }
+};

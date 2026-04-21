@@ -100,6 +100,16 @@ class EntityStore
         return entity;
     }
 
+    template <class... Components>
+    Entity
+    emplace_many(std::size_t ammount, Components &&...components)
+    {
+        for (auto _ : std::views::iota(0u, ammount))
+        {
+            emplace(components...);
+        }
+    }
+
     bool
     is_alive(const Entity::Identifier &id) const
     {

@@ -30,8 +30,8 @@ class ComponentStore
         entity_to_component_.fill(null_index);
     }
 
-    const Component *
-    operator[](Entity::Identifier entity) const
+    Component *
+    operator[](Entity::Identifier entity)
     {
         auto index = entity_to_component_[entity];
         if (index == null_index)
@@ -53,6 +53,7 @@ class ComponentStore
         entity_to_component_[entity_id] = components_.size();
         component_to_entity_.push_back(entity_id);
         components_.push_back(std::move(component));
+        return &components_.back();
     }
 
     void
@@ -60,19 +61,24 @@ class ComponentStore
     {
         auto index = entity_to_component_[entity];
 
-        if (index == null_index || components_.empty())
+        if (index == null_index)
         {
             return;
         }
 
-        std::swap(components_[index], components_.back());
+        auto last         = components_.size() - 1;
+        auto moved_entity = component_to_entity_[last];
+
+        if (index != last)
+        {
+            std::swap(components_[index], components_[last]);
+            component_to_entity_[index]        = moved_entity;
+            entity_to_component_[moved_entity] = index;
+        }
+
         components_.pop_back();
-
-        std::swap(component_to_entity_[index], component_to_entity_.back());
         component_to_entity_.pop_back();
-
-        entity_to_component_[component_to_entity_[index]] = index;
-        entity_to_component_[entity]                      = null_index;
+        entity_to_component_[entity] = null_index;
     }
 };
 

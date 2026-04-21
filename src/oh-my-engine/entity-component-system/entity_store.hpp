@@ -8,6 +8,7 @@
 #include <stack>
 
 #include "oh-my-engine/constants.hpp"
+#include "oh-my-engine/entity-component-system/component_meta_registry.hpp"
 #include "oh-my-engine/entity-component-system/component_store.hpp"
 #include "oh-my-engine/entity-component-system/entity.hpp"
 
@@ -28,7 +29,9 @@ class EntityStore
 
     Index next_new_index_ = 0;
 
-    using ComponentStores_ = boost::mp11::mp_apply<std::tuple, Components>;
+    using ComponentStores_
+        = boost::mp11::mp_apply<std::tuple, boost::mp11::mp_transform<ComponentStore, Components>>;
+
     ComponentStores_ component_stores_;
 
     friend class Entity;
@@ -88,11 +91,13 @@ class EntityStore
         ++living_entity_count_;
         // the generation gets incremented on kill
 
+        auto entity = entity_handle_(index);
+
         (std::get<ComponentStore<std::decay_t<Components>>>(component_stores_)
-             .emplace(index, std::forward<Components>(components)),
+             .set(entity.id(), std::forward<Components>(components)),
          ...);
 
-        return entity_handle_(index);
+        return entity;
     }
 
     bool
@@ -100,7 +105,7 @@ class EntityStore
     {
         auto index = id.index;
 
-        if (index >= next_new_index_)
+        if (index >= next_new_index_ || index >= max_entities)
         {
             return false;
         }
@@ -161,7 +166,9 @@ template <IsComponent Component>
 inline Component *
 Entity::get()
 {
-    return std::get<ComponentStore<std::decay_t<Component>>>(store_.component_stores_).get(id_);
+    using ComponentStore = ComponentStore<std::decay_t<Component>>;
+    auto &store          = std::get<ComponentStore>(store_.component_stores_);
+    return store[id_];
 }
 
 } // namespace ome::ecs

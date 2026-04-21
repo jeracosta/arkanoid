@@ -2,10 +2,14 @@
 
 #include <GL/gl.h>
 #include <SDL2/SDL.h>
+#include <initializer_list>
 #include <memory>
+#include <print>
 
 #include "input.hpp"
 #include "math/vector.hpp"
+#include "oh-my-engine/entity-component-system/entity_store.hpp"
+#include "oh-my-engine/entity-component-system/system_store.hpp"
 #include "pause.hpp"
 #include "time.hpp"
 #include "window.hpp"
@@ -66,12 +70,14 @@ class Game
         // Configures the input mapper. Called once at the beginning of the session.
         std::function<void(input::InputMapper &, Game &)> configure_input = {};
 
+        std::function<void(ecs::SystemStore &, Game &)> configure_systems = {};
+
         // Called once at the beginning of the session, after initialization of all internal
         // systems, and before the main loop starts.
-        std::function<void()> on_init = {};
+        std::function<void(Game &)> on_init = {};
 
         // Called once per frame.
-        std::function<void(const Game &)> on_update;
+        std::function<void(Game &)> on_update;
     };
 
   private:
@@ -79,14 +85,19 @@ class Game
         : config_(config),
           window(config.window)
     {
-        if (config.configure_input)
+        if (config_.configure_input)
         {
-            config.configure_input(input_mapper_, *this);
+            config_.configure_input(input_mapper_, *this);
         }
 
-        if (config.on_init)
+        if (config_.configure_systems)
         {
-            config_.on_init();
+            config_.configure_systems(ecs.systems, *this);
+        }
+
+        if (config_.on_init)
+        {
+            config_.on_init(*this);
         }
     }
 
@@ -119,6 +130,11 @@ class Game
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
 
+        for (auto entity : ecs.entities.living_entities())
+        {
+            ecs.systems.update(entity);
+        }
+
         config_.on_update(*this);
 
         SDL_GL_SwapWindow(window);
@@ -144,6 +160,12 @@ class Game
 
     Pause pause{ time };
 
+    struct
+    {
+        ecs::EntityStore entities = {};
+        ecs::SystemStore systems;
+    } ecs;
+
     void
     stop()
     {
@@ -165,7 +187,7 @@ class Game
     static void
     run(const Configuration &config)
     {
-        Game(config).run_();
+        Game(std::move(config)).run_();
     }
 };
 }; // namespace ome

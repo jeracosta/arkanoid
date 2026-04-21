@@ -12,22 +12,44 @@ class SystemStore
     std::vector<std::unique_ptr<System>> systems_;
 
   public:
-    SystemStore()                             = default;
-    explicit SystemStore(const SystemStore &) = default;
+    SystemStore() = default;
+
+    SystemStore(const SystemStore &) = delete;
+
+    SystemStore &
+    operator=(const SystemStore &)
+        = delete;
+
+    SystemStore(SystemStore &&) = default;
+
+    SystemStore &
+    operator=(SystemStore &&)
+        = default;
 
     template <class... Systems>
-    SystemStore(Systems &&...systems)
+        requires((std::derived_from<std::decay_t<Systems>, System>) && ...)
+    explicit SystemStore(Systems &&...systems)
     {
         (systems_.emplace_back(
              std::make_unique<std::decay_t<Systems>>(std::forward<Systems>(systems))),
          ...);
     }
 
-    template <class SystemType, class... Args>
-    SystemType &
+    template <class System, class... Args>
+    System &
     emplace(Args &&...args)
     {
-        systems_.emplace_back({ std::forward<Args>(args)... });
+        return systems_.emplace_back({ std::forward<Args>(args)... });
+    }
+
+    template <class... Systems>
+        requires((std::derived_from<std::decay_t<Systems>, System>) && ...)
+    void
+    push(Systems &&...systems)
+    {
+        (systems_.emplace_back(
+             std::make_unique<std::decay_t<Systems>>(std::forward<Systems>(systems))),
+         ...);
     }
 
     void
@@ -43,6 +65,12 @@ class SystemStore
     raw()
     {
         return systems_;
+    }
+
+    std::size_t
+    size() const
+    {
+        return systems_.size();
     }
 };
 

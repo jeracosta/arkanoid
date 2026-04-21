@@ -29,10 +29,10 @@ class EntityStore
 
     Index next_new_index_ = 0;
 
-    using ComponentStores_
-        = boost::mp11::mp_apply<std::tuple, boost::mp11::mp_transform<ComponentStore, Components>>;
+    using ComponentStores_     = boost::mp11::mp_transform<ComponentStore, Components>;
+    using ComponentStoreTuple_ = boost::mp11::mp_apply<std::tuple, ComponentStores_>;
 
-    ComponentStores_ component_stores_;
+    ComponentStoreTuple_ component_stores_;
 
     friend class Entity;
 
@@ -147,6 +147,15 @@ class EntityStore
         auto to_entity_view = [&](auto index) { return self.entity_handle_(index); };
 
         return dirty_indices | filter(occupied) | transform(to_entity_view);
+    }
+
+    template <IsComponent... Components>
+        requires(sizeof...(Components) > 0)
+    auto
+    living_entities_with(this auto &&self)
+    {
+        auto filter = [&](auto entity) { return (entity.template get<Components>() && ...); };
+        return self.living_entities() | std::views::filter(filter);
     }
 };
 

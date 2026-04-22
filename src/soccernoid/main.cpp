@@ -10,8 +10,8 @@
 #include <random>
 
 #include "oh-my-engine/camera.hpp"
+#include "oh-my-engine/curve.hpp"
 #include "oh-my-engine/game.hpp"
-#include "oh-my-engine/math/functions.hpp"
 #include "oh-my-engine/math/vector.hpp"
 
 using namespace ome;
@@ -108,7 +108,7 @@ class PauseColorSystem : public System
     struct Configuration
     {
         float speed;
-        float steepness; // TODO: recibir curva directamente
+        Curve curve;
     } config;
 
     PauseColorSystem(Configuration config)
@@ -119,11 +119,9 @@ class PauseColorSystem : public System
     Color
     filter(Color color, Game &game) const
     {
-        using ome::math::make_smoothstep;
-
-        auto intensity = game.time.unscaled.since(game.pause.paused_at()) * config.speed;
-        auto curve     = make_smoothstep(color.rgb(), grayscale(color).rgb(), config.steepness);
-        auto faded     = Color::rgb(curve(intensity));
+        auto intensity     = game.time.unscaled.since(game.pause.paused_at()) * config.speed;
+        auto interpolation = ome::Interpolation(color.rgb(), grayscale(color).rgb(), config.curve);
+        auto faded         = Color::rgb(interpolation(intensity));
 
         return game.pause.is_paused() ? faded : color;
     }
@@ -203,6 +201,8 @@ main()
     } player;
 
     std::function<void(Color)> color_filter;
+
+    auto pause_curve = ome::Curve::smoothstep(5.0f);
 
     Game::run({
         .window = {
@@ -336,7 +336,7 @@ main()
       .configure_systems = [&](auto &systems, auto &game) {
           systems.push(FallSystem({}));
           systems.push(BounceSystem({.elasticity = 0.7f}));
-          auto &pause = systems.push(PauseColorSystem({ .speed = 3.0f, .steepness = 5.0f }));
+          auto &pause = systems.push(PauseColorSystem({ .speed = 3.0f, .curve = pause_curve }));
           systems.push(SphereRenderSystem{});
           // systems.push(DebugSystem{});
 

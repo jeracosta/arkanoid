@@ -79,6 +79,19 @@ class EntityStore
         return living_entity_count_;
     }
 
+    bool
+    full() const
+    {
+        return living_entity_count_ >= max_entities;
+    }
+
+    Entity
+    random(auto &rng)
+    {
+        auto index = std::uniform_int_distribution<Index>{ 0, next_new_index_ - 1 }(rng);
+        return entity_handle_(index);
+    }
+
     template <class... Components>
     Entity
     emplace(Components &&...components)

@@ -123,24 +123,6 @@ class EntityStore
         return occupied_indices_.test(index) && generation_[index] == id.generation;
     }
 
-    void
-    kill(const Entity::Identifier &id)
-    {
-        auto index = id.index;
-
-        if (!is_alive(id))
-        {
-            throw std::runtime_error(std::format("Attempted to kill the non-alive entity {}", id));
-        }
-
-        occupied_indices_.reset(index);
-
-        --living_entity_count_;
-        ++generation_[index];
-
-        freed_index_pool_.push(index);
-    }
-
     Entity
     operator[](this auto &&self, const Entity::Identifier &id)
     {
@@ -166,6 +148,33 @@ class EntityStore
     {
         auto filter = [&](auto entity) { return (entity.template get<Components>() && ...); };
         return self.living_entities() | std::views::filter(filter);
+    }
+
+    void
+    kill(const Entity::Identifier &id)
+    {
+        auto index = id.index;
+
+        if (!is_alive(id))
+        {
+            throw std::runtime_error(std::format("Attempted to kill the non-alive entity {}", id));
+        }
+
+        occupied_indices_.reset(index);
+
+        --living_entity_count_;
+        ++generation_[index];
+
+        freed_index_pool_.push(index);
+    }
+
+    void
+    kill_all()
+    {
+        for (auto entity : living())
+        {
+            entity.kill();
+        }
     }
 };
 

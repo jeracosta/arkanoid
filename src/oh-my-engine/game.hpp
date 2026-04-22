@@ -73,7 +73,7 @@ class Game
         // systems, and before the main loop starts.
         std::function<void(Game &)> on_init = {};
 
-        // Called once per frame.
+        // Called once per frame, after processing input and before updating entities.
         std::function<void(Game &)> on_update;
     };
 
@@ -127,12 +127,12 @@ class Game
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
 
+        config_.on_update(*this);
+
         for (auto entity : entities.living())
         {
             systems.update(entity, *this);
         }
-
-        config_.on_update(*this);
 
         SDL_GL_SwapWindow(window);
 

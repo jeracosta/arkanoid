@@ -18,6 +18,16 @@ struct Camera
     {
         return target - orientation.forward() * distance;
     }
+
+    Vec3f
+    to_world(const Vec3f &v_cam) const
+    {
+        glm::vec3 v = glm::vec3(v_cam);
+
+        glm::vec3 world = orientation.quat() * v + glm::vec3(position());
+
+        return Vec3f(world);
+    }
 };
 
 } // namespace ome

@@ -3,6 +3,7 @@
 #include <SDL2/SDL.h>
 #include <SDL_keycode.h>
 #include <cstdlib>
+#include <functional>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -44,14 +45,41 @@ class FallSystem : public System
     }
 };
 
+class DespawnSystem : public System
+{
+  public:
+    struct Configuration
+    {
+        float despawn_distance;
+    } config;
+
+    DespawnSystem(Configuration config)
+        : config(config)
+    {
+    }
+
+    void
+    update(ecs::Entity &entity, Game &) override
+    {
+        auto &position = entity.get<components::Position>()->vector;
+
+        if (norm(position) >= config.despawn_distance)
+        {
+            entity.kill();
+        }
+    }
+};
+
 class BounceSystem : public System
 {
   public:
     struct Configuration
     {
         float elasticity;
-        float floor_height   = 0.0f;
         float speed_treshold = 0.4f;
+
+        float floor_height = 0.0f;
+
     } config;
 
     BounceSystem(Configuration config)
@@ -62,21 +90,38 @@ class BounceSystem : public System
     void
     update(ecs::Entity &entity, Game &) override
     {
-        auto &height = entity.get<components::Position>()->vector[1];
-        auto &speed  = entity.get<components::Velocity>()->vector[1];
-        auto &radius = entity.get<components::HitSphere>()->radius;
+        auto &position = entity.get<components::Position>()->vector;
+        auto &velocity = entity.get<components::Velocity>()->vector;
+        auto &radius   = entity.get<components::HitSphere>()->radius;
 
-        if (height - radius < config.floor_height)
+        // HACK: hardcoded ad-hoc
+        if (std::abs(position[0]) >= 1 || std::abs(position[2]) >= 1)
         {
-            if (std::abs(speed) < config.speed_treshold)
-            {
-                height = config.floor_height + radius;
-                speed  = 0.0f;
-            }
-
-            height = config.floor_height + radius;
-            speed  = -speed * config.elasticity;
+            return;
         }
+
+        Vec3f normal = directions::up;
+
+        float height = dot(position, normal) - config.floor_height;
+
+        if (height >= radius)
+        {
+            return;
+        }
+
+        position += normal * (config.floor_height + radius - dot(position, normal));
+
+        float velocity_at_normal = dot(velocity, normal);
+
+        Vec3f opposing = normal * velocity_at_normal;
+
+        if (std::abs(velocity_at_normal) < config.speed_treshold)
+        {
+            velocity -= opposing;
+            return;
+        }
+
+        velocity -= opposing * (1.0f + config.elasticity);
     }
 };
 
@@ -205,6 +250,14 @@ main()
 
     auto pause_curve = ome::Curve::smoothstep(5.0f);
 
+    struct
+    {
+        Vec3f from = { -3.0f, 3.0f, -3.0f };
+        Vec3f to   = { 3.0f, 4.0f, 3.0f };
+    } spawn_area;
+
+    Vec3f *gravity;
+
     Game::run({
         .window = {
             .title = "Soccernoid",
@@ -241,27 +294,33 @@ main()
 
           inputs.keyboard.bind(SDLK_SPACE, {Press, Repeat}, [&]
           {
-              struct {
-                Vec3f from = {-1.0f, 1.5f, -1.0f};
-                Vec3f to   = { 1.0f, 3.0f,  1.0f};
-               } spawn_area;
 
-              auto position = math::make_random_vector(spawn_area.from, spawn_area.to, rng);
-              auto color = Color::rgb(math::make_random_vector(Vec3f{0.5f}, Vec3f{1.0f}, rng));
+              auto radius = 0.03f;
 
-              auto radius = 0.05f;
+              auto spawn = [&] {
 
-              if (game.entities.full())
+                  auto position = math::make_random_vector(spawn_area.from, spawn_area.to, rng);
+                  auto color = Color::rgb(math::make_random_vector(Vec3f{0.5f}, Vec3f{1.0f}, rng));
+
+                  if (game.entities.full())
+                  {
+                      game.entities.random(rng).kill();
+                  }
+
+                  game.entities.emplace(
+                      components::Position(position),
+                      components::Velocity(Vec3f{}),
+                      components::HitSphere(radius),
+                      components::Color(color)
+                  );
+              };
+
+              constexpr uint spawn_rate = 20;
+
+              for (auto _: std::views::iota(0u, spawn_rate))
               {
-                  game.entities.random(rng).kill();
+                  spawn();
               }
-
-              game.entities.emplace(
-                  components::Position(position),
-                  components::Velocity(Vec3f{}),
-                  components::HitSphere(radius),
-                  components::Color(color)
-              );
 
               std::println("Entity count: {}", game.entities.living_count());
           });
@@ -342,20 +401,32 @@ main()
                 default:
                     throw std::runtime_error("Unsuported camera view");
               }
+
+              *gravity = camera.orientation.down() * 9.81f;
+
+              spawn_area.from = camera.to_world({ -0.5f, 3.0f, -camera.distance - 0.5f });
+              spawn_area.to   = camera.to_world({ 0.5f, 4.0f, -camera.distance + 0.5f });
+
           });
       },
 
       .configure_systems = [&](auto &systems, auto &game) {
-          systems.push(FallSystem({}));
-          systems.push(BounceSystem({.elasticity = 0.7f}));
-          auto &pause = systems.push(PauseColorSystem({ .speed = 3.0f, .curve = pause_curve }));
+          auto &fall_system = systems.push(FallSystem({}));
+          systems.push(BounceSystem({
+              .elasticity = 0.7f,
+              .floor_height = 0.0f,
+          }));
+          auto &pause_system = systems.push(PauseColorSystem({ .speed = 3.0f, .curve = pause_curve }));
           systems.push(SphereRenderSystem{});
+          systems.push(DespawnSystem({.despawn_distance = 5.0f}));
           // systems.push(DebugSystem{});
 
           color_filter = [&](Color color)
           {
-              return pause.filter(color, game);
+              return pause_system.filter(color, game);
           };
+
+          gravity = &fall_system.config.gravity;
 
       },
 

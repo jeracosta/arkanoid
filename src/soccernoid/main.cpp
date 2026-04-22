@@ -7,17 +7,146 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <print>
+#include <random>
 
 #include "oh-my-engine/camera.hpp"
 #include "oh-my-engine/game.hpp"
 #include "oh-my-engine/math/functions.hpp"
 #include "oh-my-engine/math/vector.hpp"
 
-ome::Vec3f
-grayscale(ome::Vec3f color)
+using namespace ome;
+using namespace ome::ecs;
+
+static auto rng = std::mt19937{ std::random_device{}() };
+
+class FallSystem : public System
 {
-    return { dot(color, ome::Vec3f(0.299, 0.587, 0.114)) };
-}
+  public:
+    struct Configuration
+    {
+        Vec3f gravity = { 0.0f, -9.81f, 0.0f };
+    } config;
+
+    FallSystem(Configuration config)
+        : config(config)
+    {
+    }
+
+    void
+    update(ecs::Entity &entity, Game &game) override
+    {
+        auto &velocity = entity.get<components::Velocity>()->vector;
+        auto &position = entity.get<components::Position>()->vector;
+
+        velocity += config.gravity * game.time.delta();
+        position += velocity * game.time.delta();
+    }
+};
+
+class BounceSystem : public System
+{
+  public:
+    struct Configuration
+    {
+        float elasticity;
+        float floor_height   = 0.0f;
+        float speed_treshold = 0.4f;
+    } config;
+
+    BounceSystem(Configuration config)
+        : config(config)
+    {
+    }
+
+    void
+    update(ecs::Entity &entity, Game &) override
+    {
+        auto &height = entity.get<components::Position>()->vector[1];
+        auto &speed  = entity.get<components::Velocity>()->vector[1];
+        auto &radius = entity.get<components::HitSphere>()->radius;
+
+        if (height - radius < config.floor_height)
+        {
+            if (std::abs(speed) < config.speed_treshold)
+            {
+                height = config.floor_height + radius;
+                speed  = 0.0f;
+            }
+
+            height = config.floor_height + radius;
+            speed  = -speed * config.elasticity;
+        }
+    }
+};
+
+class SphereRenderSystem : public System
+{
+  public:
+    void
+    update(ecs::Entity &entity, Game &) override
+    {
+        auto &position = entity.get<components::Position>()->vector;
+        auto  radius   = entity.get<components::HitSphere>()->radius;
+        auto  color    = entity.get<components::Color>()->color;
+
+        glColor(color);
+
+        glPushMatrix();
+        {
+            GLUquadric *q = gluNewQuadric();
+            glTranslatef(position[0], position[1], position[2]);
+            gluSphere(q, radius, 32, 32);
+            gluDeleteQuadric(q);
+        }
+        glPopMatrix();
+    }
+};
+
+class PauseColorSystem : public System
+{
+  public:
+    struct Configuration
+    {
+        float speed;
+        float steepness; // TODO: recibir curva directamente
+    } config;
+
+    PauseColorSystem(Configuration config)
+        : config(config)
+    {
+    }
+
+    Color
+    filter(Color color, Game &game) const
+    {
+        using ome::math::make_smoothstep;
+
+        auto intensity = game.time.unscaled.since(game.pause.paused_at()) * config.speed;
+        auto curve     = make_smoothstep(color.rgb(), grayscale(color).rgb(), config.steepness);
+        auto faded     = Color::rgb(curve(intensity));
+
+        return game.pause.is_paused() ? faded : color;
+    }
+
+    void
+    update(ecs::Entity &entity, Game &game) override
+    {
+        auto &color = entity.get<components::Color>()->color;
+        color       = filter(color, game);
+    }
+};
+
+class DebugSystem : public System
+{
+  public:
+    void
+    update(ecs::Entity &entity, Game &) override
+    {
+        auto &position = entity.get<components::Position>()->vector;
+
+        std::println("Entity {} at position {}", entity, position);
+    }
+};
 
 enum class CameraView
 {
@@ -33,8 +162,8 @@ next(CameraView view)
                                    % static_cast<int>(CameraView::Count_));
 }
 
-ome::Camera
-make_camera(CameraView view, ome::Camera camera = {})
+Camera
+make_camera(CameraView view, Camera camera = {})
 {
     switch (view)
     {
@@ -69,53 +198,21 @@ main()
 
     struct
     {
-        float      speed = 1.5f;
-        ome::Vec3f moving_direction{};
+        float speed = 1.5f;
+        Vec3f moving_direction{};
     } player;
 
-    static constexpr auto gravity = ome::Vec3f(0.0f, -9.8f, 0.0f);
+    std::function<void(Color)> color_filter;
 
-    struct Ball
-    {
-        ome::Vec3f position            = { 0.0f, 1.0f, 0.0f };
-        ome::Vec3f speed               = { 0.0f, 0.2f, 0.0f };
-        float      elasticity          = 0.75f;
-        float      radius              = 0.05f;
-        float      speed_stop_treshold = 0.4f;
-
-        void
-        update(float delta)
-        {
-            auto height       = position[1] - radius;
-            auto acceleration = gravity;
-            speed += acceleration * delta;
-            position += speed * delta;
-
-            if (height < 0.0f)
-            {
-                position[1] = radius;
-                if (std::abs(speed[1]) < speed_stop_treshold)
-                {
-                    speed[1] = 0.0f;
-                }
-                else
-                {
-                    speed[1] = -speed[1] * elasticity;
-                }
-            }
-        }
-
-    } ball;
-
-    ome::Game::run({
-      .window = {
+    Game::run({
+        .window = {
             .title = "Soccernoid",
             .size  = {640, 480},
       },
 
       .configure_input = [&](auto &inputs, auto &game)
       {
-          using enum ome::input::KeyInput;
+          using enum input::KeyInput;
 
           inputs.keyboard.bind(SDLK_ESCAPE, Release, [&]{ game.stop(); });
 
@@ -141,10 +238,40 @@ main()
               std::println("Switched to {} view", view == CameraView::FirstPerson ? "first person" : "third person");
           });
 
+          inputs.keyboard.bind(SDLK_SPACE, {Press, Repeat}, [&]
+          {
+              struct {
+                Vec3f from = {-1.0f, 1.5f, -1.0f};
+                Vec3f to   = { 1.0f, 3.0f,  1.0f};
+               } spawn_area;
+
+              auto position = math::make_random_vector(spawn_area.from, spawn_area.to, rng);
+              auto color = Color::rgb(math::make_random_vector(Vec3f{0.5f}, Vec3f{1.0f}, rng));
+
+              auto radius = 0.05f;
+
+              if (game.entities.full())
+              {
+                  game.entities.random(rng).kill();
+              }
+
+              game.entities.emplace(
+                  components::Position(position),
+                  components::Velocity(Vec3f{}),
+                  components::HitSphere(radius),
+                  components::Color(color)
+              );
+          });
+
           inputs.keyboard.bind(SDLK_r, Press, [&]
           {
-              ball = {};
-              std::println("Ball reset");
+              game.entities.kill_all();
+              std::println("Wiped entities");
+          });
+
+          inputs.keyboard.bind(SDLK_i, Press, [&]
+          {
+              std::println("Entities: {}", game.entities.living());
           });
 
           inputs.keyboard.bind(SDLK_PLUS, Press, [&]
@@ -165,7 +292,7 @@ main()
               std::println("Time scale: {} // {}{}", new_scale, delta > 0 ? "+" : "-", delta);
           });
 
-          using namespace ome::directions;
+          using namespace directions;
 
         // clang-format off
           #define BIND_MOVE(KEY, DIR)                                           \
@@ -183,12 +310,44 @@ main()
 
           inputs.mouse_motion.bind([&](auto input)
           {
-              camera.orientation.steer_yaw(-input.delta[0] * 0.01f);
-              camera.orientation.steer_pitch(-input.delta[1] * 0.01f);
+              float yaw   = -input.delta[0] * 0.01f;
+              float pitch = -input.delta[1] * 0.01f;
+
+              switch (view)
+              {
+                case CameraView::FirstPerson:
+                {
+                    camera.orientation.steer_yaw(yaw);
+                    camera.orientation.steer_pitch(pitch);
+                    break;
+                }
+                case CameraView::ThirdPerson:
+                {
+                    camera.orientation.rotate(yaw, camera.orientation.down());
+                    camera.orientation.rotate(pitch, camera.orientation.left());
+                    break;
+                }
+                default:
+                    throw std::runtime_error("Unsuported camera view");
+              }
           });
       },
 
-      .on_init = []
+      .configure_systems = [&](auto &systems, auto &game) {
+          systems.push(FallSystem({}));
+          systems.push(BounceSystem({.elasticity = 0.7f}));
+          auto &pause = systems.push(PauseColorSystem({ .speed = 3.0f, .steepness = 5.0f }));
+          systems.push(SphereRenderSystem{});
+          // systems.push(DebugSystem{});
+
+          color_filter = [&](Color color)
+          {
+              return pause.filter(color, game);
+          };
+
+      },
+
+      .on_init = [](auto &)
       {
           glMatrixMode(GL_PROJECTION);
           glLoadIdentity();
@@ -204,25 +363,10 @@ main()
 
           gluLookAt(camera);
 
-          auto color_filter = [&](ome::Vec3f color)
-          {
-              static constexpr auto speed = 7;
-              auto intensity = game.time.since(game.pause.paused_at()) * speed;
-              auto gray = grayscale(color);
-              auto faded = ome::math::make_smoothstep(color, gray, 0.7)(intensity);
-              return game.pause.is_paused() ? faded : color;
-          };
-
-          auto set_color = [&](ome::Vec3f color)
-          {
-              auto filtered = color_filter(color);
-              glColor3f(filtered[0], filtered[1], filtered[2]);
-          };
-
           // cancha
           glBegin(GL_QUADS);
           {
-              set_color({0.1, 0.8, 0.1});
+              glColor(Color::rgb( 0.1, 0.8, 0.1 ));
               glVertex3f( -1.0  , 0.0 ,  1.0);
               glVertex3f(  1.0  , 0.0 ,  1.0);
               glVertex3f(  1.0  , 0.0 , -1.0);
@@ -233,25 +377,13 @@ main()
           // arco
           glBegin(GL_QUADS);
           {
-              set_color({1.0, 1.0, 1.0});
+              glColor(Color::rgb( 0.9, 0.95, 0.85 ));
               glVertex3f(  .25  , 0.0 , -1.0);
               glVertex3f(  .25  , 0.2 , -1.0);
               glVertex3f( -.25  , 0.2 , -1.0);
               glVertex3f( -.25  , 0.0 , -1.0);
           }
           glEnd();
-
-          // pelota
-          ball.update(game.time.delta());
-          glPushMatrix();
-          {
-              GLUquadric* q = gluNewQuadric();
-              glTranslatef(ball.position[0], ball.position[1], ball.position[2]);
-              set_color({0.9, 0.2, 0.1});
-              gluSphere(q, ball.radius, 32, 32);
-              gluDeleteQuadric(q);
-          }
-          glPopMatrix();
 
       }
     });

@@ -21,7 +21,7 @@ static constexpr Vec3f backward = -forward;
 namespace ecs {
 
 #ifndef OME_ECS_MAX_ENTITIES
-#define OME_ECS_MAX_ENTITIES (1 << 8)
+#define OME_ECS_MAX_ENTITIES (1 << 16)
 #endif
 
 #ifndef OME_ECS_MAX_COMPONENT_TYPES

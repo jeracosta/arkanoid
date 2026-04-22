@@ -2,12 +2,9 @@
 
 #include <GL/gl.h>
 #include <SDL2/SDL.h>
-#include <initializer_list>
 #include <memory>
-#include <print>
 
 #include "input.hpp"
-#include "math/vector.hpp"
 #include "oh-my-engine/entity-component-system/entity_store.hpp"
 #include "oh-my-engine/entity-component-system/system_store.hpp"
 #include "pause.hpp"
@@ -132,7 +129,7 @@ class Game
 
         for (auto entity : entities.living())
         {
-            systems.update(entity);
+            systems.update(entity, *this);
         }
 
         config_.on_update(*this);

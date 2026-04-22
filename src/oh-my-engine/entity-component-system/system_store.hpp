@@ -53,11 +53,11 @@ class SystemStore
     }
 
     void
-    update(Entity &entity)
+    update(Entity &entity, Game &game)
     {
         for (auto &system : systems_)
         {
-            system->update(entity);
+            system->update(entity, game);
         }
     }
 

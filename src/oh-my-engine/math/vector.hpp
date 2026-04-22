@@ -283,6 +283,19 @@ norm(const is_vector auto &vector)
     return std::sqrt(std::accumulate(std::begin(vector), std::end(vector), 0, sum_square));
 }
 
+template <class Vector>
+Vector
+normal(const Vector &vector)
+{
+    auto length = norm(vector);
+    if (length == 0)
+    {
+        throw std::runtime_error("Cannot normalize a zero-length vector");
+    }
+
+    return vector / length;
+}
+
 template <typename Range>
 Vector(Range &&range) -> Vector<decltype(std::ranges::size(range))::value,
                                 typename std::ranges::range_value_t<Range>>;

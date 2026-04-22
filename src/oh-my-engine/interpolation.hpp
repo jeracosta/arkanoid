@@ -13,7 +13,7 @@ struct Interpolation
     T
     operator()(float progress) const
     {
-        return curve(progress) * target + (1.0f - curve(progress)) * origin;
+        return target * curve(progress) + origin * (1.0f - curve(progress));
     }
 
     void

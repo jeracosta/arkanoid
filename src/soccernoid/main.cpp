@@ -12,6 +12,7 @@
 #include "oh-my-engine/camera.hpp"
 #include "oh-my-engine/curve.hpp"
 #include "oh-my-engine/game.hpp"
+#include "oh-my-engine/interpolation.hpp"
 #include "oh-my-engine/math/vector.hpp"
 
 using namespace ome;

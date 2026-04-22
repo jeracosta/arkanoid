@@ -101,7 +101,7 @@ class EntityStore
     }
 
     template <class... Components>
-    Entity
+    void
     emplace_many(std::size_t ammount, Components &&...components)
     {
         for (auto _ : std::views::iota(0u, ammount))

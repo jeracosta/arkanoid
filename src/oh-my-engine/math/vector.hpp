@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <functional>
 #include <numeric>
+#include <random>
 #include <ranges>
 #include <stdexcept>
 #include <type_traits>
@@ -294,6 +295,21 @@ constexpr auto
 transform(auto transformation, const Vector &lhs, const Vector &rhs)
 {
     return Vector(std::views::zip_transform(transformation, lhs, rhs));
+}
+
+template <is_vector Vector, class RandomNumberGenerator>
+static Vector
+make_random_vector(Vector from, Vector to, RandomNumberGenerator &&rng)
+{
+    Vector result;
+
+    for (auto [r, f, t] : std::views::zip(result, from, to))
+    {
+        std::uniform_real_distribution dist(f, t);
+        r = dist(rng);
+    }
+
+    return result;
 }
 
 } // namespace math

@@ -52,6 +52,14 @@ class SystemStore
          ...);
     }
 
+    template <class System>
+    System &
+    push(System &&system)
+    {
+        systems_.emplace_back(std::make_unique<System>(std::forward<System>(system)));
+        return static_cast<System &>(*systems_.back());
+    }
+
     void
     update(Entity &entity, Game &game)
     {

@@ -312,6 +312,14 @@ make_random_vector(Vector from, Vector to, RandomNumberGenerator &&rng)
     return result;
 }
 
+template <is_vector Vector>
+constexpr Vector
+clamp(const Vector &value, const Vector &min, const Vector &max)
+{
+    return Vector(std::views::zip_transform(
+        [](auto x, auto lo, auto hi) { return std::clamp(x, lo, hi); }, value, min, max));
+}
+
 } // namespace math
 
 #define DEFINE_VEC_N(N)                                                                            \

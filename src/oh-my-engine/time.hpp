@@ -51,13 +51,6 @@ class Time
     }
 
     float
-    since(const auto &time_point) const
-    {
-        auto now = decltype(chronometer_)::Clock::now();
-        return std::chrono::duration<float>(now - time_point).count();
-    }
-
-    float
     delta() const
     {
         return current_time_.delta;
@@ -83,6 +76,13 @@ class Time
         Chronometer<Unit>::Reading current_time_;
 
       public:
+        float
+        since(const auto &time_point) const
+        {
+            auto now = decltype(chronometer_)::Clock::now();
+            return std::chrono::duration<float>(now - time_point).count();
+        }
+
         float
         elapsed() const
         {

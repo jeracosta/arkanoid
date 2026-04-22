@@ -76,6 +76,14 @@ class Orientation
     {
         return glm::eulerAngles(quat_).z;
     }
+
+    Orientation &
+    rotate(float angle, const Vec3f &axis)
+    {
+        glm::quat q = glm::angleAxis(angle, glm::vec3(axis));
+        quat_       = glm::normalize(q * quat_);
+        return *this;
+    }
 };
 
 } // namespace ome

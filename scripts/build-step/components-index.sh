@@ -17,6 +17,18 @@ shopt -s nullglob
 files=("$SRC_DIR"/*.hpp)
 count=${#files[@]}
 
+pascal_case() {
+  local IFS='_'
+  read -ra parts <<<"$1"
+  local out=""
+
+  for p in "${parts[@]}"; do
+    out+="${p^}"
+  done
+
+  printf '%s' "$out"
+}
+
 for i in "${!files[@]}"; do
   f="${files[$i]}"
   name=$(basename "$f" .hpp)
@@ -26,6 +38,6 @@ for i in "${!files[@]}"; do
     macro="X_LAST"
   fi
 
-  printf '%s(%s)\n' "$macro" "${name^}" >>"$DEF_OUT"
+  printf '%s(%s)\n' "$macro" "$(pascal_case "$name")" >>"$DEF_OUT"
   printf '#include "oh-my-engine/entity-component-system/components/%s.hpp"\n' "$name" >>"$HDR_OUT"
 done

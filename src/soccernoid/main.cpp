@@ -262,6 +262,17 @@ main()
                   components::HitSphere(radius),
                   components::Color(color)
               );
+
+              std::println("Entity count: {}", game.entities.living_count());
+          });
+
+          inputs.keyboard.bind(SDLK_RETURN, {Press, Repeat}, [&]
+          {
+            for (auto entity: game.entities.living())
+            {
+                auto &velocity = entity.template get<components::Velocity>()->vector;
+                velocity[1] += std::uniform_real_distribution<>{0, 5}(rng);
+            }
           });
 
           inputs.keyboard.bind(SDLK_r, Press, [&]

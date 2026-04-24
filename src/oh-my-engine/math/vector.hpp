@@ -95,6 +95,12 @@ class Vector
         std::ranges::copy(range, components_.begin());
     }
 
+    operator Component() const
+        requires(TDimension == 1)
+    {
+        return components_[0];
+    }
+
     template <CoordinateSystem NewBasis>
     Vector<TDimension, TComponent, NewBasis>
     rebased() const
@@ -344,12 +350,14 @@ clamp(const Vector &value, const Vector &min, const Vector &max)
     template <typename Component                = float,                                           \
               ome::math::CoordinateSystem Basis = ome::math::CoordinateSystem::Cartesian>          \
     using Vec##N = ome::math::Vector<N, Component, Basis>;
+DEFINE_VEC_N(1)
 DEFINE_VEC_N(2)
 DEFINE_VEC_N(3)
 DEFINE_VEC_N(4)
 #undef DEFINE_VEC_N
 
 #define DEFINE_VEC_ALIAS(SUFFIX, TYPE)                                                             \
+    using Vec1##SUFFIX = Vec1<TYPE>;                                                               \
     using Vec2##SUFFIX = Vec2<TYPE>;                                                               \
     using Vec3##SUFFIX = Vec3<TYPE>;                                                               \
     using Vec4##SUFFIX = Vec4<TYPE>;

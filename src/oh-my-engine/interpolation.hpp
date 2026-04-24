@@ -1,6 +1,6 @@
 #pragma once
 
-#include "curve.hpp"
+#include "oh-my-engine/math/curve.hpp"
 
 namespace ome {
 template <typename T>

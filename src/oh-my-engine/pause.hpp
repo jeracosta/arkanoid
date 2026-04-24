@@ -1,3 +1,5 @@
+#pragma once
+
 #include "time.hpp"
 
 namespace ome {

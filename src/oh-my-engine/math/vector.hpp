@@ -243,10 +243,15 @@ operator-(const is_vector auto &vector)
 }
 
 #define BINARY_OPERATOR(op)                                                                        \
-    template <is_vector LHS, typename RHS>                                                         \
-    [[nodiscard]] constexpr auto operator op(const LHS &lhs, const RHS &rhs)                       \
+    [[nodiscard]] constexpr auto operator op(const is_vector auto &lhs, const auto &rhs)           \
     {                                                                                              \
         return auto(lhs) op## = rhs;                                                               \
+    }                                                                                              \
+    template <typename Scalar, is_vector Vector>                                                   \
+        requires(!is_vector_v<Scalar>)                                                             \
+    [[nodiscard]] constexpr auto operator op(const Scalar &lhs, const Vector &rhs)                 \
+    {                                                                                              \
+        return rhs op lhs;                                                                         \
     }
 // point-point:
 BINARY_OPERATOR(+)

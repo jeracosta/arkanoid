@@ -259,20 +259,29 @@ visit_dfs(Node &node, auto &&pre, auto &&post)
 }
 
 inline void
-print_tree(Node &node, std::string_view prefix = "", bool is_last = true)
+print_tree(Node &root)
 {
-    std::print("{}{}", prefix, is_last ? "└─ " : "├─ ");
-    std::println("{}", node.name());
+    std::println("{}", root.name());
 
-    auto children = node.children();
-
-    auto view = std::ranges::subrange(children.begin(), children.end());
-
-    for (auto it = view.begin(); it != view.end(); ++it)
+    auto recursive_step = [](auto &&self, Node &node, std::string prefix, bool is_last) -> void
     {
-        bool last = std::next(it) == view.end();
+        std::print("{}{}", prefix, is_last ? "└─ " : "├─ ");
+        std::println("{}", node.name());
 
-        print_tree(**it, std::string(prefix) + (is_last ? "   " : "│  "), last);
+        auto children = node.children();
+        for (auto it = children.begin(); it != children.end(); ++it)
+        {
+            bool last = std::next(it) == children.end();
+
+            self(self, **it, prefix + (is_last ? "   " : "│  "), last);
+        }
+    };
+
+    auto children = root.children();
+    for (auto it = children.begin(); it != children.end(); ++it)
+    {
+        bool last = std::next(it) == children.end();
+        recursive_step(recursive_step, **it, "", last);
     }
 }
 

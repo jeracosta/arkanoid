@@ -120,10 +120,10 @@ class Game
         Game(config).run_();
     }
 
-    // Schedules an extra task to be executed at the end of the current frame.
-    // Tasks get executed in the order they were scheduled, and the queue is cleared.
+    // At the end of the frame, tasks get executed in the order they were scheduled,
+    // Already excecuted tasks do not repeat at the next frame unless re-scheduled.
     void
-    queue(std::function<void()> task)
+    schedule(std::function<void()> task)
     {
         tasks_.emplace_back(std::move(task));
     }

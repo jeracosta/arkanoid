@@ -109,12 +109,6 @@ class Node
         return game_ != nullptr;
     }
 
-    bool
-    is_alive() const
-    {
-        return alive_;
-    }
-
     Node *
     add_child(std::unique_ptr<Node> child_owner)
     {
@@ -265,7 +259,26 @@ class Node
     void
     die_()
     {
-        alive_ = false;
+        [[unlikely]]
+        if (!is_mounted())
+        {
+            return;
+        }
+
+        auto task = [this]
+        {
+            [[likely]]
+            if (parent())
+            {
+                parent()->remove_child(name());
+            }
+            else
+            {
+                throw std::runtime_error("Tried to kill root game node.");
+            }
+        };
+
+        game()->schedule(std::move(task));
     }
 
   private:
@@ -275,7 +288,6 @@ class Node
     Game        *game_   = nullptr;
     Node        *parent_ = nullptr;
     ChildrenMap_ children_;
-    bool         alive_ = true;
 
     Hooks hooks_;
 

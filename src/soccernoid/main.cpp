@@ -526,29 +526,21 @@ main()
               print_message(node, std::format("Height: {}", height));
           };
 
-          FallingNode *falling_node;
-
           extending(*root)
               .add<Node>().named("Manolito")
                   .add<Node>().named("Fede")
                   .up()
               .up()
-              .add<Slowed<TestNode, 1.0f>>(10).named("Prueba")
+              .add<Slowed<TestNode, 0.5f>>(10).named("Prueba")
                   .add<Node>().named("Jaimito")
                   .up()
               .up()
               .add<Node>()
-                  .add<FallingNode>().named("Falling").on_tick(print_height).set(&falling_node)
+                  .add<FallingNode>().named("Falling")//.on_tick(print_height)
                   .up()
                   .add<Slowed<FrameRateNode, 1.0f>>().named("FPS")
                   .up()
                   .add<Node>().named("Marujita");
-
-          falling_node->hook_mount([](FrameRateNode &node)
-          {
-              print_message(node, "Renaming...");
-              node.rename("Kratos");
-          });
 
           return root;
       },

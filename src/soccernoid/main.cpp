@@ -249,26 +249,26 @@ type_name()
     return s;
 }
 
+void
+say(const auto &node, auto &&message)
+{
+    auto now  = std::chrono::system_clock::now();
+    auto time = floor<std::chrono::seconds>(now);
+
+    std::print("\033[37m[{:%H:%M:%S}]\033[0m "
+               "\033[34m{} ({}): \033[0m "
+               "\033[37m{}\033[0m\n",
+               time,
+               node.name(),
+               type_name<std::remove_cvref_t<decltype(node)>>(),
+               message);
+}
+
 class TestNode : public Node
 {
   private:
     int   counter_;
     float cooldown_;
-
-    void
-    say_(auto &&message)
-    {
-        auto now  = std::chrono::system_clock::now();
-        auto time = floor<std::chrono::seconds>(now);
-
-        std::print("\033[37m[{:%H:%M:%S}]\033[0m "
-                   "\033[34m{} ({}): \033[0m "
-                   "\033[37m{}\033[0m\n",
-                   time,
-                   name(),
-                   type_name<std::remove_cvref_t<decltype(*this)>>(),
-                   message);
-    }
 
   public:
     TestNode(int counter = 5)
@@ -280,7 +280,7 @@ class TestNode : public Node
     virtual void
     on_mount_() override
     {
-        say_("Hello, world!");
+        say(*this, "Hello, world!");
     }
 
     virtual void
@@ -290,7 +290,7 @@ class TestNode : public Node
 
         if (cooldown_ <= 0)
         {
-            say_(std::format("{} ticks left", counter_--));
+            say(*this, std::format("{} ticks left", counter_--));
             cooldown_ = 1;
         }
 
@@ -303,9 +303,18 @@ class TestNode : public Node
     virtual void
     on_unmount_() override
     {
-        say_("Bye, bye!");
+        say(*this, "Bye, bye!");
         std::println("Updated tree:");
         print_tree(find_root(this));
+    }
+};
+
+class FallingNode : public Node
+{
+    void
+    on_mount_() override
+    {
+        extending(*this).add<TransformNode>().add<GravityNode>();
     }
 };
 
@@ -508,17 +517,23 @@ main()
       {
           auto root = std::make_unique<Node>("Root");
 
+          auto print_height = [](FallingNode &node) {
+            auto transform = find_descendant<TransformNode>(&node);
+            auto height = math::dot(transform->position, up);
+            say(node, std::format("Height: {}", height));
+          };
+
           extending(*root)
               .add<Node>().named("Manolito")
                   .add<Node>().named("Fede")
                   .up()
               .up()
-              .add<TestNode>().named("Prueba")
+              .add<TestNode>(10).named("Prueba")
                   .add<Node>().named("Jaimito")
                   .up()
               .up()
               .add<Node>()
-                  .add<Node>()
+                  .add<FallingNode>().named("Kratos").on_tick(print_height)
                   .up()
                   .add<Node>()
                   .up()

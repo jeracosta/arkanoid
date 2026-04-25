@@ -1,6 +1,7 @@
 // A node is the basic building block of a game.
 // Nodes are "mounted" to become part of a game and begin affecting it in some way.
 // Users can derive from a node to implement their own game logic.
+// Nodes also have instance-level equivalent hooks, called after the class-level virtual hooks.
 // Games tick all mounted nodes every frame, traversing the tree in a depth-first manner.
 // Nodes can "die": a dead node doesn't tick, and gets unmounted and freed by the game.
 // Additional specialized systems (e.g. rendering) could interact with nodes as well.
@@ -14,6 +15,7 @@
 
 #pragma once
 
+#include <boost/callable_traits.hpp>
 #include <cassert>
 #include <flat_map>
 #include <memory>
@@ -29,6 +31,14 @@ namespace ome {
 class Node
 {
   public:
+    struct Hooks
+    {
+        std::function<void(Node &)> on_mount   = {};
+        std::function<void(Node &)> on_ready   = {};
+        std::function<void(Node &)> on_tick    = {};
+        std::function<void(Node &)> on_unmount = {};
+    } hooks;
+
     Node(std::string_view name = make_default_name_())
         : name_(name)
     {
@@ -173,6 +183,7 @@ class Node
         assert(is_alive && "Tried ticking a dead node; free it instead.");
 
         tick_();
+        hooks.on_tick ? hooks.on_tick(*this) : void();
     }
 
     virtual ~Node()
@@ -184,24 +195,31 @@ class Node
     class CompositionCursor;
 
   protected:
+    // TODO: Prevent users from forgetting to call parent implementations when overriding lifecycle
+    // hooks. A mixin approach could work; investigate.
+
     virtual void
     on_mount_()
     {
+        // remember to call parent implementation on overrides
     }
 
     virtual void
     on_ready_()
     {
+        // remember to call parent implementation on overrides
     }
 
     virtual void
     tick_()
     {
+        // remember to call parent implementation on overrides
     }
 
     virtual void
     on_unmount_()
     {
+        // remember to call parent implementation on overrides
     }
 
     void
@@ -229,6 +247,7 @@ class Node
         game_ = game;
 
         on_mount_();
+        hooks.on_mount ? hooks.on_mount(*this) : void();
 
         for (auto child : children())
         {
@@ -236,6 +255,7 @@ class Node
         }
 
         on_ready_();
+        hooks.on_ready ? hooks.on_ready(*this) : void();
     }
 
     void
@@ -247,6 +267,7 @@ class Node
         }
 
         on_unmount_();
+        hooks.on_unmount ? hooks.on_unmount(*this) : void();
 
         game_ = nullptr;
     }
@@ -373,6 +394,15 @@ print_tree(Node &root)
     }
 }
 
+template <class F>
+struct function_traits;
+
+template <class R, class T, class... Args>
+struct function_traits<R (T::*)(Args...) const>
+{
+    using arg0 = std::tuple_element_t<0, std::tuple<Args...>>;
+};
+
 // Stateful fluent interface for building a node tree.
 class Node::CompositionCursor
 {
@@ -410,6 +440,46 @@ class Node::CompositionCursor
 
         return *this;
     }
+
+#define DEFINE_HOOK_SETTER(name)                                                                   \
+    template <typename F>                                                                          \
+    CompositionCursor &name(F &&callback)                                                          \
+    {                                                                                              \
+        using CallbackArgs = boost::callable_traits::args_t<F>;                                    \
+                                                                                                   \
+        static_assert(std::tuple_size_v<CallbackArgs> == 1,                                        \
+                      "Node hook must take exactly one node reference argument.");                 \
+                                                                                                   \
+        using CallbackArg0 = std::tuple_element_t<0, CallbackArgs>;                                \
+                                                                                                   \
+        static_assert(std::is_reference_v<CallbackArg0>,                                           \
+                      "Node hook argument must be a reference type (e.g. Node&).");                \
+                                                                                                   \
+        using NodeRef = std::remove_cvref_t<CallbackArg0>;                                         \
+                                                                                                   \
+        static_assert(std::is_base_of_v<Node, NodeRef>,                                            \
+                      "Node hook argument must be a Node or derived Node type.");                  \
+                                                                                                   \
+        using TNode = std::remove_reference_t<CallbackArg0>;                                       \
+                                                                                                   \
+        if (not dynamic_cast<TNode *>(stack_.back()))                                              \
+        {                                                                                          \
+            throw std::runtime_error(                                                              \
+                "Tried setting a node hook that takes an incompatible node type");                 \
+        }                                                                                          \
+                                                                                                   \
+        auto wrapper = [callback = std::forward<F>(callback)](Node &node) mutable                  \
+        { callback(static_cast<TNode &>(node)); };                                                 \
+                                                                                                   \
+        stack_.back()->hooks.name = std::move(wrapper);                                            \
+        return *this;                                                                              \
+    }
+
+    DEFINE_HOOK_SETTER(on_mount)
+    DEFINE_HOOK_SETTER(on_ready)
+    DEFINE_HOOK_SETTER(on_tick)
+    DEFINE_HOOK_SETTER(on_unmount)
+#undef DEFINE_HOOK_SETTER
 
     CompositionCursor &
     up()

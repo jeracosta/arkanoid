@@ -526,6 +526,8 @@ main()
               print_message(node, std::format("Height: {}", height));
           };
 
+          FallingNode *falling_node;
+
           extending(*root)
               .add<Node>().named("Manolito")
                   .add<Node>().named("Fede")
@@ -536,11 +538,17 @@ main()
                   .up()
               .up()
               .add<Node>()
-                  .add<FallingNode>().named("Kratos").on_tick(print_height)
+                  .add<FallingNode>().named("Falling").on_tick(print_height).set(&falling_node)
                   .up()
                   .add<Slowed<FrameRateNode, 1.0f>>().named("FPS")
                   .up()
                   .add<Node>().named("Marujita");
+
+          falling_node->hook_mount([](FrameRateNode &node)
+          {
+              print_message(node, "Renaming...");
+              node.rename("Kratos");
+          });
 
           return root;
       },

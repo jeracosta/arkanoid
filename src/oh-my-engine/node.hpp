@@ -37,7 +37,7 @@ class Node
         std::function<void(Node &)> on_ready   = {};
         std::function<void(Node &)> on_tick    = {};
         std::function<void(Node &)> on_unmount = {};
-    } hooks;
+    };
 
     Node(std::string_view name = make_default_name_())
         : name_(name)
@@ -183,8 +183,55 @@ class Node
         assert(is_alive && "Tried ticking a dead node; free it instead.");
 
         tick_();
-        hooks.on_tick ? hooks.on_tick(*this) : void();
+        hooks_.on_tick ? hooks_.on_tick(*this) : void();
     }
+
+    const Hooks &
+    hooks() const
+    {
+        return hooks_;
+    }
+
+#define DEFINE_HOOK_SETTER(name)                                                                   \
+    template <typename Callback>                                                                   \
+    void hook_##name(Callback &&on_##name)                                                         \
+    {                                                                                              \
+        /* We use a free Callback type instead of std::function, and static_assert its shape. */   \
+        /* Awkward, but this deduces node type from the param, avoiding manual specification.  */  \
+                                                                                                   \
+        using CallbackArgs = boost::callable_traits::args_t<Callback>;                             \
+                                                                                                   \
+        static_assert(std::tuple_size_v<CallbackArgs> == 1,                                        \
+                      "Node hook must take exactly one node reference argument.");                 \
+                                                                                                   \
+        using CallbackArg0 = std::tuple_element_t<0, CallbackArgs>;                                \
+                                                                                                   \
+        static_assert(std::is_reference_v<CallbackArg0>,                                           \
+                      "Node hook argument must be a reference type.");                             \
+                                                                                                   \
+        using NodeRef = std::remove_cvref_t<CallbackArg0>;                                         \
+                                                                                                   \
+        static_assert(std::is_base_of_v<Node, NodeRef>,                                            \
+                      "Node hook argument must be a Node or derived Node type.");                  \
+                                                                                                   \
+        using TNode = std::remove_reference_t<CallbackArg0>;                                       \
+                                                                                                   \
+        if (dynamic_cast<TNode *>(this) == nullptr)                                                \
+        {                                                                                          \
+            throw std::runtime_error(                                                              \
+                "Tried setting a node hook that takes an incompatible node type");                 \
+        }                                                                                          \
+                                                                                                   \
+        auto wrapper = [callback = std::forward<Callback>(on_##name)](Node &node) mutable          \
+        { callback(static_cast<TNode &>(node)); };                                                 \
+                                                                                                   \
+        hooks_.on_##name = std::move(wrapper);                                                     \
+    }
+    DEFINE_HOOK_SETTER(mount)
+    DEFINE_HOOK_SETTER(ready)
+    DEFINE_HOOK_SETTER(tick)
+    DEFINE_HOOK_SETTER(unmount)
+#undef DEFINE_HOOK_SETTER
 
     virtual ~Node()
     {
@@ -195,31 +242,24 @@ class Node
     class CompositionCursor;
 
   protected:
-    // TODO: Prevent users from forgetting to call parent implementations when overriding lifecycle
-    // hooks. A mixin approach could work; investigate.
-
     virtual void
     on_mount_()
     {
-        // remember to call parent implementation on overrides
     }
 
     virtual void
     on_ready_()
     {
-        // remember to call parent implementation on overrides
     }
 
     virtual void
     tick_()
     {
-        // remember to call parent implementation on overrides
     }
 
     virtual void
     on_unmount_()
     {
-        // remember to call parent implementation on overrides
     }
 
     void
@@ -237,6 +277,8 @@ class Node
     ChildrenMap_ children_;
     bool         alive_ = true;
 
+    Hooks hooks_;
+
     inline static unsigned int nodes_created_ = 0;
 
     void
@@ -247,7 +289,7 @@ class Node
         game_ = game;
 
         on_mount_();
-        hooks.on_mount ? hooks.on_mount(*this) : void();
+        hooks_.on_mount ? hooks_.on_mount(*this) : void();
 
         for (auto child : children())
         {
@@ -255,7 +297,7 @@ class Node
         }
 
         on_ready_();
-        hooks.on_ready ? hooks.on_ready(*this) : void();
+        hooks_.on_ready ? hooks_.on_ready(*this) : void();
     }
 
     void
@@ -267,7 +309,7 @@ class Node
         }
 
         on_unmount_();
-        hooks.on_unmount ? hooks.on_unmount(*this) : void();
+        hooks_.on_unmount ? hooks_.on_unmount(*this) : void();
 
         game_ = nullptr;
     }
@@ -442,43 +484,15 @@ class Node::CompositionCursor
     }
 
 #define DEFINE_HOOK_SETTER(name)                                                                   \
-    template <typename F>                                                                          \
-    CompositionCursor &name(F &&callback)                                                          \
+    CompositionCursor &on_##name(auto &&hook)                                                      \
     {                                                                                              \
-        using CallbackArgs = boost::callable_traits::args_t<F>;                                    \
-                                                                                                   \
-        static_assert(std::tuple_size_v<CallbackArgs> == 1,                                        \
-                      "Node hook must take exactly one node reference argument.");                 \
-                                                                                                   \
-        using CallbackArg0 = std::tuple_element_t<0, CallbackArgs>;                                \
-                                                                                                   \
-        static_assert(std::is_reference_v<CallbackArg0>,                                           \
-                      "Node hook argument must be a reference type (e.g. Node&).");                \
-                                                                                                   \
-        using NodeRef = std::remove_cvref_t<CallbackArg0>;                                         \
-                                                                                                   \
-        static_assert(std::is_base_of_v<Node, NodeRef>,                                            \
-                      "Node hook argument must be a Node or derived Node type.");                  \
-                                                                                                   \
-        using TNode = std::remove_reference_t<CallbackArg0>;                                       \
-                                                                                                   \
-        if (not dynamic_cast<TNode *>(stack_.back()))                                              \
-        {                                                                                          \
-            throw std::runtime_error(                                                              \
-                "Tried setting a node hook that takes an incompatible node type");                 \
-        }                                                                                          \
-                                                                                                   \
-        auto wrapper = [callback = std::forward<F>(callback)](Node &node) mutable                  \
-        { callback(static_cast<TNode &>(node)); };                                                 \
-                                                                                                   \
-        stack_.back()->hooks.name = std::move(wrapper);                                            \
+        stack_.back()->hook_##name(std::forward<decltype(hook)>(hook));                            \
         return *this;                                                                              \
     }
-
-    DEFINE_HOOK_SETTER(on_mount)
-    DEFINE_HOOK_SETTER(on_ready)
-    DEFINE_HOOK_SETTER(on_tick)
-    DEFINE_HOOK_SETTER(on_unmount)
+    DEFINE_HOOK_SETTER(mount)
+    DEFINE_HOOK_SETTER(ready)
+    DEFINE_HOOK_SETTER(tick)
+    DEFINE_HOOK_SETTER(unmount)
 #undef DEFINE_HOOK_SETTER
 
     CompositionCursor &
@@ -491,6 +505,16 @@ class Node::CompositionCursor
 
         stack_.pop_back();
 
+        return *this;
+    }
+
+    // Sets the provided pointer to point to the current node.
+    // Useful for keeping references to important nodes while building a tree.
+    template <class T>
+    CompositionCursor &
+    set(T **node_pointer)
+    {
+        *node_pointer = dynamic_cast<T *>(stack_.back());
         return *this;
     }
 

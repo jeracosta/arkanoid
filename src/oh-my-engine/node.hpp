@@ -281,6 +281,28 @@ visit_dfs(Node &node, auto &&pre, auto &&post)
     std::invoke(post, node);
 }
 
+/// Performs a breadth-first traversal of a node tree,
+// calling `pre` before visiting children and `post` after.
+inline void
+visit_bfs(Node &root, auto &&visit)
+{
+    std::queue<Node *> q;
+    q.push(&root);
+
+    while (!q.empty())
+    {
+        Node *node = q.front();
+        q.pop();
+
+        std::invoke(visit, *node);
+
+        for (auto child : node->children())
+        {
+            q.push(child);
+        }
+    }
+}
+
 inline void
 print_tree(Node &root)
 {

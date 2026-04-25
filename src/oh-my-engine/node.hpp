@@ -266,6 +266,48 @@ find_root(Node *node)
     return node->parent() ? find_root(node->parent()) : *node;
 }
 
+template <class T>
+    requires std::derived_from<T, Node>
+inline T *
+find_ancestor(Node *node)
+{
+    for (Node *parent = node->parent(); parent != nullptr; parent = parent->parent())
+    {
+        if (T *casted = dynamic_cast<T *>(parent))
+        {
+            return casted;
+        }
+    }
+    return nullptr;
+}
+
+template <class T>
+    requires std::derived_from<T, Node>
+inline T *
+find_descendant(Node *node)
+{
+    std::queue<Node *> q;
+    q.push(node);
+
+    while (!q.empty())
+    {
+        Node *cur = q.front();
+        q.pop();
+
+        for (auto child : cur->children())
+        {
+            if (auto *casted = dynamic_cast<T *>(child))
+            {
+                return casted;
+            }
+
+            q.push(child);
+        }
+    }
+
+    return nullptr;
+}
+
 /// Performs a depth-first traversal of a node tree,
 // calling `pre` before visiting children and `post` after.
 inline void

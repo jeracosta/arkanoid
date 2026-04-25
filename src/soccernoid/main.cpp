@@ -19,6 +19,7 @@
 #include "oh-my-engine/math/vector.hpp"
 #include "oh-my-engine/node.hpp"
 #include "oh-my-engine/nodes/gravity_node.hpp"
+#include "oh-my-engine/nodes/slowed_node.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
 
 using namespace ome;
@@ -250,7 +251,7 @@ type_name()
 }
 
 void
-say(const auto &node, auto &&message)
+print_message(const auto &node, auto &&message)
 {
     auto now  = std::chrono::system_clock::now();
     auto time = floor<std::chrono::seconds>(now);
@@ -267,34 +268,26 @@ say(const auto &node, auto &&message)
 class TestNode : public Node
 {
   private:
-    int   counter_;
-    float cooldown_;
+    int counter_;
 
   public:
     TestNode(int counter = 5)
-        : counter_(counter),
-          cooldown_(1.0f)
+        : counter_(counter)
     {
     }
 
     virtual void
     on_mount_() override
     {
-        say(*this, "Hello, world!");
+        print_message(*this, "Hello, world!");
     }
 
     virtual void
     tick_() override
     {
-        cooldown_ -= game()->time.delta();
+        print_message(*this, std::format("{} ticks left", counter_));
 
-        if (cooldown_ <= 0)
-        {
-            say(*this, std::format("{} ticks left", counter_--));
-            cooldown_ = 1;
-        }
-
-        if (counter_ == 0)
+        if (counter_-- == 0)
         {
             die_();
         }
@@ -303,7 +296,7 @@ class TestNode : public Node
     virtual void
     on_unmount_() override
     {
-        say(*this, "Bye, bye!");
+        print_message(*this, "Bye, bye!");
         std::println("Updated tree:");
         print_tree(find_root(this));
     }
@@ -315,6 +308,16 @@ class FallingNode : public Node
     on_mount_() override
     {
         extending(*this).add<TransformNode>().add<GravityNode>();
+    }
+};
+
+class FrameRateNode : public Node
+{
+  public:
+    void
+    tick_() override
+    {
+        print_message(*this, std::format("FPS: {}", game()->instant_frame_rate()));
     }
 };
 
@@ -518,9 +521,9 @@ main()
           auto root = std::make_unique<Node>("Root");
 
           auto print_height = [](FallingNode &node) {
-            auto transform = find_descendant<TransformNode>(&node);
-            auto height = math::dot(transform->position, up);
-            say(node, std::format("Height: {}", height));
+              auto transform = find_descendant<TransformNode>(&node);
+              auto height = math::dot(transform->position, up);
+              print_message(node, std::format("Height: {}", height));
           };
 
           extending(*root)
@@ -528,14 +531,14 @@ main()
                   .add<Node>().named("Fede")
                   .up()
               .up()
-              .add<TestNode>(10).named("Prueba")
+              .add<Slowed<TestNode, 1.0f>>(10).named("Prueba")
                   .add<Node>().named("Jaimito")
                   .up()
               .up()
               .add<Node>()
                   .add<FallingNode>().named("Kratos").on_tick(print_height)
                   .up()
-                  .add<Node>()
+                  .add<Slowed<FrameRateNode, 1.0f>>().named("FPS")
                   .up()
                   .add<Node>().named("Marujita");
 

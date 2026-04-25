@@ -15,6 +15,7 @@
 #include "oh-my-engine/interpolation.hpp"
 #include "oh-my-engine/math/curve.hpp"
 #include "oh-my-engine/math/vector.hpp"
+#include "oh-my-engine/node.hpp"
 
 using namespace ome;
 using namespace ome::ecs;
@@ -233,6 +234,25 @@ make_camera(CameraView view, Camera camera = {})
     }
 }
 
+class TestNode : public Node
+{
+  public:
+    int   counter;
+    float cooldown;
+
+    virtual void
+    tick() override
+    {
+        cooldown -= game()->time.delta();
+
+        if (cooldown <= 0)
+        {
+            std::println("Tick {} from node '{}'", counter++, name());
+            cooldown = 1;
+        }
+    }
+};
+
 int
 main()
 {
@@ -430,11 +450,35 @@ main()
 
       },
 
-      .on_init = [](auto &)
+      .make_root_node = [] (Game &)
+      {
+          auto root = std::make_unique<Node>("Root");
+
+          extending(*root)
+              .add<Node>().named("Manolito")
+                  .add<Node>().named("Fede")
+                  .up()
+              .add<Node>().named("Marujita")
+                  .up()
+              .add<TestNode>().named("Prueba")
+                  .add<Node>().named("Jaimito")
+              .end();
+
+          return root;
+
+
+          // 19 nodes total, 18 used; node 19 is root only
+          // return std::move(nodes[19]);
+      },
+
+      .on_init = [](Game &game)
       {
           glMatrixMode(GL_PROJECTION);
           glLoadIdentity();
           gluPerspective(45.0, 640.0 / 480.0, 0.1, 100.0);
+
+          std::println("Game initialized. Tree:");
+          print_tree(*game.root_node());
       },
 
       .on_update = [&](auto & game)

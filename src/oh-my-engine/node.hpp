@@ -11,6 +11,8 @@
 // When recursively mounting a tree (node), nodes became "ready" when no children are left to mount.
 // Nodes call virtual lifecycle hooks on mount (up-down), ready (down-up), and unmount (down-up).
 
+#pragma once
+
 #include <cassert>
 #include <flat_map>
 #include <memory>
@@ -29,6 +31,13 @@ class Node
         : name_(name)
     {
     }
+
+    // non-movable to avoid dangling pointers in parent and children
+    Node(Node &&) = delete;
+
+    Node &
+    operator=(Node &&)
+        = delete;
 
     std::string_view
     name() const
@@ -64,7 +73,7 @@ class Node
 
         if (parent_->children_.contains(new_name))
         {
-            throw std::runtime_error("Cannot rename node to sibling name.");
+            throw std::runtime_error("Tried renaming node to sibling name.");
         }
 
         auto it   = parent_->children_.find(name_);
@@ -88,7 +97,7 @@ class Node
         return game_ != nullptr;
     }
 
-    void
+    Node *
     add_child(std::unique_ptr<Node> child_owner)
     {
         auto child = child_owner.get();
@@ -116,6 +125,8 @@ class Node
         {
             child->mount_to_(game_);
         }
+
+        return child;
     }
 
     std::unique_ptr<Node>
@@ -155,8 +166,10 @@ class Node
     virtual ~Node()
     {
         // note: node cannot be unmounted here, as it implies a virtual call
-        assert(!is_mounted() && "Cannot destroy a mounted node; unmount it first.");
+        assert(!is_mounted() && "Tried to destroy a mounted node; unmount it first.");
     }
+
+    class CompositionCursor;
 
   protected:
     virtual void
@@ -261,6 +274,70 @@ print_tree(Node &node, std::string_view prefix = "", bool is_last = true)
 
         print_tree(**it, std::string(prefix) + (is_last ? "   " : "│  "), last);
     }
+}
+
+// Stateful fluent interface for building a node tree.
+class Node::CompositionCursor
+{
+    std::vector<Node *> stack_;
+
+  public:
+    template <class Root>
+        requires std::derived_from<std::remove_cvref_t<Root>, Node>
+    explicit CompositionCursor(Root &root)
+    {
+        stack_.push_back(&root);
+    }
+
+    CompositionCursor &
+    add(std::unique_ptr<Node> child)
+    {
+        auto *parent = stack_.back();
+        auto *node   = parent->add_child(std::move(child));
+        stack_.push_back(node);
+        return *this;
+    }
+
+    template <class T, class... Args>
+        requires std::derived_from<T, Node>
+    CompositionCursor &
+    add(Args &&...args)
+    {
+        return add(std::make_unique<T>(std::forward<Args>(args)...));
+    }
+
+    CompositionCursor &
+    named(std::string name)
+    {
+        stack_.back()->rename(std::move(name));
+
+        return *this;
+    }
+
+    CompositionCursor &
+    up()
+    {
+        if (stack_.size() == 1)
+        {
+            throw std::runtime_error("Node builder tried to move up from root node.");
+        }
+
+        stack_.pop_back();
+
+        return *this;
+    }
+
+    Node &
+    end()
+    {
+        return *stack_.front(); // root
+    }
+};
+
+inline Node::CompositionCursor
+extending(Node &root)
+{
+    return Node::CompositionCursor(root);
 }
 
 } // namespace ome

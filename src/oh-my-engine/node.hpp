@@ -130,7 +130,7 @@ class Node
     }
 
     std::unique_ptr<Node>
-    remove_child(const std::string &name)
+    remove_child(const std::string_view &name)
     {
         auto it = children_.find(name);
 
@@ -188,7 +188,7 @@ class Node
     }
 
   private:
-    using ChildrenMap_ = std::flat_map<std::string, std::unique_ptr<Node>>;
+    using ChildrenMap_ = std::flat_map<std::string, std::unique_ptr<Node>, std::less<>>;
 
     std::string  name_;
     Game        *game_   = nullptr;

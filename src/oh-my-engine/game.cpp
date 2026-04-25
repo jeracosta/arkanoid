@@ -149,6 +149,13 @@ Game::update_()
 
     visit_dfs(*root_node_, node_update_preorder, node_update_postorder);
 
+    for (auto &task : tasks_)
+    {
+        task();
+    }
+
+    tasks_.clear();
+
     SDL_GL_SwapWindow(window);
 
     frame_count_++;

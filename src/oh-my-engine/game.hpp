@@ -52,12 +52,13 @@ class Game
     ~Game();
 
   private:
-    Configuration               config_;
-    input::InputMapper          input_mapper_;
-    bool                        running_     = false;
-    unsigned long               frame_count_ = 0;
-    std::shared_ptr<Enviroment> enviroment_  = Enviroment::instance();
-    std::unique_ptr<Node>       root_node_;
+    Configuration                      config_;
+    input::InputMapper                 input_mapper_;
+    bool                               running_     = false;
+    unsigned long                      frame_count_ = 0;
+    std::shared_ptr<Enviroment>        enviroment_  = Enviroment::instance();
+    std::unique_ptr<Node>              root_node_;
+    std::vector<std::function<void()>> tasks_;
 
     Game(const Configuration &config);
 
@@ -118,5 +119,13 @@ class Game
     {
         Game(config).run_();
     }
+
+    // Schedules an extra task to be executed at the end of the current frame.
+    // Tasks get executed in the order they were scheduled, and the queue is cleared.
+    void
+    queue(std::function<void()> task)
+    {
+        tasks_.emplace_back(std::move(task));
+    }
 };
-}; // namespace ome
+} // namespace ome

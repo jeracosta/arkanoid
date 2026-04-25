@@ -18,6 +18,8 @@
 #include "oh-my-engine/math/curve.hpp"
 #include "oh-my-engine/math/vector.hpp"
 #include "oh-my-engine/node.hpp"
+#include "oh-my-engine/nodes/gravity_node.hpp"
+#include "oh-my-engine/nodes/transform_node.hpp"
 
 using namespace ome;
 using namespace ome::ecs;
@@ -520,8 +522,7 @@ main()
                   .up()
                   .add<Node>()
                   .up()
-                  .add<Node>().named("Marujita")
-              .end();
+                  .add<Node>().named("Marujita");
 
           return root;
       },

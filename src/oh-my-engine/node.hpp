@@ -18,6 +18,7 @@
 #include <flat_map>
 #include <memory>
 #include <print>
+#include <queue>
 #include <ranges>
 #include <string>
 
@@ -423,8 +424,7 @@ class Node::CompositionCursor
         return *this;
     }
 
-    Node &
-    end()
+    operator Node &()
     {
         return *stack_.front(); // root
     }

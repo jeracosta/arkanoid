@@ -103,7 +103,7 @@ class BounceSystem : public System
             return;
         }
 
-        Vec3f normal = directions::up;
+        Vec3f normal = up;
 
         float height = dot(position, normal) - config.floor_height;
 
@@ -436,8 +436,6 @@ main()
               game.time.scale(new_scale);
               std::println("Time scale: {} // {}{}", new_scale, delta > 0 ? "+" : "-", delta);
           });
-
-          using namespace directions;
 
         // clang-format off
           #define BIND_MOVE(KEY, DIR)                                           \

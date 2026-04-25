@@ -49,7 +49,7 @@ class Orientation
 #define DEFINE_DIR_GETTER(name)                                                                    \
     Vec3f name() const                                                                             \
     {                                                                                              \
-        return Vec3f(quat_ * glm::vec3(directions::name));                                         \
+        return Vec3f(quat_ * glm::vec3(ome::name));                                                \
     }
     DEFINE_DIR_GETTER(forward)
     DEFINE_DIR_GETTER(backward)

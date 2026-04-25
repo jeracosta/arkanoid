@@ -128,7 +128,26 @@ Game::update_()
         systems.update(entity, *this);
     }
 
-    visit_dfs(*root_node_, &Node::tick, [](Node &) {});
+    static auto node_update_preorder = &Node::tick;
+
+    static auto node_update_postorder = [](Node &node)
+    {
+        if (node.is_alive())
+        {
+            return;
+        }
+
+        if (node.parent())
+        {
+            node.parent()->remove_child(node.name());
+        }
+        else
+        {
+            throw std::runtime_error("Tried to kill root game node.");
+        }
+    };
+
+    visit_dfs(*root_node_, node_update_preorder, node_update_postorder);
 
     SDL_GL_SwapWindow(window);
 

@@ -3,12 +3,14 @@
 #include <SDL2/SDL.h>
 #include <SDL_keycode.h>
 #include <cstdlib>
+#include <cxxabi.h>
 #include <functional>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <print>
 #include <random>
+#include <typeinfo>
 
 #include "oh-my-engine/camera.hpp"
 #include "oh-my-engine/game.hpp"
@@ -234,22 +236,74 @@ make_camera(CameraView view, Camera camera = {})
     }
 }
 
+template <class T>
+std::string
+type_name()
+{
+    int         status = 0;
+    char       *p      = abi::__cxa_demangle(typeid(T).name(), nullptr, nullptr, &status);
+    std::string s      = (status == 0 && p) ? p : typeid(T).name();
+    std::free(p);
+    return s;
+}
+
 class TestNode : public Node
 {
+  private:
+    int   counter_;
+    float cooldown_;
+
+    void
+    say_(auto &&message)
+    {
+        auto now  = std::chrono::system_clock::now();
+        auto time = floor<std::chrono::seconds>(now);
+
+        std::print("\033[37m[{:%H:%M:%S}]\033[0m "
+                   "\033[34m{} ({}): \033[0m "
+                   "\033[37m{}\033[0m\n",
+                   time,
+                   name(),
+                   type_name<std::remove_cvref_t<decltype(*this)>>(),
+                   message);
+    }
+
   public:
-    int   counter;
-    float cooldown;
+    TestNode(int counter = 5)
+        : counter_(counter),
+          cooldown_(1.0f)
+    {
+    }
 
     virtual void
-    tick() override
+    on_mount_() override
     {
-        cooldown -= game()->time.delta();
+        say_("Hello, world!");
+    }
 
-        if (cooldown <= 0)
+    virtual void
+    tick_() override
+    {
+        cooldown_ -= game()->time.delta();
+
+        if (cooldown_ <= 0)
         {
-            std::println("Tick {} from node '{}'", counter++, name());
-            cooldown = 1;
+            say_(std::format("{} ticks left", counter_--));
+            cooldown_ = 1;
         }
+
+        if (counter_ == 0)
+        {
+            die_();
+        }
+    }
+
+    virtual void
+    on_unmount_() override
+    {
+        say_("Bye, bye!");
+        std::println("Updated tree:");
+        print_tree(find_root(this));
     }
 };
 
@@ -458,17 +512,20 @@ main()
               .add<Node>().named("Manolito")
                   .add<Node>().named("Fede")
                   .up()
-              .add<Node>().named("Marujita")
-                  .up()
+              .up()
               .add<TestNode>().named("Prueba")
                   .add<Node>().named("Jaimito")
+                  .up()
+              .up()
+              .add<Node>()
+                  .add<Node>()
+                  .up()
+                  .add<Node>()
+                  .up()
+                  .add<Node>().named("Marujita")
               .end();
 
           return root;
-
-
-          // 19 nodes total, 18 used; node 19 is root only
-          // return std::move(nodes[19]);
       },
 
       .on_init = [](Game &game)

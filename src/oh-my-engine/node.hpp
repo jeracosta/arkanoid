@@ -1,7 +1,8 @@
 // A node is the basic building block of a game.
 // Nodes are "mounted" to become part of a game and begin affecting it in some way.
 // Users can derive from a node to implement their own game logic.
-// Games tick all mounted nodes every frame, traversing the tree in a depth-first manner
+// Games tick all mounted nodes every frame, traversing the tree in a depth-first manner.
+// Nodes can "die": a dead node doesn't tick, and gets unmounted and freed by the game.
 // Additional specialized systems (e.g. rendering) could interact with nodes as well.
 // A node can be mounted in three ways:
 //   1. A game assigns it as the root node.
@@ -97,6 +98,12 @@ class Node
         return game_ != nullptr;
     }
 
+    bool
+    is_alive() const
+    {
+        return alive_;
+    }
+
     Node *
     add_child(std::unique_ptr<Node> child_owner)
     {
@@ -158,9 +165,13 @@ class Node
         return self.children_ | values | transform(&std::unique_ptr<Node>::get);
     }
 
-    virtual void
+    void
     tick()
     {
+        assert(is_mounted() && "Tried ticking an unmounted node; mount it first.");
+        assert(is_alive && "Tried ticking a dead node; free it instead.");
+
+        tick_();
     }
 
     virtual ~Node()
@@ -183,8 +194,19 @@ class Node
     }
 
     virtual void
+    tick_()
+    {
+    }
+
+    virtual void
     on_unmount_()
     {
+    }
+
+    void
+    die_()
+    {
+        alive_ = false;
     }
 
   private:
@@ -194,6 +216,7 @@ class Node
     Game        *game_   = nullptr;
     Node        *parent_ = nullptr;
     ChildrenMap_ children_;
+    bool         alive_ = true;
 
     inline static unsigned int nodes_created_ = 0;
 

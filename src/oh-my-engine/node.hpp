@@ -110,7 +110,7 @@ class Node
     }
 
     Node *
-    add_child(std::unique_ptr<Node> child_owner)
+    add_child(std::shared_ptr<Node> child_owner)
     {
         auto child = child_owner.get();
 
@@ -141,7 +141,7 @@ class Node
         return child;
     }
 
-    std::unique_ptr<Node>
+    std::shared_ptr<Node>
     remove_child(const std::string_view &name)
     {
         auto it = children_.find(name);
@@ -167,7 +167,7 @@ class Node
     {
         using namespace std::views;
 
-        return self.children_ | values | transform(&std::unique_ptr<Node>::get);
+        return self.children_ | values | transform(&std::shared_ptr<Node>::get);
     }
 
     void
@@ -282,7 +282,7 @@ class Node
     }
 
   private:
-    using ChildrenMap_ = std::flat_map<std::string, std::unique_ptr<Node>, std::less<>>;
+    using ChildrenMap_ = std::flat_map<std::string, std::shared_ptr<Node>, std::less<>>;
 
     std::string  name_;
     Game        *game_   = nullptr;
@@ -471,7 +471,7 @@ class Node::CompositionCursor
     }
 
     CompositionCursor &
-    add(std::unique_ptr<Node> child)
+    add(std::shared_ptr<Node> child)
     {
         auto *parent = stack_.back();
         auto *node   = parent->add_child(std::move(child));
@@ -517,16 +517,6 @@ class Node::CompositionCursor
 
         stack_.pop_back();
 
-        return *this;
-    }
-
-    // Sets the provided pointer to point to the current node.
-    // Useful for keeping references to important nodes while building a tree.
-    template <class T>
-    CompositionCursor &
-    set(T **node_pointer)
-    {
-        *node_pointer = dynamic_cast<T *>(stack_.back());
         return *this;
     }
 

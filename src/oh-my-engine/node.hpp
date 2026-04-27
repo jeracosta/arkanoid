@@ -1,6 +1,6 @@
 // A node is the basic building block of a game.
 // Nodes are "mounted" to become part of a game and begin affecting it in some way.
-// Users can derive from a node to implement their own game logic.
+// Users can derive from Node::Base to implement their own game logic.
 // Nodes also have instance-level equivalent hooks, called after the class-level virtual hooks.
 // Games tick all mounted nodes every frame, traversing the tree in a depth-first manner.
 // Nodes can "die": a dead node doesn't tick, and gets unmounted and freed by the game.
@@ -16,6 +16,7 @@
 #pragma once
 
 #include <boost/callable_traits.hpp>
+#include <boost/core/type_name.hpp>
 #include <cassert>
 #include <flat_map>
 #include <memory>
@@ -24,6 +25,7 @@
 #include <ranges>
 #include <string>
 
+#include "events.hpp"
 #include "game.hpp"
 
 namespace ome {
@@ -38,11 +40,6 @@ class Node
         std::function<void(Node &)> on_tick    = {};
         std::function<void(Node &)> on_unmount = {};
     };
-
-    Node(std::string_view name = make_default_name_())
-        : name_(name)
-    {
-    }
 
     // non-movable to avoid dangling pointers in parent and children
     Node(Node &&) = delete;
@@ -233,6 +230,12 @@ class Node
         assert(!is_mounted() && "Tried to destroy a mounted node; unmount it first.");
     }
 
+    template <class Derived>
+    class Base;
+
+    template <class>
+    friend class Base;
+
     class CompositionCursor;
 
   protected:
@@ -282,6 +285,12 @@ class Node
     }
 
   private:
+    // Node is not directly constructible; it must be derived from Node::Base.
+    Node(std::string_view name)
+        : name_(name)
+    {
+    }
+
     using ChildrenMap_ = std::flat_map<std::string, std::shared_ptr<Node>, std::less<>>;
 
     std::string  name_;
@@ -290,8 +299,6 @@ class Node
     ChildrenMap_ children_;
 
     Hooks hooks_;
-
-    inline static unsigned int nodes_created_ = 0;
 
     void
     mount_to_(Game *game)
@@ -326,14 +333,123 @@ class Node
         game_ = nullptr;
     }
 
+    friend class Game; // needed for Game to mount nodes
+};
+
+// Base class for nodes.
+// Uses CRTP to leverage static polymorphism and static asserts.
+template <class Derived>
+class Node::Base : public Node
+{
+    // static_assert(std::derived_from<Base, Derived>);
+    //
+    // static_assert(
+    //     std::is_final_v<Derived>,
+    //     "Inhiretance chains disregarded to prevent users from forgetting to call parent hooks."
+    //     "You can create specialized nodes that interact with a parent node instead.");
+
+  public:
+    Base()
+        : Node(make_default_name_())
+    {
+        // Prevents CRTP misuse such as `class Foo : Base<Bar>`,
+        // where the CRTP template parameter does not match the actual derived type.
+        assert(typeid(*this) == typeid(Derived));
+    }
+
+    // void
+    // bind(auto observer, auto method)
+    // {
+    //     return event_dispatcher_.bind(observer, method);
+    // }
+
+  protected:
+  private:
+    inline static unsigned int instances_created_ = 0;
+
+    EventDispatcher<Derived> event_dispatcher_;
+
     static std::string
     make_default_name_()
     {
-        return "Node_" + std::to_string(nodes_created_++);
+        return boost::core::type_name<Derived>() + "_" + std::to_string(instances_created_++);
+    }
+};
+
+// Stateful fluent interface for building a node tree.
+class Node::CompositionCursor
+{
+    std::vector<Node *> stack_;
+
+  public:
+    template <class Root>
+        requires std::derived_from<std::remove_cvref_t<Root>, Node>
+    explicit CompositionCursor(Root &root)
+    {
+        stack_.push_back(&root);
     }
 
-    friend class Game; // needed for Game to mount nodes
+    CompositionCursor &
+    add(std::shared_ptr<Node> child)
+    {
+        auto *parent = stack_.back();
+        auto *node   = parent->add_child(std::move(child));
+        stack_.push_back(node);
+        return *this;
+    }
+
+    template <class T, class... Args>
+        requires std::derived_from<T, Node>
+    CompositionCursor &
+    add(Args &&...args)
+    {
+        return add(std::make_unique<T>(std::forward<Args>(args)...));
+    }
+
+    CompositionCursor &
+    named(std::string name)
+    {
+        stack_.back()->rename(std::move(name));
+
+        return *this;
+    }
+
+#define DEFINE_HOOK_SETTER(name)                                                                   \
+    CompositionCursor &on_##name(auto &&hook)                                                      \
+    {                                                                                              \
+        stack_.back()->hook_##name(std::forward<decltype(hook)>(hook));                            \
+        return *this;                                                                              \
+    }
+    DEFINE_HOOK_SETTER(mount)
+    DEFINE_HOOK_SETTER(ready)
+    DEFINE_HOOK_SETTER(tick)
+    DEFINE_HOOK_SETTER(unmount)
+#undef DEFINE_HOOK_SETTER
+
+    CompositionCursor &
+    up()
+    {
+        if (stack_.size() == 1)
+        {
+            throw std::runtime_error("Node builder tried to move up from root node.");
+        }
+
+        stack_.pop_back();
+
+        return *this;
+    }
+
+    operator Node &()
+    {
+        return *stack_.front(); // root
+    }
 };
+
+inline Node::CompositionCursor
+extending(Node &root)
+{
+    return Node::CompositionCursor(root);
+}
 
 // Follows parent pointers up a game node tree until it finds the root node, which is returned.
 inline Node &
@@ -446,81 +562,6 @@ print_tree(Node &root)
         bool last = std::next(it) == children.end();
         recursive_step(recursive_step, **it, "", last);
     }
-}
-
-// Stateful fluent interface for building a node tree.
-class Node::CompositionCursor
-{
-    std::vector<Node *> stack_;
-
-  public:
-    template <class Root>
-        requires std::derived_from<std::remove_cvref_t<Root>, Node>
-    explicit CompositionCursor(Root &root)
-    {
-        stack_.push_back(&root);
-    }
-
-    CompositionCursor &
-    add(std::shared_ptr<Node> child)
-    {
-        auto *parent = stack_.back();
-        auto *node   = parent->add_child(std::move(child));
-        stack_.push_back(node);
-        return *this;
-    }
-
-    template <class T, class... Args>
-        requires std::derived_from<T, Node>
-    CompositionCursor &
-    add(Args &&...args)
-    {
-        return add(std::make_unique<T>(std::forward<Args>(args)...));
-    }
-
-    CompositionCursor &
-    named(std::string name)
-    {
-        stack_.back()->rename(std::move(name));
-
-        return *this;
-    }
-
-#define DEFINE_HOOK_SETTER(name)                                                                   \
-    CompositionCursor &on_##name(auto &&hook)                                                      \
-    {                                                                                              \
-        stack_.back()->hook_##name(std::forward<decltype(hook)>(hook));                            \
-        return *this;                                                                              \
-    }
-    DEFINE_HOOK_SETTER(mount)
-    DEFINE_HOOK_SETTER(ready)
-    DEFINE_HOOK_SETTER(tick)
-    DEFINE_HOOK_SETTER(unmount)
-#undef DEFINE_HOOK_SETTER
-
-    CompositionCursor &
-    up()
-    {
-        if (stack_.size() == 1)
-        {
-            throw std::runtime_error("Node builder tried to move up from root node.");
-        }
-
-        stack_.pop_back();
-
-        return *this;
-    }
-
-    operator Node &()
-    {
-        return *stack_.front(); // root
-    }
-};
-
-inline Node::CompositionCursor
-extending(Node &root)
-{
-    return Node::CompositionCursor(root);
 }
 
 } // namespace ome

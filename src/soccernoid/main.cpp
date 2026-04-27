@@ -267,13 +267,13 @@ print_message(const auto &node, auto &&message)
                message);
 }
 
-class DespawingNode : public Node
+class DespawningNode : public Node
 {
   private:
     int counter_;
 
   public:
-    DespawingNode(int counter = 5)
+    DespawningNode(int counter = 5)
         : counter_(counter)
     {
     }
@@ -330,16 +330,21 @@ class FrameRateNode : public Eventful<Node, FrameRateEvent>
     }
 };
 
-class FrameRateObserverNode : public Slowed<DespawingNode, 1.0f>
+class FrameRateObserverNode : public Slowed<DespawningNode, 1.0f>
 {
   private:
     std::shared_ptr<EventConnection> connection_;
 
   public:
+    FrameRateObserverNode()
+        : Slowed<DespawningNode, 1.0f>(5) // 5 tics de vida
+    {
+    }
+
     void
     on_mount_() override
     {
-        DespawingNode::on_mount_();
+        DespawningNode::on_mount_();
 
         auto callback = [this](const auto &event)
         {

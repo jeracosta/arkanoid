@@ -114,6 +114,9 @@ class Game
         return root_node_.get();
     }
 
+    std::shared_ptr<Node>
+    unmount_tree();
+
     static void
     run(const Configuration &config)
     {

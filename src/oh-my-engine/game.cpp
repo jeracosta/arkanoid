@@ -120,7 +120,11 @@ Game::update_()
         systems.update(entity, *this);
     }
 
-    visit_dfs(*root_node_, &Node::tick, [](Node &) {});
+    [[likely]]
+    if (root_node_)
+    {
+        visit_dfs(*root_node_, &Node::tick, [](Node &) {});
+    }
 
     for (auto &task : tasks_)
     {
@@ -132,6 +136,13 @@ Game::update_()
     SDL_GL_SwapWindow(window);
 
     frame_count_++;
+}
+
+std::shared_ptr<Node>
+Game::unmount_tree()
+{
+    root_node_->unmount_();
+    return std::move(root_node_);
 }
 
 } // namespace ome

@@ -188,39 +188,20 @@ class Node
     }
 
 #define DEFINE_HOOK_SETTER(name)                                                                   \
-    template <typename Callback>                                                                   \
+    template <typename Callback, class TNode>                                                      \
+        requires std::derived_from<TNode, Node> && std::is_invocable_v<Callback, TNode &>          \
     void hook_##name(Callback &&on_##name)                                                         \
     {                                                                                              \
-        /* We use a free Callback type instead of std::function, and static_assert its shape. */   \
-        /* Awkward, but this deduces node type from the param, avoiding manual specification.  */  \
-                                                                                                   \
-        using CallbackArgs = boost::callable_traits::args_t<Callback>;                             \
-                                                                                                   \
-        static_assert(std::tuple_size_v<CallbackArgs> == 1,                                        \
-                      "Node hook must take exactly one node reference argument.");                 \
-                                                                                                   \
-        using CallbackArg0 = std::tuple_element_t<0, CallbackArgs>;                                \
-                                                                                                   \
-        static_assert(std::is_reference_v<CallbackArg0>,                                           \
-                      "Node hook argument must be a reference type.");                             \
-                                                                                                   \
-        using NodeRef = std::remove_cvref_t<CallbackArg0>;                                         \
-                                                                                                   \
-        static_assert(std::is_base_of_v<Node, NodeRef>,                                            \
-                      "Node hook argument must be a Node or derived Node type.");                  \
-                                                                                                   \
-        using TNode = std::remove_reference_t<CallbackArg0>;                                       \
-                                                                                                   \
         if (dynamic_cast<TNode *>(this) == nullptr)                                                \
         {                                                                                          \
             throw std::runtime_error(                                                              \
                 "Tried setting a node hook that takes an incompatible node type");                 \
         }                                                                                          \
                                                                                                    \
-        auto wrapper = [callback = std::forward<Callback>(on_##name)](Node &node) mutable          \
+        auto adapted_callback = [callback = std::forward<Callback>(on_##name)](Node &node) mutable \
         { callback(static_cast<TNode &>(node)); };                                                 \
                                                                                                    \
-        hooks_.on_##name = std::move(wrapper);                                                     \
+        hooks_.on_##name = std::move(adapted_callback);                                            \
     }
     DEFINE_HOOK_SETTER(mount)
     DEFINE_HOOK_SETTER(ready)

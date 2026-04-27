@@ -61,11 +61,11 @@ class EventDispatcher
         static_assert(std::is_invocable_v<TCallable, const TEvent &>,
                       "Tried binding a callback that cannot be invoked with the event type.");
 
-        auto callback_wrapper = [callback = std::forward<TCallable>(callback)](void *event)
+        auto adapted_callback = [callback = std::forward<TCallable>(callback)](void *event)
         { callback(*static_cast<const TEvent *>(event)); };
 
         auto connection       = std::make_shared<EventConnection>();
-        connection->callback_ = std::move(callback_wrapper);
+        connection->callback_ = std::move(adapted_callback);
 
         connections_<TEvent>().push_back(connection);
 

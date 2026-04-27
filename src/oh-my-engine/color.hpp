@@ -11,8 +11,6 @@ class Color
   private:
     Vec3f rgb_;
 
-    Color() = default;
-
     template <typename... Args>
     Color(Args... args)
         : rgb_{ args... }
@@ -20,6 +18,8 @@ class Color
     }
 
   public:
+    Color() = default; // black
+
     template <typename... Args>
     static constexpr Color
     rgb(Args... args)

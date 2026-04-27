@@ -448,15 +448,6 @@ print_tree(Node &root)
     }
 }
 
-template <class F>
-struct function_traits;
-
-template <class R, class T, class... Args>
-struct function_traits<R (T::*)(Args...) const>
-{
-    using arg0 = std::tuple_element_t<0, std::tuple<Args...>>;
-};
-
 // Stateful fluent interface for building a node tree.
 class Node::CompositionCursor
 {

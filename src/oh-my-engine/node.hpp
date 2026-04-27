@@ -19,11 +19,13 @@
 #include <boost/type_index.hpp>
 #include <cassert>
 #include <flat_map>
+#include <functional>
 #include <memory>
 #include <print>
 #include <queue>
 #include <ranges>
 #include <string>
+#include <type_traits>
 
 #include "game.hpp"
 
@@ -188,10 +190,14 @@ class Node
     }
 
 #define DEFINE_HOOK_SETTER(name)                                                                   \
-    template <typename Callback, class TNode>                                                      \
-        requires std::derived_from<TNode, Node> && std::is_invocable_v<Callback, TNode &>          \
+    template <typename Callback>                                                                   \
     void hook_##name(Callback &&on_##name)                                                         \
     {                                                                                              \
+        using CallbackArgs = boost::callable_traits::args_t<Callback>;                             \
+        using TNode        = std::remove_cvref_t<std::tuple_element_t<0, CallbackArgs>>;           \
+        static_assert(std::derived_from<TNode, Node>);                                             \
+        static_assert(std::is_invocable_v<Callback, TNode &>);                                     \
+                                                                                                   \
         if (dynamic_cast<TNode *>(this) == nullptr)                                                \
         {                                                                                          \
             throw std::runtime_error(                                                              \

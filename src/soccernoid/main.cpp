@@ -19,7 +19,7 @@
 #include "oh-my-engine/math/vector.hpp"
 #include "oh-my-engine/node.hpp"
 #include "oh-my-engine/nodes/gravity_node.hpp"
-#include "oh-my-engine/nodes/slowed_node.hpp"
+#include "oh-my-engine/nodes/mixins/slowed.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
 
 using namespace ome;

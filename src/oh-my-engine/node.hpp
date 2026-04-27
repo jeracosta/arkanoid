@@ -335,6 +335,81 @@ class Node
     friend class Game; // needed for Game to mount nodes
 };
 
+// Stateful fluent interface for building a node tree.
+class Node::CompositionCursor
+{
+    std::vector<Node *> stack_;
+
+  public:
+    template <class Root>
+        requires std::derived_from<std::remove_cvref_t<Root>, Node>
+    explicit CompositionCursor(Root &root)
+    {
+        stack_.push_back(&root);
+    }
+
+    CompositionCursor &
+    add(std::shared_ptr<Node> child)
+    {
+        auto *parent = stack_.back();
+        auto *node   = parent->add_child(std::move(child));
+        stack_.push_back(node);
+        return *this;
+    }
+
+    template <class T, class... Args>
+        requires std::derived_from<T, Node>
+    CompositionCursor &
+    add(Args &&...args)
+    {
+        return add(std::make_unique<T>(std::forward<Args>(args)...));
+    }
+
+    CompositionCursor &
+    named(std::string name)
+    {
+        stack_.back()->rename(std::move(name));
+
+        return *this;
+    }
+
+#define DEFINE_HOOK_SETTER(name)                                                                   \
+    CompositionCursor &on_##name(auto &&hook)                                                      \
+    {                                                                                              \
+        stack_.back()->hook_##name(std::forward<decltype(hook)>(hook));                            \
+        return *this;                                                                              \
+    }
+    DEFINE_HOOK_SETTER(mount)
+    DEFINE_HOOK_SETTER(ready)
+    DEFINE_HOOK_SETTER(tick)
+    DEFINE_HOOK_SETTER(unmount)
+#undef DEFINE_HOOK_SETTER
+
+    CompositionCursor &
+    up()
+    {
+        if (stack_.size() == 1)
+        {
+            throw std::runtime_error("Node builder tried to move up from root node.");
+        }
+
+        stack_.pop_back();
+
+        return *this;
+    }
+
+    operator Node &()
+    {
+        return *stack_.front(); // root
+    }
+};
+
+inline Node::CompositionCursor
+extending(Node &root)
+{
+    return Node::CompositionCursor(root);
+}
+
 // Follows parent pointers up a game node tree until it finds the root node, which is returned.
 inline Node &
 find_root(Node *node)
@@ -446,81 +521,6 @@ print_tree(Node &root)
         bool last = std::next(it) == children.end();
         recursive_step(recursive_step, **it, "", last);
     }
-}
-
-// Stateful fluent interface for building a node tree.
-class Node::CompositionCursor
-{
-    std::vector<Node *> stack_;
-
-  public:
-    template <class Root>
-        requires std::derived_from<std::remove_cvref_t<Root>, Node>
-    explicit CompositionCursor(Root &root)
-    {
-        stack_.push_back(&root);
-    }
-
-    CompositionCursor &
-    add(std::shared_ptr<Node> child)
-    {
-        auto *parent = stack_.back();
-        auto *node   = parent->add_child(std::move(child));
-        stack_.push_back(node);
-        return *this;
-    }
-
-    template <class T, class... Args>
-        requires std::derived_from<T, Node>
-    CompositionCursor &
-    add(Args &&...args)
-    {
-        return add(std::make_unique<T>(std::forward<Args>(args)...));
-    }
-
-    CompositionCursor &
-    named(std::string name)
-    {
-        stack_.back()->rename(std::move(name));
-
-        return *this;
-    }
-
-#define DEFINE_HOOK_SETTER(name)                                                                   \
-    CompositionCursor &on_##name(auto &&hook)                                                      \
-    {                                                                                              \
-        stack_.back()->hook_##name(std::forward<decltype(hook)>(hook));                            \
-        return *this;                                                                              \
-    }
-    DEFINE_HOOK_SETTER(mount)
-    DEFINE_HOOK_SETTER(ready)
-    DEFINE_HOOK_SETTER(tick)
-    DEFINE_HOOK_SETTER(unmount)
-#undef DEFINE_HOOK_SETTER
-
-    CompositionCursor &
-    up()
-    {
-        if (stack_.size() == 1)
-        {
-            throw std::runtime_error("Node builder tried to move up from root node.");
-        }
-
-        stack_.pop_back();
-
-        return *this;
-    }
-
-    operator Node &()
-    {
-        return *stack_.front(); // root
-    }
-};
-
-inline Node::CompositionCursor
-extending(Node &root)
-{
-    return Node::CompositionCursor(root);
 }
 
 } // namespace ome

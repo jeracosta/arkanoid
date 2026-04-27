@@ -15,6 +15,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <boost/callable_traits.hpp>
 #include <boost/type_index.hpp>
 #include <cassert>
@@ -25,6 +26,7 @@
 #include <queue>
 #include <ranges>
 #include <string>
+#include <string_view>
 #include <type_traits>
 
 #include "game.hpp"
@@ -429,29 +431,47 @@ find_ancestor(Node *node)
 template <class T>
     requires std::derived_from<T, Node>
 inline T *
-find_descendant(Node *node)
+find_descendant(Node *from)
 {
-    std::queue<Node *> q;
-    q.push(node);
+    std::queue<Node *> queue;
+    queue.push(from);
 
-    while (!q.empty())
+    while (!queue.empty())
     {
-        Node *cur = q.front();
-        q.pop();
+        Node *current = queue.front();
+        queue.pop();
 
-        for (auto child : cur->children())
+        for (auto child : current->children())
         {
             if (auto *casted = dynamic_cast<T *>(child))
             {
                 return casted;
             }
 
-            q.push(child);
+            queue.push(child);
         }
     }
 
     return nullptr;
 }
+
+#define DEFINE_FIND_NAMED_RELATIVE(relation)                                                       \
+    template <class T>                                                                             \
+        requires std::derived_from<T, Node>                                                        \
+    inline T *find_##relation(std::string_view name, Node *from)                                   \
+    {                                                                                              \
+        for (Node *it = from; it != nullptr; it = find_##relation<T>(it))                          \
+        {                                                                                          \
+            if (it->name() == name)                                                                \
+            {                                                                                      \
+                return it;                                                                         \
+            }                                                                                      \
+        }                                                                                          \
+        return nullptr;                                                                            \
+    }
+DEFINE_FIND_NAMED_RELATIVE(ancestor)
+DEFINE_FIND_NAMED_RELATIVE(descendant)
+#undef DEFINE_FIND_NAMED_RELATIVE
 
 /// Performs a depth-first traversal of a node tree,
 // calling `pre` before visiting children and `post` after.

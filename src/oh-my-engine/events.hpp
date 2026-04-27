@@ -11,9 +11,6 @@ namespace ome {
 template <class... TEvents>
 class EventDispatcher; // forward declaration
 
-// Macro to be used inside a class definition to define the event types it can emit.
-#define DEFINE_EVENTS(...) using Events = ::ome::events_specification<__VA_ARGS__>
-
 struct EventConnection
 {
   private:

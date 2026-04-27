@@ -8,6 +8,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <memory>
 #include <print>
 #include <random>
 #include <typeinfo>
@@ -19,6 +20,7 @@
 #include "oh-my-engine/math/vector.hpp"
 #include "oh-my-engine/node.hpp"
 #include "oh-my-engine/nodes/gravity_node.hpp"
+#include "oh-my-engine/nodes/mixins/eventful.hpp"
 #include "oh-my-engine/nodes/mixins/slowed.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
 
@@ -265,13 +267,13 @@ print_message(const auto &node, auto &&message)
                message);
 }
 
-class TestNode : public Node
+class DespawingNode : public Node
 {
   private:
     int counter_;
 
   public:
-    TestNode(int counter = 5)
+    DespawingNode(int counter = 5)
         : counter_(counter)
     {
     }
@@ -311,13 +313,41 @@ class FallingNode : public Node
     }
 };
 
-class FrameRateNode : public Node
+struct FrameRateEvent
+{
+    float frame_rate;
+};
+
+class FrameRateNode : public Eventful<Node, FrameRateEvent>
 {
   public:
     void
     tick_() override
     {
-        print_message(*this, std::format("FPS: {}", game()->instant_frame_rate()));
+        auto frame_rate = game()->instant_frame_rate();
+        print_message(*this, std::format("FPS: {}", frame_rate));
+        emit_(FrameRateEvent{ .frame_rate = game()->instant_frame_rate() });
+    }
+};
+
+class FrameRateObserverNode : public Slowed<DespawingNode, 1.0f>
+{
+  private:
+    std::shared_ptr<EventConnection> connection_;
+
+  public:
+    void
+    on_mount_() override
+    {
+        DespawingNode::on_mount_();
+
+        auto callback = [this](const auto &event)
+        {
+            auto message = std::format("Observed FPS: {}", event.frame_rate);
+            print_message(*this, message);
+        };
+
+        connection_ = find_ancestor<FrameRateNode>(this)->bind<FrameRateEvent>(callback);
     }
 };
 
@@ -520,6 +550,7 @@ main()
       {
           auto root = std::make_unique<Node>("Root");
 
+          [[maybe_unused]]
           auto print_height = [](FallingNode &node) {
               auto transform = find_descendant<TransformNode>(&node);
               auto height = math::dot(transform->position, up);
@@ -531,16 +562,13 @@ main()
                   .add<Node>().named("Fede")
                   .up()
               .up()
-              .add<Slowed<TestNode, 0.5f>>(10).named("Prueba")
-                  .add<Node>().named("Jaimito")
-                  .up()
+              .add<Node>().named("Jaimito")
               .up()
               .add<Node>()
                   .add<FallingNode>().named("Falling")//.on_tick(print_height)
                   .up()
-                  .add<Slowed<FrameRateNode, 1.0f>>().named("FPS")
-                  .up()
-                  .add<Node>().named("Marujita");
+                  .add<Slowed<FrameRateNode, 0.5f>>().named("FPS")
+                      .add<FrameRateObserverNode>().named("Observador");
 
           return root;
       },

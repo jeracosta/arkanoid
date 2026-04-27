@@ -411,7 +411,7 @@ class Node::CompositionCursor
     }
 };
 
-inline Node::CompositionCursor
+[[nodiscard]] inline Node::CompositionCursor
 extending(Node &root)
 {
     return Node::CompositionCursor(root);

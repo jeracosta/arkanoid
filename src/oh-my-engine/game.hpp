@@ -57,13 +57,13 @@ class Game
     bool                               running_     = false;
     unsigned long                      frame_count_ = 0;
     std::shared_ptr<Enviroment>        enviroment_  = Enviroment::instance();
-    std::unique_ptr<Node>              root_node_;
+    std::shared_ptr<Node>              root_node_;
     std::vector<std::function<void()>> tasks_;
 
     Game(const Configuration &config);
 
     void
-    mount_(std::unique_ptr<Node> node);
+    mount_(std::shared_ptr<Node> node);
 
     void
     update_();

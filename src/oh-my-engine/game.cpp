@@ -78,17 +78,9 @@ Game::Game(const Configuration &config)
 Game::~Game() = default;
 
 void
-Game::mount_(std::unique_ptr<Node> node_owner)
+Game::mount_(std::shared_ptr<Node> node_owner)
 {
     assert(node_owner);
-
-    auto node = node_owner.get();
-
-    [[unlikely]]
-    if (node->is_mounted())
-    {
-        throw std::runtime_error("Cannot mount a node that is already mounted.");
-    }
 
     if (root_node_)
     {

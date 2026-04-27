@@ -16,6 +16,7 @@
 #pragma once
 
 #include <boost/callable_traits.hpp>
+#include <boost/type_index.hpp>
 #include <cassert>
 #include <flat_map>
 #include <memory>
@@ -39,7 +40,7 @@ class Node
         std::function<void(Node &)> on_unmount = {};
     };
 
-    Node(std::string_view name = make_default_name_())
+    Node(std::string_view name = {})
         : name_(name)
     {
     }
@@ -291,12 +292,15 @@ class Node
 
     Hooks hooks_;
 
-    inline static unsigned int nodes_created_ = 0;
-
     void
     mount_to_(Game *game)
     {
         assert(!is_mounted());
+
+        if (name_.empty())
+        {
+            name_ = default_name_();
+        }
 
         game_ = game;
 
@@ -326,10 +330,13 @@ class Node
         game_ = nullptr;
     }
 
-    static std::string
-    make_default_name_()
+    std::string
+    default_name_()
     {
-        return "Node_" + std::to_string(nodes_created_++);
+        auto type_str     = boost::typeindex::type_id_runtime(*this).pretty_name();
+        auto instance_str = std::format("{:x}", reinterpret_cast<std::uintptr_t>(this));
+
+        return type_str + "@" + instance_str;
     }
 
     friend class Game; // needed for Game to mount nodes

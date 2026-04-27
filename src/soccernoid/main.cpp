@@ -567,7 +567,7 @@ main()
               .add<Node>()
                   .add<FallingNode>().named("Falling")//.on_tick(print_height)
                   .up()
-                  .add<Slowed<FrameRateNode, 0.5f>>().named("FPS")
+                  .add<Slowed<FrameRateNode, 1.0f>>().named("FPS")
                       .add<FrameRateObserverNode>().named("Observador");
 
           return root;

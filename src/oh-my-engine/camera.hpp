@@ -63,18 +63,18 @@ struct Camera : private EventBus<ProjectionUpdatedEvent>
         orientation_ = new_orientation;
     }
 
-    FORWARD_TO_MEMBER(steer_pitch, orientation_)
-    FORWARD_TO_MEMBER(steer_roll, orientation_)
-    FORWARD_TO_MEMBER(steer_yaw, orientation_)
-    FORWARD_TO_MEMBER(backward, orientation_)
-    FORWARD_TO_MEMBER(down, orientation_)
-    FORWARD_TO_MEMBER(forward, orientation_)
-    FORWARD_TO_MEMBER(left, orientation_)
-    FORWARD_TO_MEMBER(right, orientation_)
-    FORWARD_TO_MEMBER(up, orientation_)
-    FORWARD_TO_MEMBER(pitch, orientation_)
-    FORWARD_TO_MEMBER(roll, orientation_)
-    FORWARD_TO_MEMBER(rotate, orientation_)
+    FORWARD_TO_MEMBER(orientation_, steer_pitch)
+    FORWARD_TO_MEMBER(orientation_, steer_roll)
+    FORWARD_TO_MEMBER(orientation_, steer_yaw)
+    FORWARD_TO_MEMBER(orientation_, backward)
+    FORWARD_TO_MEMBER(orientation_, down)
+    FORWARD_TO_MEMBER(orientation_, forward)
+    FORWARD_TO_MEMBER(orientation_, left)
+    FORWARD_TO_MEMBER(orientation_, right)
+    FORWARD_TO_MEMBER(orientation_, up)
+    FORWARD_TO_MEMBER(orientation_, pitch)
+    FORWARD_TO_MEMBER(orientation_, roll)
+    FORWARD_TO_MEMBER(orientation_, rotate)
 
     Vec3f
     target() const

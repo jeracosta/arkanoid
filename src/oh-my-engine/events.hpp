@@ -14,31 +14,47 @@ class EventBus; // forward declaration
 
 // Represents a subscription to an event.
 // The registered callback will be invoked for the event as long as the connection is alive.
-struct EventConnection
+// Handle-like class, tighly coupled with the event bus that produced it.
+struct EventConnection : public std::enable_shared_from_this<EventConnection>
 {
   private:
-    // Parameter type-erased to support different event types while
+    // The callable to be invoked when the event is emitted.
+    // Its parameter is type-erased to support different event types while
     // allowing heterogeneous storage of connections.
     std::function<void(void *event)> callback_;
 
-    // If set, connection will automatically disconnect when the owner expires.
-    std::optional<std::weak_ptr<void>> owner_;
+    // If set, the connection should keep itself alive as long as the lifetime anchor is alive.
+    std::optional<std::weak_ptr<void>> lifetime_anchor_;
 
-    bool
-    owner_expired_() const
-    {
-        return owner_.has_value() && owner_->expired();
-    }
+    // Used to keep itself alive, should be reset when the lifetime anchor expires.
+    // XXX: Potential source of memory leaks if used incorrectly.
+    std::shared_ptr<EventConnection> self_ownership_;
 
     template <class... TEvents>
     friend class EventBus;
 
   public:
+    bool
+    is_alive()
+    {
+        return lifetime_anchor_.has_value() && lifetime_anchor_->expired();
+    }
+
+    // When a connection is "tied" to an object, it will be kept alive as long as such object is
+    // alive, and automatically disconnect when the owner expires.
     template <class T>
     void
-    tie_to(const std::shared_ptr<T> &owner)
+    tie_to(const std::shared_ptr<T> &lifetime_anchor)
     {
-        owner_ = owner;
+        lifetime_anchor_ = lifetime_anchor;
+        self_ownership_  = shared_from_this();
+    }
+
+    void
+    untie()
+    {
+        lifetime_anchor_.reset();
+        self_ownership_.reset();
     }
 };
 
@@ -84,7 +100,7 @@ class EventBus
         {
             auto connection = it->lock();
 
-            if (!connection || connection->owner_expired_())
+            if (!connection || connection->is_alive())
             {
                 it = connections.erase(it);
                 continue;

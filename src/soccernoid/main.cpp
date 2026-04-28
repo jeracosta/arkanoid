@@ -571,8 +571,7 @@ main()
           return root;
       },
 
-    .on_init =
-        [](Game &game)
+    .on_init = [](Game &)
     {
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
@@ -580,35 +579,35 @@ main()
     },
 
     .on_update = [&](auto &game)
-{
-    if (camera_node->current_view() == CameraView::FirstPerson)
     {
-        auto dir = game.camera.orientation().quat() * glm::vec3(player.moving_direction);
-        game.camera.target(game.camera.target() + dir * player.speed * game.time.unscaled.delta());
-    }
+        if (camera_node->current_view() == CameraView::FirstPerson)
+        {
+            auto dir = game.camera.orientation().quat() * glm::vec3(player.moving_direction);
+            game.camera.target(game.camera.target() + dir * player.speed * game.time.unscaled.delta());
+        }
 
-    // cancha
-    glBegin(GL_QUADS);
-    {
-        glColor(Color::rgb(0.1, 0.8, 0.1));
-        glVertex3f(-1.0, 0.0, 1.0);
-        glVertex3f(1.0, 0.0, 1.0);
-        glVertex3f(1.0, 0.0, -1.0);
-        glVertex3f(-1.0, 0.0, -1.0);
-    }
-    glEnd();
+        // cancha
+        glBegin(GL_QUADS);
+        {
+            glColor(Color::rgb(0.1, 0.8, 0.1));
+            glVertex3f(-1.0, 0.0, 1.0);
+            glVertex3f(1.0, 0.0, 1.0);
+            glVertex3f(1.0, 0.0, -1.0);
+            glVertex3f(-1.0, 0.0, -1.0);
+        }
+        glEnd();
 
-    // arco
-    glBegin(GL_QUADS);
-    {
-        glColor(Color::rgb(0.9, 0.95, 0.85));
-        glVertex3f(.25, 0.0, -1.0);
-        glVertex3f(.25, 0.2, -1.0);
-        glVertex3f(-.25, 0.2, -1.0);
-        glVertex3f(-.25, 0.0, -1.0);
+        // arco
+        glBegin(GL_QUADS);
+        {
+            glColor(Color::rgb(0.9, 0.95, 0.85));
+            glVertex3f(.25, 0.0, -1.0);
+            glVertex3f(.25, 0.2, -1.0);
+            glVertex3f(-.25, 0.2, -1.0);
+            glVertex3f(-.25, 0.0, -1.0);
+        }
+        glEnd();
     }
-    glEnd();
-}
 });
 
     return EXIT_SUCCESS;

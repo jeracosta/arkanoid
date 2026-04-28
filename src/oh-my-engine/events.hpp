@@ -4,7 +4,6 @@
 #include <boost/mp11.hpp>
 #include <functional>
 #include <memory>
-#include <type_traits>
 #include <vector>
 
 namespace ome {
@@ -12,6 +11,8 @@ namespace ome {
 template <class... TEvents>
 class EventDispatcher; // forward declaration
 
+// Represents a subscription to an event.
+// The registered callback will be invoked for the event as long as the connection is alive.
 struct EventConnection
 {
   private:
@@ -49,9 +50,9 @@ class EventDispatcher
     static constexpr bool supported_ = boost::mp11::mp_contains<Events_, TEvent>::value;
 
   public:
-    // Registers a callback for an event and returns a handle to the connection.
-    // The callback is invoked whenever the event is emitted, receiving the event as an argument.
-    // The subscription remains active while the returned connection handle is alive.
+    // Registers a callback for an event and returns ownership of a handle to the connection.
+    // while that handle remains alive, the callback is invoked whenever the event is emitted.
+    // The callback must be invocable with a single argument of a const ref to the event type.
     template <class TCallback>
     [[nodiscard]] std::shared_ptr<EventConnection>
     bind(TCallback &&callback)
@@ -77,6 +78,7 @@ class EventDispatcher
         return connection;
     }
 
+    // Calls all registered callbacks with live connections to the event.
     template <class TEvent>
         requires supported_<TEvent>
     void

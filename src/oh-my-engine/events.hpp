@@ -5,7 +5,6 @@
 #include <functional>
 #include <memory>
 #include <optional>
-#include <variant>
 #include <vector>
 
 namespace ome {
@@ -71,7 +70,6 @@ class EventBus
   public:
     // Registers a callback for an event and returns ownership of a handle to the connection.
     // While that handle remains alive, the callback is invoked whenever the event is emitted.
-    // The callback must be invocable with a single argument of a const ref to the event type.
     template <class TCallback>
     [[nodiscard]] std::shared_ptr<EventConnection>
     bind(TCallback &&callback)
@@ -97,6 +95,20 @@ class EventBus
         return connection;
     }
 
+    // Adapts bind to support callbacks that take no parameters, by ignoring the event parameter.
+    template <class TEvent, class TCallback>
+        requires std::is_invocable_v<TCallback>
+    [[nodiscard]] std::shared_ptr<EventConnection>
+    bind(TCallback &&callback)
+    {
+        auto adapted_callback
+            = [callback = std::forward<TCallback>(callback)](const TEvent &) { callback(); };
+
+        return bind(adapted_callback);
+    }
+
+    // Adapts bind to support member function pointers as callbacks, with an implicit instance
+    // parameter.
     template <class T, class Event>
     [[nodiscard]] std::shared_ptr<EventConnection>
     bind(void (T::*member)(const Event &), T *instance)

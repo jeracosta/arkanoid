@@ -274,12 +274,12 @@ class Node
   private:
     using ChildrenMap_ = std::flat_map<std::string, std::shared_ptr<Node>, std::less<>>;
 
-    std::string  name_;
-    Game        *game_   = nullptr;
-    Node        *parent_ = nullptr;
-    ChildrenMap_ children_;
-
-    Hooks hooks_;
+    std::string  name_     = "";      // empty placeholder; default name is set on mount if unset
+    bool         enabled_  = true;    // disabled nodes don't tick
+    Game        *game_     = nullptr; // the game this node is mounted to, or nullptr if unmounted
+    Node        *parent_   = nullptr;
+    ChildrenMap_ children_ = {};
+    Hooks        hooks_    = {};
 
     void
     mount_to_(Game *game)

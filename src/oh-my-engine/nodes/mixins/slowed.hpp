@@ -7,8 +7,7 @@ namespace ome {
 
 // Adapts a node to only tick at a specified period, effectively slowing it down by skipping ticks
 // in between. It does not slow down instance-level hooks.
-template <typename TBase, float TPeriod, typename TDuration = ome::Time::Unit>
-    requires std::derived_from<TBase, Node>
+template <std::derived_from<Node> TBase, float TPeriod, typename TDuration = ome::Time::Unit>
 class Slowed : public TBase
 {
   private:

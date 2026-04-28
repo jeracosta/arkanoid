@@ -2,6 +2,7 @@
 #include <GL/glu.h>
 #include <SDL2/SDL.h>
 #include <SDL_keycode.h>
+#include <algorithm>
 #include <cstdlib>
 #include <cxxabi.h>
 #include <format>
@@ -25,6 +26,8 @@
 #include "oh-my-engine/nodes/mixins/slowed.hpp"
 #include "oh-my-engine/nodes/particle_emitter_node.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
+#include "soccernoid/level.hpp"
+#include "soccernoid/nodes/camera_control.hpp"
 
 using namespace ome;
 using namespace ome::ecs;
@@ -202,48 +205,6 @@ class DebugSystem : public System
     }
 };
 
-enum class CameraView
-{
-    FirstPerson,
-    ThirdPerson,
-    Count_
-};
-
-CameraView
-next(CameraView view)
-{
-    return static_cast<CameraView>((static_cast<int>(view) + 1)
-                                   % static_cast<int>(CameraView::Count_));
-}
-
-void
-update_camera(CameraView view, Camera &camera)
-{
-    switch (view)
-    {
-    case CameraView::FirstPerson:
-    {
-        auto distance      = 0.1f;
-        auto delta_distace = camera.distance() - distance;
-        auto delta_target  = camera.backward() * delta_distace;
-
-        camera.move_target(delta_target);
-        camera.distance(distance);
-
-        break;
-    }
-    case CameraView::ThirdPerson:
-    {
-        camera.distance(5);
-        camera.orientate({});
-
-        break;
-    }
-    default:
-        throw std::runtime_error("Unsuported camera view");
-    }
-}
-
 template <class T>
 std::string
 type_name()
@@ -253,21 +214,6 @@ type_name()
     std::string s      = (status == 0 && p) ? p : typeid(T).name();
     std::free(p);
     return s;
-}
-
-void
-print_message(const auto &node, auto &&message)
-{
-    auto now  = std::chrono::system_clock::now();
-    auto time = floor<std::chrono::seconds>(now);
-
-    std::print("\033[37m[{:%H:%M:%S}]\033[0m "
-               "\033[34m{} ({}): \033[0m "
-               "\033[37m{}\033[0m\n",
-               time,
-               node.name(),
-               type_name<std::remove_cvref_t<decltype(node)>>(),
-               message);
 }
 
 class DespawningNode : public Node
@@ -359,11 +305,11 @@ class FrameRateObserverNode : public Slowed<DespawningNode, 1.0f>
     }
 };
 
+using namespace soccernoid;
+
 int
 main()
 {
-    auto view = CameraView::ThirdPerson;
-
     struct
     {
         float speed = 1.5f;
@@ -382,14 +328,16 @@ main()
 
     Vec3f *gravity;
 
+    auto camera_node = std::make_shared<CameraControlNode>();
+
     Game::run({
       .window = {
             .title = "Soccernoid",
             .size  = {640, 480},
       },
-      
+
       .camera = {
-          .distance = 5,
+          .distance = 3,
       },
 
       .configure_input = [&](auto &inputs, auto &game)
@@ -415,9 +363,14 @@ main()
 
           inputs.keyboard.bind(SDLK_TAB, Press, [&]
           {
-              view = next(view);
-              update_camera(view, game.camera);
-              std::println("Switched to {} view", view == CameraView::FirstPerson ? "first person" : "third person");
+              using enum CameraView;
+
+              auto view = succesor(camera_node->current_view());
+
+              camera_node->set_view(view);
+
+              auto message = std::format("Switched to {} view", view == CameraView::FirstPerson ? "first person" : "third person");
+              print_message(*camera_node, message);
           });
 
           inputs.keyboard.bind(SDLK_SPACE, {Press, Repeat}, [&]
@@ -512,7 +465,7 @@ main()
               float yaw   = -input.delta[0] * 0.01f;
               float pitch = -input.delta[1] * 0.01f;
 
-              switch (view)
+              switch (camera_node->current_view())
               {
                 case CameraView::FirstPerson:
                 {
@@ -559,7 +512,7 @@ main()
 
       },
 
-      .make_root_node = [] (Game &)
+      .make_root_node = [&] (Game &)
       {
           auto root = std::make_unique<Node>("Root");
 
@@ -608,6 +561,7 @@ main()
           };
       
           extending(*root)
+              .add(camera_node).named("Camera")
               .add<Node>().named("Manolito")
                   .add<Node>().named("Fede")
                   .up()
@@ -638,7 +592,7 @@ main()
 
     .on_update = [&](auto &game)
 {
-    if (view == CameraView::FirstPerson)
+    if (camera_node->current_view() == CameraView::FirstPerson)
     {
         auto dir = game.camera.orientation().quat() * glm::vec3(player.moving_direction);
         game.camera.target(game.camera.target() + dir * player.speed * game.time.unscaled.delta());

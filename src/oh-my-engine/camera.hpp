@@ -13,7 +13,7 @@ namespace ome {
 
 struct ProjectionUpdatedEvent;
 
-struct Camera : private EventDispatcher<ProjectionUpdatedEvent>
+struct Camera : private EventBus<ProjectionUpdatedEvent>
 {
   public:
     struct Settings
@@ -128,7 +128,7 @@ struct Camera : private EventDispatcher<ProjectionUpdatedEvent>
         return Vec3f(world);
     }
 
-    using EventDispatcher<ProjectionUpdatedEvent>::bind;
+    using EventBus<ProjectionUpdatedEvent>::bind;
 
     float
     fov_degrees() const

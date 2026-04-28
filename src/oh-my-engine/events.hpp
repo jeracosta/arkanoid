@@ -5,12 +5,13 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <variant>
 #include <vector>
 
 namespace ome {
 
 template <class... TEvents>
-class EventDispatcher; // forward declaration
+class EventBus; // forward declaration
 
 // Represents a subscription to an event.
 // The registered callback will be invoked for the event as long as the connection is alive.
@@ -31,7 +32,7 @@ struct EventConnection
     }
 
     template <class... TEvents>
-    friend class EventDispatcher;
+    friend class EventBus;
 
   public:
     template <class T>
@@ -43,7 +44,7 @@ struct EventConnection
 };
 
 template <class... TEvents>
-class EventDispatcher
+class EventBus
 {
   private:
     using Events_ = boost::mp11::mp_list<TEvents...>;
@@ -69,7 +70,7 @@ class EventDispatcher
 
   public:
     // Registers a callback for an event and returns ownership of a handle to the connection.
-    // while that handle remains alive, the callback is invoked whenever the event is emitted.
+    // While that handle remains alive, the callback is invoked whenever the event is emitted.
     // The callback must be invocable with a single argument of a const ref to the event type.
     template <class TCallback>
     [[nodiscard]] std::shared_ptr<EventConnection>

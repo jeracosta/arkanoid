@@ -9,18 +9,18 @@ namespace ome {
 // Adapts a node to produce events of the specified types, allowing observers to subscribe to them.
 template <typename Base, typename... Events>
     requires std::derived_from<Base, Node>
-class Eventful : public Base, private EventDispatcher<Events...>
+class Eventful : public Base, private EventBus<Events...>
 {
   protected:
     void
     emit_(const auto &event)
     {
-        EventDispatcher<Events...>::emit(event);
+        EventBus<Events...>::emit(event);
     }
 
   public:
     using Base::Base;
-    using EventDispatcher<Events...>::bind;
+    using EventBus<Events...>::bind;
 };
 
 } // namespace ome

@@ -56,6 +56,11 @@ Game::Game(const Configuration &config)
       window(config.window),
       camera(config.camera)
 {
+    if (config_.make_logger)
+    {
+        logger_ = config_.make_logger();
+    }
+
     if (config_.configure_input)
     {
         config_.configure_input(input_mapper_, *this);

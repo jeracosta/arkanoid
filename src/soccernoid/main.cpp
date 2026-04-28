@@ -229,13 +229,13 @@ class DespawningNode : public Node
     virtual void
     on_mount_() override
     {
-        print_message(*this, "Hello, world!");
+        log(*this, "Hello, world!", game()->logger());
     }
 
     virtual void
     tick_() override
     {
-        print_message(*this, std::format("{} ticks left", counter_));
+        log(*this, std::format("{} ticks left", counter_), game()->logger(), LogLevel::Debug);
 
         if (counter_-- == 0)
         {
@@ -246,7 +246,7 @@ class DespawningNode : public Node
     virtual void
     on_unmount_() override
     {
-        print_message(*this, "Bye, bye!");
+        log(*this, "Bye, bye!", game()->logger());
         std::println("Updated tree:");
         print_tree(find_root(this));
     }
@@ -274,7 +274,7 @@ class FrameRateNode : public Eventful<Node, FrameRateEvent>
     {
         auto frame_rate = game()->instant_frame_rate();
 
-        print_message(*this, std::format("FPS: {}", frame_rate));
+        log(*this, std::format("FPS: {}", frame_rate), game()->logger());
 
         emit_(FrameRateEvent{ frame_rate });
     }
@@ -296,7 +296,7 @@ class FrameRateObserverNode : public Slowed<DespawningNode, 1.0f>
         auto callback = [this](const FrameRateEvent &event)
         {
             auto message = std::format("Observed FPS: {}", event.frame_rate);
-            print_message(*this, message);
+            log(*this, message, game()->logger(), LogLevel::Debug);
         };
 
         auto connection = find_ancestor<FrameRateNode>(this)->bind(callback);
@@ -371,7 +371,7 @@ main()
               camera_node->set_view(view);
 
               auto message = std::format("Switched to {} view", view == CameraView::FirstPerson ? "first person" : "third person");
-              print_message(*camera_node, message);
+              log(*camera_node, message, game.logger());
           });
 
           inputs.keyboard.bind(SDLK_SPACE, {Press, Repeat}, [&]
@@ -518,7 +518,7 @@ main()
           auto root = std::make_shared<Node>("Root");
 
           root->hold(root->bind<NodeGotReady>([&root = *root]{
-              std::println("Game started");
+              log(root, "¡Si capitán, estamos listos!", root.game()->logger());
               print_tree(root);
           }));
 
@@ -552,20 +552,6 @@ main()
               .emission_rate = 0.001f
           });
 
-          // particle_node->hook_tick([](ParticleEmitterNode &node)
-          // {
-          //     print_message(node, std::format("Particle count: {}", node.particle_count()));
-          // });
-
-          [[maybe_unused]]
-          auto print_height
-              = [](FallingNode &node)
-          {
-              auto transform = find_descendant<TransformNode>(&node);
-              auto height    = math::dot(transform->position, up);
-              print_message(node, std::format("Height: {}", height));
-          };
-      
           extending(*root)
               .add(camera_node).named("Camera")
               .add<Node>().named("Manolito")
@@ -577,7 +563,7 @@ main()
                   .up()
               .up()
               .add<Node>()
-                  .add<FallingNode>().named("Falling")//.on_tick(print_height)
+                  .add<FallingNode>().named("Falling")
                   .up()
                   .add<Slowed<FrameRateNode, 1.0f>>().named("FPS")
                       .add<FrameRateObserverNode>().named("Observador");

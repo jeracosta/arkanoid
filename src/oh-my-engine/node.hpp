@@ -66,10 +66,10 @@ class Node : public std::enable_shared_from_this<Node>,
     std::string
     default_name() const
     {
-        auto type_str     = boost::typeindex::type_id_runtime(*this).pretty_name();
-        auto instance_str = std::format("{:x}", reinterpret_cast<std::uintptr_t>(this));
+        auto type_str   = boost::typeindex::type_id_runtime(*this).pretty_name();
+        auto addres_str = address_string(this);
 
-        return type_str + "@" + instance_str;
+        return type_str + "@" + addres_str;
     }
 
     Game *
@@ -493,20 +493,11 @@ print_tree(Node &root)
     }
 }
 
-// TODO: Use an actual logger approach instead of this
 void
-print_message(const auto &node, auto &&message)
+log(const auto &node, auto &&message, Logger &logger, LogLevel level = LogLevel::Info)
 {
-    auto now  = std::chrono::system_clock::now();
-    auto time = floor<std::chrono::seconds>(now);
-
-    std::print("\033[37m[{:%H:%M:%S}]\033[0m "
-               "\033[34m{} ({}): \033[0m "
-               "\033[37m{}\033[0m\n",
-               time,
-               node.name(),
-               node.default_name(),
-               message);
+    auto prefix = std::format("\033[34m{} ({}): \033[0m", node.name(), address_string(&node));
+    logger.log(prefix + message, level);
 }
 
 } // namespace ome

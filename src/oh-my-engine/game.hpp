@@ -6,6 +6,7 @@
 
 #include "camera.hpp"
 #include "input.hpp"
+#include "logger.hpp"
 #include "oh-my-engine/entity-component-system/entity_store.hpp"
 #include "oh-my-engine/entity-component-system/system_store.hpp"
 #include "pause.hpp"
@@ -33,6 +34,9 @@ class Game : public EventConnectionHolder
 
     struct Configuration
     {
+        std::function<std::unique_ptr<Logger>()> make_logger
+            = [] { return std::make_unique<ConsoleLogger>(); };
+
         Window::Configuration window;
 
         Camera::Settings camera;
@@ -62,6 +66,7 @@ class Game : public EventConnectionHolder
     std::shared_ptr<Enviroment>        enviroment_  = Enviroment::instance();
     std::shared_ptr<Node>              root_node_;
     std::vector<std::function<void()>> tasks_;
+    std::unique_ptr<Logger>            logger_;
 
     Game(const Configuration &config);
 
@@ -102,6 +107,12 @@ class Game : public EventConnectionHolder
     stop()
     {
         running_ = false;
+    }
+
+    Logger &
+    logger()
+    {
+        return *logger_;
     }
 
     uint

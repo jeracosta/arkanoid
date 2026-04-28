@@ -78,6 +78,15 @@ class EventDispatcher
         return connection;
     }
 
+    template <class T, class Event>
+    [[nodiscard]] std::shared_ptr<EventConnection>
+    bind(void (T::*member)(const Event &), T *instance)
+    {
+        auto callback = [instance, member](const Event &event) { (instance->*member)(event); };
+
+        return bind(callback);
+    }
+
     // Calls all registered callbacks with live connections to the event.
     template <class TEvent>
         requires supported_<TEvent>

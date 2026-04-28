@@ -33,7 +33,7 @@
 
 namespace ome {
 
-class Node : public std::enable_shared_from_this<Node>
+class Node : public std::enable_shared_from_this<Node>, public EventConnectionHolder
 {
   public:
     struct Hooks

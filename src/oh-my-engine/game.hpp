@@ -16,7 +16,7 @@ namespace ome {
 
 class Node; // forward declaration
 
-class Game
+class Game : public EventConnectionHolder
 {
   public:
     class Enviroment
@@ -55,14 +55,13 @@ class Game
     ~Game();
 
   private:
-    Configuration                                 config_;
-    input::InputMapper                            input_mapper_;
-    bool                                          running_     = false;
-    unsigned long                                 frame_count_ = 0;
-    std::shared_ptr<Enviroment>                   enviroment_  = Enviroment::instance();
-    std::shared_ptr<Node>                         root_node_;
-    std::vector<std::function<void()>>            tasks_;
-    std::vector<std::shared_ptr<EventConnection>> event_connections_;
+    Configuration                      config_;
+    input::InputMapper                 input_mapper_;
+    bool                               running_     = false;
+    unsigned long                      frame_count_ = 0;
+    std::shared_ptr<Enviroment>        enviroment_  = Enviroment::instance();
+    std::shared_ptr<Node>              root_node_;
+    std::vector<std::function<void()>> tasks_;
 
     Game(const Configuration &config);
 

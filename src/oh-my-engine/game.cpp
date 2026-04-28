@@ -76,7 +76,7 @@ Game::Game(const Configuration &config)
         config_.on_init(*this);
     }
 
-    event_connections_.push_back(camera.bind(&Game::on_projection_update_, this));
+    hold(camera.bind(&Game::on_projection_update_, this));
 }
 
 Game::~Game() = default;

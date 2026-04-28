@@ -4,7 +4,6 @@
 #include <boost/mp11.hpp>
 #include <functional>
 #include <memory>
-#include <optional>
 #include <vector>
 
 namespace ome {
@@ -14,47 +13,38 @@ class EventBus; // forward declaration
 
 // Represents a subscription to an event.
 // The registered callback will be invoked for the event as long as the connection is alive.
-// Handle-like class, tighly coupled with the event bus that produced it.
+// Handle-like class, tighly coupled to the event bus instance that produced it.
 struct EventConnection : public std::enable_shared_from_this<EventConnection>
 {
   private:
     // The callable to be invoked when the event is emitted.
     // Its parameter is type-erased to support different event types while
-    // allowing heterogeneous storage of connections.
+    // allowing homogeneous storage of connections.
     std::function<void(void *event)> callback_;
-
-    // If set, the connection should keep itself alive as long as the lifetime anchor is alive.
-    std::optional<std::weak_ptr<void>> lifetime_anchor_;
-
-    // Used to keep itself alive, should be reset when the lifetime anchor expires.
-    // XXX: Potential source of memory leaks if used incorrectly.
-    std::shared_ptr<EventConnection> self_ownership_;
 
     template <class... TEvents>
     friend class EventBus;
+};
+
+// Class that holds ownership of event connections, keeping them alive until the holder is destroyed
+// or explicitly drops them.
+class EventConnectionHolder
+{
+  private:
+    std::vector<std::shared_ptr<EventConnection>> connections_;
 
   public:
-    bool
-    is_alive()
+    void
+    hold(std::shared_ptr<EventConnection> connection)
     {
-        return lifetime_anchor_.has_value() && lifetime_anchor_->expired();
+        connections_.push_back(std::move(connection));
     }
 
-    // When a connection is "tied" to an object, it will be kept alive as long as such object is
-    // alive, and automatically disconnect when the owner expires.
-    template <class T>
+  protected:
     void
-    tie_to(const std::shared_ptr<T> &lifetime_anchor)
+    drop_connections_()
     {
-        lifetime_anchor_ = lifetime_anchor;
-        self_ownership_  = shared_from_this();
-    }
-
-    void
-    untie()
-    {
-        lifetime_anchor_.reset();
-        self_ownership_.reset();
+        connections_.clear();
     }
 };
 
@@ -98,16 +88,15 @@ class EventBus
 
         for (auto it = connections.begin(); it != connections.end();)
         {
-            auto connection = it->lock();
-
-            if (!connection || connection->is_alive())
+            if (auto connection = it->lock())
+            {
+                std::invoke(connection->callback_, const_cast<TEvent *>(&event));
+                ++it;
+            }
+            else
             {
                 it = connections.erase(it);
-                continue;
             }
-
-            std::invoke(connection->callback_, const_cast<TEvent *>(&event));
-            ++it;
         }
     }
 

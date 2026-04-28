@@ -7,6 +7,7 @@
 #include "input.hpp"
 #include "node.hpp"
 #include "oh-my-engine/entity-component-system/system_store.hpp"
+#include "oh-my-engine/open_gl/matrix_mode_guard.hpp"
 #include "time.hpp"
 #include "window.hpp"
 
@@ -52,7 +53,8 @@ Game::Enviroment::~Enviroment()
 
 Game::Game(const Configuration &config)
     : config_(config),
-      window(config.window)
+      window(config.window),
+      camera(config.camera)
 {
     if (config_.configure_input)
     {
@@ -73,6 +75,8 @@ Game::Game(const Configuration &config)
     {
         config_.on_init(*this);
     }
+
+    event_connections_.push_back(camera.bind(&Game::on_projection_update_, this));
 }
 
 Game::~Game() = default;
@@ -113,6 +117,8 @@ Game::update_()
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
+    ome::open_gl::look_at(camera);
+
     config_.on_update(*this);
 
     for (auto entity : entities.living())
@@ -143,6 +149,18 @@ Game::unmount_tree()
 {
     root_node_->unmount_();
     return std::move(root_node_);
+}
+
+void
+Game::on_projection_update_(const ProjectionUpdatedEvent &event)
+{
+    auto &projection = event.new_projection;
+
+    ome::open_gl::MatrixModeGuard mmg;
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+
+    gluPerspective(projection.fov_degrees, projection.aspect_ratio, camera.near(), camera.far());
 }
 
 } // namespace ome

@@ -4,6 +4,7 @@
 #include <SDL2/SDL.h>
 #include <memory>
 
+#include "camera.hpp"
 #include "input.hpp"
 #include "oh-my-engine/entity-component-system/entity_store.hpp"
 #include "oh-my-engine/entity-component-system/system_store.hpp"
@@ -34,6 +35,8 @@ class Game
     {
         Window::Configuration window;
 
+        Camera::Settings camera;
+
         // Configures the input mapper. Called once at the beginning of the session.
         std::function<void(input::InputMapper &, Game &)> configure_input = {};
 
@@ -52,13 +55,14 @@ class Game
     ~Game();
 
   private:
-    Configuration                      config_;
-    input::InputMapper                 input_mapper_;
-    bool                               running_     = false;
-    unsigned long                      frame_count_ = 0;
-    std::shared_ptr<Enviroment>        enviroment_  = Enviroment::instance();
-    std::shared_ptr<Node>              root_node_;
-    std::vector<std::function<void()>> tasks_;
+    Configuration                                 config_;
+    input::InputMapper                            input_mapper_;
+    bool                                          running_     = false;
+    unsigned long                                 frame_count_ = 0;
+    std::shared_ptr<Enviroment>                   enviroment_  = Enviroment::instance();
+    std::shared_ptr<Node>                         root_node_;
+    std::vector<std::function<void()>>            tasks_;
+    std::vector<std::shared_ptr<EventConnection>> event_connections_;
 
     Game(const Configuration &config);
 
@@ -79,8 +83,13 @@ class Game
         }
     }
 
+    void
+    on_projection_update_(const ProjectionUpdatedEvent &projection);
+
   public:
     Window window;
+
+    Camera camera;
 
     Time time;
 

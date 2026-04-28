@@ -4,6 +4,7 @@
 #include <SDL_keycode.h>
 #include <cstdlib>
 #include <cxxabi.h>
+#include <format>
 #include <functional>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -22,6 +23,7 @@
 #include "oh-my-engine/nodes/gravity_node.hpp"
 #include "oh-my-engine/nodes/mixins/eventful.hpp"
 #include "oh-my-engine/nodes/mixins/slowed.hpp"
+#include "oh-my-engine/nodes/particle_emitter_node.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
 
 using namespace ome;
@@ -214,27 +216,28 @@ next(CameraView view)
                                    % static_cast<int>(CameraView::Count_));
 }
 
-Camera
-make_camera(CameraView view, Camera camera = {})
+void
+update_camera(CameraView view, Camera &camera)
 {
     switch (view)
     {
     case CameraView::FirstPerson:
     {
         auto distance      = 0.1f;
-        auto delta_distace = camera.distance - distance;
-        auto delta_target  = camera.orientation.backward() * delta_distace;
-        return {
-            .target      = camera.target + delta_target,
-            .orientation = camera.orientation,
-            .distance    = distance,
-        };
+        auto delta_distace = camera.distance() - distance;
+        auto delta_target  = camera.backward() * delta_distace;
+
+        camera.move_target(delta_target);
+        camera.distance(distance);
+
+        break;
     }
     case CameraView::ThirdPerson:
     {
-        return {
-            .distance = 5,
-        };
+        camera.distance(5);
+        camera.orientate({});
+
+        break;
     }
     default:
         throw std::runtime_error("Unsuported camera view");
@@ -346,13 +349,13 @@ class FrameRateObserverNode : public Slowed<DespawningNode, 1.0f>
     {
         DespawningNode::on_mount_();
 
-        auto callback = [this](const auto &event)
+        auto callback = [this](const FrameRateEvent &event)
         {
             auto message = std::format("Observed FPS: {}", event.frame_rate);
             print_message(*this, message);
         };
 
-        connection_ = find_ancestor<FrameRateNode>(this)->bind<FrameRateEvent>(callback);
+        connection_ = find_ancestor<FrameRateNode>(this)->bind(callback);
     }
 };
 
@@ -360,8 +363,6 @@ int
 main()
 {
     auto view = CameraView::ThirdPerson;
-
-    auto camera = make_camera(view);
 
     struct
     {
@@ -382,9 +383,13 @@ main()
     Vec3f *gravity;
 
     Game::run({
-        .window = {
+      .window = {
             .title = "Soccernoid",
             .size  = {640, 480},
+      },
+      
+      .camera = {
+          .distance = 5,
       },
 
       .configure_input = [&](auto &inputs, auto &game)
@@ -411,7 +416,7 @@ main()
           inputs.keyboard.bind(SDLK_TAB, Press, [&]
           {
               view = next(view);
-              camera = make_camera(view, camera);
+              update_camera(view, game.camera);
               std::println("Switched to {} view", view == CameraView::FirstPerson ? "first person" : "third person");
           });
 
@@ -502,6 +507,8 @@ main()
 
           inputs.mouse_motion.bind([&](auto input)
           {
+              auto& camera = game.camera;
+
               float yaw   = -input.delta[0] * 0.01f;
               float pitch = -input.delta[1] * 0.01f;
 
@@ -509,24 +516,25 @@ main()
               {
                 case CameraView::FirstPerson:
                 {
-                    camera.orientation.steer_yaw(yaw);
-                    camera.orientation.steer_pitch(pitch);
+                    camera.steer_yaw(yaw);
+                    camera.steer_pitch(pitch);
                     break;
                 }
                 case CameraView::ThirdPerson:
                 {
-                    camera.orientation.rotate(yaw, camera.orientation.down());
-                    camera.orientation.rotate(pitch, camera.orientation.left());
+                    // FIXME: it tilts
+                    camera.rotate(yaw, camera.up());
+                    camera.rotate(pitch, camera.right());
                     break;
                 }
                 default:
                     throw std::runtime_error("Unsuported camera view");
               }
 
-              *gravity = camera.orientation.down() * 9.81f;
+              *gravity = camera.down() * 9.81f;
 
-              spawn_area.from = camera.to_world({ -0.5f, 3.0f, -camera.distance - 0.5f });
-              spawn_area.to   = camera.to_world({ 0.5f, 4.0f, -camera.distance + 0.5f });
+              spawn_area.from = from_camera_space({ -0.5f, 3.0f, -camera.distance() - 0.5f }, camera);
+              spawn_area.to   = from_camera_space({ 0.5f, 4.0f, -camera.distance() + 0.5f }, camera);
 
           });
       },
@@ -555,19 +563,58 @@ main()
       {
           auto root = std::make_unique<Node>("Root");
 
-          [[maybe_unused]]
-          auto print_height = [](FallingNode &node) {
-              auto transform = find_descendant<TransformNode>(&node);
-              auto height = math::dot(transform->position, up);
-              print_message(node, std::format("Height: {}", height));
+          ParticleBlueprint particle_blueprint = {
+              .color = {
+                  .origin = {1.0, 0.0, 0.0, 1.0},
+                  .target = {0.0, 1.0, 0.5, 0.9},
+                  .curve  = Curve::linear(),
+              },
+              .scale = {
+                  .origin = 1.2f,
+                  .target = 1.3f,
+                  .curve  = Curve::linear(),
+              },
+              .velocity = {
+                  .origin = Vec3f(0.0, -0.2, 0.0),
+                  .target = Vec3f(0.0, -0.2, 0.2),
+                  .curve  = Curve::linear(),
+              },
+              .origin = Vec3f(0.0, 0.2, 0.0),
+              .angular_speed = {
+                  .origin = 0,
+                  .target = 0,
+                  .curve  = Curve::linear(),
+              },
+              .time_to_live = 1.5,
           };
 
+          auto particle_node = std::make_shared<ParticleEmitterNode>(ParticleEmitterNode::Configuration{
+              .particle_blueprint = particle_blueprint,
+              .emission_rate = 0.001f
+          });
+
+          // particle_node->hook_tick([](ParticleEmitterNode &node)
+          // {
+          //     print_message(node, std::format("Particle count: {}", node.particle_count()));
+          // });
+
+          [[maybe_unused]]
+          auto print_height
+              = [](FallingNode &node)
+          {
+              auto transform = find_descendant<TransformNode>(&node);
+              auto height    = math::dot(transform->position, up);
+              print_message(node, std::format("Height: {}", height));
+          };
+      
           extending(*root)
               .add<Node>().named("Manolito")
                   .add<Node>().named("Fede")
                   .up()
               .up()
               .add<Node>().named("Jaimito")
+                  .add(particle_node).named("Particulas")
+                  .up()
               .up()
               .add<Node>()
                   .add<FallingNode>().named("Falling")//.on_tick(print_height)
@@ -578,49 +625,48 @@ main()
           return root;
       },
 
-      .on_init = [](Game &game)
-      {
-          glMatrixMode(GL_PROJECTION);
-          glLoadIdentity();
-          gluPerspective(45.0, 640.0 / 480.0, 0.1, 100.0);
+    .on_init =
+        [](Game &game)
+{
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(45.0, 640.0 / 480.0, 0.1, 100.0);
 
-          std::println("Game initialized. Tree:");
-          print_tree(*game.root_node());
-      },
+    std::println("Game initialized. Tree:");
+    print_tree(*game.root_node());
+},
 
-      .on_update = [&](auto & game)
-      {
-          if (view == CameraView::FirstPerson) {
-              auto dir = camera.orientation.quat() * glm::vec3(player.moving_direction);
-              camera.target += dir * player.speed * game.time.unscaled.delta();
-          }
+    .on_update = [&](auto &game)
+{
+    if (view == CameraView::FirstPerson)
+    {
+        auto dir = game.camera.orientation().quat() * glm::vec3(player.moving_direction);
+        game.camera.target(game.camera.target() + dir * player.speed * game.time.unscaled.delta());
+    }
 
-          gluLookAt(camera);
+    // cancha
+    glBegin(GL_QUADS);
+    {
+        glColor(Color::rgb(0.1, 0.8, 0.1));
+        glVertex3f(-1.0, 0.0, 1.0);
+        glVertex3f(1.0, 0.0, 1.0);
+        glVertex3f(1.0, 0.0, -1.0);
+        glVertex3f(-1.0, 0.0, -1.0);
+    }
+    glEnd();
 
-          // cancha
-          glBegin(GL_QUADS);
-          {
-              glColor(Color::rgb( 0.1, 0.8, 0.1 ));
-              glVertex3f( -1.0  , 0.0 ,  1.0);
-              glVertex3f(  1.0  , 0.0 ,  1.0);
-              glVertex3f(  1.0  , 0.0 , -1.0);
-              glVertex3f( -1.0  , 0.0 , -1.0);
-          }
-          glEnd();
-
-          // arco
-          glBegin(GL_QUADS);
-          {
-              glColor(Color::rgb( 0.9, 0.95, 0.85 ));
-              glVertex3f(  .25  , 0.0 , -1.0);
-              glVertex3f(  .25  , 0.2 , -1.0);
-              glVertex3f( -.25  , 0.2 , -1.0);
-              glVertex3f( -.25  , 0.0 , -1.0);
-          }
-          glEnd();
-
-      }
-    });
+    // arco
+    glBegin(GL_QUADS);
+    {
+        glColor(Color::rgb(0.9, 0.95, 0.85));
+        glVertex3f(.25, 0.0, -1.0);
+        glVertex3f(.25, 0.2, -1.0);
+        glVertex3f(-.25, 0.2, -1.0);
+        glVertex3f(-.25, 0.0, -1.0);
+    }
+    glEnd();
+}
+});
 
     return EXIT_SUCCESS;
 }

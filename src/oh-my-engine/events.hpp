@@ -67,23 +67,42 @@ class EventBus
     template <class TEvent>
     static constexpr bool supported_ = boost::mp11::mp_contains<Events_, TEvent>::value;
 
+    // metaprogramming helper
+    template <class TCallback>
+    using arg0_t_ = std::tuple_element_t<0, boost::callable_traits::args_t<TCallback>>;
+
+  protected:
+    // Calls all registered callbacks with live connections to the event.
+    template <class TEvent>
+        requires supported_<TEvent>
+    void
+    emit_(const TEvent &event)
+    {
+        auto &connections = connections_<TEvent>();
+
+        for (auto it = connections.begin(); it != connections.end();)
+        {
+            auto connection = it->lock();
+
+            if (!connection || connection->owner_expired_())
+            {
+                it = connections.erase(it);
+                continue;
+            }
+
+            std::invoke(connection->callback_, const_cast<TEvent *>(&event));
+            ++it;
+        }
+    }
+
   public:
     // Registers a callback for an event and returns ownership of a handle to the connection.
     // While that handle remains alive, the callback is invoked whenever the event is emitted.
-    template <class TCallback>
+    template <class TCallback, class TEvent = std::remove_cvref_t<arg0_t_<TCallback>>>
+        requires supported_<TEvent> && std::is_invocable_v<TCallback, const TEvent &>
     [[nodiscard]] std::shared_ptr<EventConnection>
     bind(TCallback &&callback)
     {
-        using CallbackArgs = boost::callable_traits::args_t<TCallback>;
-        using TEvent       = std::remove_cvref_t<std::tuple_element_t<0, CallbackArgs>>;
-        static_assert(std::is_invocable_v<TCallback, const TEvent &>);
-
-        static_assert(supported_<TEvent>,
-                      "Tried binding to an event that is not supported by the dispatcher.");
-
-        static_assert(std::is_invocable_v<TCallback, const TEvent &>,
-                      "Tried binding a callback that cannot be invoked with the event type.");
-
         auto adapted_callback = [callback = std::forward<TCallback>(callback)](void *event)
         { callback(*static_cast<const TEvent *>(event)); };
 
@@ -116,29 +135,6 @@ class EventBus
         auto callback = [instance, member](const Event &event) { (instance->*member)(event); };
 
         return bind(callback);
-    }
-
-    // Calls all registered callbacks with live connections to the event.
-    template <class TEvent>
-        requires supported_<TEvent>
-    void
-    emit(const TEvent &event)
-    {
-        auto &connections = connections_<TEvent>();
-
-        for (auto it = connections.begin(); it != connections.end();)
-        {
-            auto connection = it->lock();
-
-            if (!connection || connection->owner_expired_())
-            {
-                it = connections.erase(it);
-                continue;
-            }
-
-            std::invoke(connection->callback_, const_cast<TEvent *>(&event));
-            ++it;
-        }
     }
 };
 

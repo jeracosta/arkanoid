@@ -176,28 +176,28 @@ inline void
 Camera::fov_degrees(float new_value)
 {
     projection_.fov_degrees = new_value;
-    emit(ProjectionUpdatedEvent{ projection_ });
+    emit_(ProjectionUpdatedEvent{ projection_ });
 }
 
 inline void
 Camera::aspect_ratio(float new_value)
 {
     projection_.aspect_ratio = new_value;
-    emit(ProjectionUpdatedEvent{ projection_ });
+    emit_(ProjectionUpdatedEvent{ projection_ });
 }
 
 inline void
 Camera::near(float new_value)
 {
     projection_.near = new_value;
-    emit(ProjectionUpdatedEvent{ projection_ });
+    emit_(ProjectionUpdatedEvent{ projection_ });
 }
 
 inline void
 Camera::far(float new_value)
 {
     projection_.far = new_value;
-    emit(ProjectionUpdatedEvent{ projection_ });
+    emit_(ProjectionUpdatedEvent{ projection_ });
 }
 
 namespace open_gl {

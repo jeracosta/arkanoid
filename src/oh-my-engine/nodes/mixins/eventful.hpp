@@ -12,14 +12,9 @@ template <typename Base, typename... Events>
 class Eventful : public Base, private EventBus<Events...>
 {
   protected:
-    void
-    emit_(const auto &event)
-    {
-        EventBus<Events...>::emit(event);
-    }
+    using EventBus<Events...>::emit_;
 
   public:
-    using Base::Base;
     using EventBus<Events...>::bind;
 };
 

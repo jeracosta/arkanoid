@@ -62,6 +62,15 @@ class Node
         return name_;
     }
 
+    std::string
+    default_name() const
+    {
+        auto type_str     = boost::typeindex::type_id_runtime(*this).pretty_name();
+        auto instance_str = std::format("{:x}", reinterpret_cast<std::uintptr_t>(this));
+
+        return type_str + "@" + instance_str;
+    }
+
     Game *
     game()
     {
@@ -288,7 +297,7 @@ class Node
 
         if (name_.empty())
         {
-            name_ = default_name_();
+            name_ = default_name();
         }
 
         game_ = game;
@@ -317,15 +326,6 @@ class Node
         hooks_.on_unmount ? hooks_.on_unmount(*this) : void();
 
         game_ = nullptr;
-    }
-
-    std::string
-    default_name_()
-    {
-        auto type_str     = boost::typeindex::type_id_runtime(*this).pretty_name();
-        auto instance_str = std::format("{:x}", reinterpret_cast<std::uintptr_t>(this));
-
-        return type_str + "@" + instance_str;
     }
 
     friend class Game; // needed for Game to mount nodes
@@ -535,6 +535,22 @@ print_tree(Node &root)
         bool last = std::next(it) == children.end();
         recursive_step(recursive_step, **it, "", last);
     }
+}
+
+// TODO: Use an actual logger approach instead of this
+void
+print_message(const auto &node, auto &&message)
+{
+    auto now  = std::chrono::system_clock::now();
+    auto time = floor<std::chrono::seconds>(now);
+
+    std::print("\033[37m[{:%H:%M:%S}]\033[0m "
+               "\033[34m{} ({}): \033[0m "
+               "\033[37m{}\033[0m\n",
+               time,
+               node.name(),
+               node.default_name(),
+               message);
 }
 
 } // namespace ome

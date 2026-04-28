@@ -15,6 +15,7 @@ class Eventful : public Base, protected EventBus<Events...>
     using EventBus<Events...>::emit_;
 
   public:
+    using Node::bind;
     using EventBus<Events...>::bind;
 };
 

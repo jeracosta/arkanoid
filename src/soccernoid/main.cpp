@@ -2,7 +2,6 @@
 #include <GL/glu.h>
 #include <SDL2/SDL.h>
 #include <SDL_keycode.h>
-#include <algorithm>
 #include <cstdlib>
 #include <cxxabi.h>
 #include <format>
@@ -15,7 +14,6 @@
 #include <random>
 #include <typeinfo>
 
-#include "oh-my-engine/camera.hpp"
 #include "oh-my-engine/game.hpp"
 #include "oh-my-engine/interpolation.hpp"
 #include "oh-my-engine/math/curve.hpp"
@@ -301,7 +299,8 @@ class FrameRateObserverNode : public Slowed<DespawningNode, 1.0f>
             print_message(*this, message);
         };
 
-        find_ancestor<FrameRateNode>(this)->bind(callback)->tie_to(shared_from(this));
+        auto connection = find_ancestor<FrameRateNode>(this)->bind(callback);
+        hold(connection);
     }
 };
 
@@ -329,6 +328,8 @@ main()
     Vec3f *gravity;
 
     auto camera_node = std::make_shared<CameraControlNode>();
+
+    auto test_connection = std::make_shared<EventConnection>();
 
     Game::run({
       .window = {
@@ -516,6 +517,11 @@ main()
       {
           auto root = std::make_shared<Node>("Root");
 
+          root->hold(root->bind<NodeGotReady>([&root = *root]{
+              std::println("Game started");
+              print_tree(root);
+          }));
+
           ParticleBlueprint particle_blueprint = {
               .color = {
                   .origin = {1.0, 0.0, 0.0, 1.0},
@@ -581,14 +587,11 @@ main()
 
     .on_init =
         [](Game &game)
-{
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(45.0, 640.0 / 480.0, 0.1, 100.0);
-
-    std::println("Game initialized. Tree:");
-    print_tree(*game.root_node());
-},
+    {
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        gluPerspective(45.0, 640.0 / 480.0, 0.1, 100.0);
+    },
 
     .on_update = [&](auto &game)
 {

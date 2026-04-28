@@ -1,7 +1,6 @@
 // A node is the basic building block of a game.
 // Nodes are "mounted" to become part of a game and begin affecting it in some way.
 // Users can derive from a node to implement their own game logic.
-// Nodes also have instance-level equivalent hooks, called after the class-level virtual hooks.
 // Games tick all mounted nodes every frame, traversing the tree in a depth-first manner.
 // Nodes can "die": a dead node doesn't tick, and gets unmounted and freed by the game.
 // Additional specialized systems (e.g. rendering) could interact with nodes as well.
@@ -12,10 +11,10 @@
 // Unmounting a node unmounts all of its children as well.
 // When recursively mounting a tree (node), nodes became "ready" when no children are left to mount.
 // Nodes call virtual lifecycle hooks on mount (up-down), ready (down-up), and unmount (down-up).
+// Each lifecycle phase also emits a corresponding event, which users can subscribe to.
 
 #pragma once
 
-#include <algorithm>
 #include <boost/callable_traits.hpp>
 #include <boost/type_index.hpp>
 #include <cassert>
@@ -33,17 +32,19 @@
 
 namespace ome {
 
-class Node : public std::enable_shared_from_this<Node>, public EventConnectionHolder
+// Lifecycle events
+// clang-format off
+struct NodeMounted {};
+struct NodeGotReady {};
+struct NodeTicked {};
+struct NodeUnmounted {};
+// clang-format on
+
+class Node : public std::enable_shared_from_this<Node>,
+             public EventBus<NodeMounted, NodeGotReady, NodeTicked, NodeUnmounted>,
+             public EventConnectionHolder
 {
   public:
-    struct Hooks
-    {
-        std::function<void(Node &)> on_mount   = {};
-        std::function<void(Node &)> on_ready   = {};
-        std::function<void(Node &)> on_tick    = {};
-        std::function<void(Node &)> on_unmount = {};
-    };
-
     Node(std::string_view name = {})
         : name_(name)
     {
@@ -191,40 +192,8 @@ class Node : public std::enable_shared_from_this<Node>, public EventConnectionHo
         assert(is_alive && "Tried ticking a dead node; free it instead.");
 
         tick_();
-        hooks_.on_tick ? hooks_.on_tick(*this) : void();
+        emit_(NodeTicked{});
     }
-
-    const Hooks &
-    hooks() const
-    {
-        return hooks_;
-    }
-
-#define DEFINE_HOOK_SETTER(name)                                                                   \
-    template <typename Callback>                                                                   \
-    void hook_##name(Callback &&on_##name)                                                         \
-    {                                                                                              \
-        using CallbackArgs = boost::callable_traits::args_t<Callback>;                             \
-        using TNode        = std::remove_cvref_t<std::tuple_element_t<0, CallbackArgs>>;           \
-        static_assert(std::derived_from<TNode, Node>);                                             \
-        static_assert(std::is_invocable_v<Callback, TNode &>);                                     \
-                                                                                                   \
-        if (dynamic_cast<TNode *>(this) == nullptr)                                                \
-        {                                                                                          \
-            throw std::runtime_error(                                                              \
-                "Tried setting a node hook that takes an incompatible node type");                 \
-        }                                                                                          \
-                                                                                                   \
-        auto adapted_callback = [callback = std::forward<Callback>(on_##name)](Node &node) mutable \
-        { callback(static_cast<TNode &>(node)); };                                                 \
-                                                                                                   \
-        hooks_.on_##name = std::move(adapted_callback);                                            \
-    }
-    DEFINE_HOOK_SETTER(mount)
-    DEFINE_HOOK_SETTER(ready)
-    DEFINE_HOOK_SETTER(tick)
-    DEFINE_HOOK_SETTER(unmount)
-#undef DEFINE_HOOK_SETTER
 
     virtual ~Node()
     {
@@ -288,7 +257,6 @@ class Node : public std::enable_shared_from_this<Node>, public EventConnectionHo
     Game        *game_     = nullptr; // the game this node is mounted to, or nullptr if unmounted
     Node        *parent_   = nullptr;
     ChildrenMap_ children_ = {};
-    Hooks        hooks_    = {};
 
     void
     mount_to_(Game *game)
@@ -303,7 +271,7 @@ class Node : public std::enable_shared_from_this<Node>, public EventConnectionHo
         game_ = game;
 
         on_mount_();
-        hooks_.on_mount ? hooks_.on_mount(*this) : void();
+        emit_(NodeMounted{});
 
         for (auto child : children())
         {
@@ -311,7 +279,7 @@ class Node : public std::enable_shared_from_this<Node>, public EventConnectionHo
         }
 
         on_ready_();
-        hooks_.on_ready ? hooks_.on_ready(*this) : void();
+        emit_(NodeGotReady{});
     }
 
     void
@@ -323,7 +291,7 @@ class Node : public std::enable_shared_from_this<Node>, public EventConnectionHo
         }
 
         on_unmount_();
-        hooks_.on_unmount ? hooks_.on_unmount(*this) : void();
+        emit_(NodeUnmounted{});
 
         game_ = nullptr;
     }
@@ -368,18 +336,6 @@ class Node::CompositionCursor
 
         return *this;
     }
-
-#define DEFINE_HOOK_SETTER(name)                                                                   \
-    CompositionCursor &on_##name(auto &&hook)                                                      \
-    {                                                                                              \
-        stack_.back()->hook_##name(std::forward<decltype(hook)>(hook));                            \
-        return *this;                                                                              \
-    }
-    DEFINE_HOOK_SETTER(mount)
-    DEFINE_HOOK_SETTER(ready)
-    DEFINE_HOOK_SETTER(tick)
-    DEFINE_HOOK_SETTER(unmount)
-#undef DEFINE_HOOK_SETTER
 
     CompositionCursor &
     up()

@@ -514,7 +514,7 @@ main()
 
       .make_root_node = [&] (Game &)
       {
-          auto root = std::make_unique<Node>("Root");
+          auto root = std::make_shared<Node>("Root");
 
           ParticleBlueprint particle_blueprint = {
               .color = {

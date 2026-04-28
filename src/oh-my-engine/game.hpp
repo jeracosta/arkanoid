@@ -42,7 +42,7 @@ class Game
 
         std::function<void(ecs::SystemStore &, Game &)> configure_systems = {};
 
-        std::function<std::unique_ptr<Node>(Game &)> make_root_node = {};
+        std::function<std::shared_ptr<Node>(Game &)> make_root_node = {};
 
         // Called once at the beginning of the session, after initialization of all internal
         // systems, and before the main loop starts.

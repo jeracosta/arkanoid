@@ -4,6 +4,7 @@
 #include <boost/mp11.hpp>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace ome {
@@ -20,8 +21,25 @@ struct EventConnection
     // allowing heterogeneous storage of connections.
     std::function<void(void *event)> callback_;
 
+    // If set, connection will automatically disconnect when the owner expires.
+    std::optional<std::weak_ptr<void>> owner_;
+
+    bool
+    owner_expired_() const
+    {
+        return owner_.has_value() && owner_->expired();
+    }
+
     template <class... TEvents>
     friend class EventDispatcher;
+
+  public:
+    template <class T>
+    void
+    tie_to(const std::shared_ptr<T> &owner)
+    {
+        owner_ = owner;
+    }
 };
 
 template <class... TEvents>
@@ -97,15 +115,16 @@ class EventDispatcher
 
         for (auto it = connections.begin(); it != connections.end();)
         {
-            if (auto connection = it->lock())
-            {
-                std::invoke(connection->callback_, const_cast<TEvent *>(&event));
-                ++it;
-            }
-            else
+            auto connection = it->lock();
+
+            if (!connection || connection->owner_expired_())
             {
                 it = connections.erase(it);
+                continue;
             }
+
+            std::invoke(connection->callback_, const_cast<TEvent *>(&event));
+            ++it;
         }
     }
 };

@@ -26,6 +26,7 @@
 #include "oh-my-engine/nodes/mixins/slowed.hpp"
 #include "oh-my-engine/nodes/particle_emitter_node.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
+#include "oh-my-engine/shared_from.hpp"
 #include "soccernoid/level.hpp"
 #include "soccernoid/nodes/camera_control.hpp"
 
@@ -274,16 +275,15 @@ class FrameRateNode : public Eventful<Node, FrameRateEvent>
     tick_() override
     {
         auto frame_rate = game()->instant_frame_rate();
+
         print_message(*this, std::format("FPS: {}", frame_rate));
-        emit_(FrameRateEvent{ .frame_rate = game()->instant_frame_rate() });
+
+        emit_(FrameRateEvent{ frame_rate });
     }
 };
 
 class FrameRateObserverNode : public Slowed<DespawningNode, 1.0f>
 {
-  private:
-    std::shared_ptr<EventConnection> connection_;
-
   public:
     FrameRateObserverNode()
         : Slowed<DespawningNode, 1.0f>(5) // 5 tics de vida
@@ -301,7 +301,7 @@ class FrameRateObserverNode : public Slowed<DespawningNode, 1.0f>
             print_message(*this, message);
         };
 
-        connection_ = find_ancestor<FrameRateNode>(this)->bind(callback);
+        find_ancestor<FrameRateNode>(this)->bind(callback)->tie_to(shared_from(this));
     }
 };
 

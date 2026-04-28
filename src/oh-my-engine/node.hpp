@@ -328,7 +328,7 @@ class Node : public std::enable_shared_from_this<Node>
         game_ = nullptr;
     }
 
-    friend class Game; // needed for Game to mount nodes
+    friend class Game; // needed for Game to mount and unmount nodes.
 };
 
 // Stateful fluent interface for building a node tree.
@@ -358,7 +358,7 @@ class Node::CompositionCursor
     CompositionCursor &
     add(Args &&...args)
     {
-        return add(std::make_unique<T>(std::forward<Args>(args)...));
+        return add(std::make_shared<T>(std::forward<Args>(args)...));
     }
 
     CompositionCursor &

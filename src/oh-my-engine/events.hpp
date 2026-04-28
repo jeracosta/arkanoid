@@ -14,48 +14,17 @@ class EventBus; // forward declaration
 
 // Represents a subscription to an event.
 // The registered callback will be invoked for the event as long as the connection is alive.
-// Handle-like class, tighly coupled with the event bus that produced it.
+// Handle-like class, tighly coupled to the event bus instance that produced it.
 struct EventConnection : public std::enable_shared_from_this<EventConnection>
 {
   private:
     // The callable to be invoked when the event is emitted.
     // Its parameter is type-erased to support different event types while
-    // allowing heterogeneous storage of connections.
+    // allowing homogeneous storage of connections.
     std::function<void(void *event)> callback_;
-
-    // If set, the connection should keep itself alive as long as the lifetime anchor is alive.
-    std::optional<std::weak_ptr<void>> lifetime_anchor_;
-
-    // Used to keep itself alive, should be reset when the lifetime anchor expires.
-    // XXX: Potential source of memory leaks if used incorrectly.
-    std::shared_ptr<EventConnection> self_ownership_;
 
     template <class... TEvents>
     friend class EventBus;
-
-  public:
-    bool
-    is_alive()
-    {
-        return lifetime_anchor_.has_value() && lifetime_anchor_->expired();
-    }
-
-    // When a connection is "tied" to an object, it will be kept alive as long as such object is
-    // alive, and automatically disconnect when the owner expires.
-    template <class T>
-    void
-    tie_to(const std::shared_ptr<T> &lifetime_anchor)
-    {
-        lifetime_anchor_ = lifetime_anchor;
-        self_ownership_  = shared_from_this();
-    }
-
-    void
-    untie()
-    {
-        lifetime_anchor_.reset();
-        self_ownership_.reset();
-    }
 };
 
 template <class... TEvents>
@@ -64,8 +33,15 @@ class EventBus
   private:
     using Events_ = boost::mp11::mp_list<TEvents...>;
 
+    struct ConnectionSlot_
+    {
+        std::weak_ptr<EventConnection>     connection;
+        std::shared_ptr<EventConnection>   ownership;
+        std::optional<std::weak_ptr<void>> lifetime_guard;
+    };
+
     template <class TEvent>
-    using ConnectionVector_ = std::vector<std::weak_ptr<EventConnection>>;
+    using ConnectionVector_ = std::vector<std::weak_ptr<ConnectionSlot_>>;
 
     using ConnectionMatrix_
         = boost::mp11::mp_rename<boost::mp11::mp_transform<ConnectionVector_, Events_>, std::tuple>;
@@ -74,7 +50,7 @@ class EventBus
 
     template <class TEvent>
     ConnectionVector_<TEvent> &
-    connections_()
+    connection_slots_()
     {
         constexpr auto index = boost::mp11::mp_find<Events_, TEvent>::value;
         return std::get<index>(callback_matrix_);
@@ -94,63 +70,83 @@ class EventBus
     void
     emit_(const TEvent &event)
     {
-        auto &connections = connections_<TEvent>();
+        auto &slots = connection_slots_<TEvent>();
 
-        for (auto it = connections.begin(); it != connections.end();)
+        for (auto it = slots.begin(); it != slots.end();)
         {
-            auto connection = it->lock();
+            auto &connection = it->connection.lock();
 
-            if (!connection || connection->is_alive())
             {
-                it = connections.erase(it);
-                continue;
+                auto &guard = it->lifetime_guard;
+
+                if (guard.has_value() && guard->expired())
+                {
+                    guard.reset();
+                    connection.ownership.reset();
+                }
             }
 
-            std::invoke(connection->callback_, const_cast<TEvent *>(&event));
-            ++it;
+            if (connection)
+            {
+                std::invoke(connection->callback_, const_cast<TEvent *>(&event));
+                ++it;
+            }
+            else
+            {
+                it = slots.erase(it);
+            }
         }
     }
 
   public:
     // Registers a callback for an event and returns ownership of a handle to the connection.
     // While that handle remains alive, the callback is invoked whenever the event is emitted.
+    // If `lifetime_guard` is set, the connection is kept alive while its guard is alive.
     template <class TCallback, class TEvent = std::remove_cvref_t<arg0_t_<TCallback>>>
         requires supported_<TEvent> && std::is_invocable_v<TCallback, const TEvent &>
     [[nodiscard]] std::shared_ptr<EventConnection>
-    bind(TCallback &&callback)
+    bind(TCallback &&callback, std::weak_ptr<void> lifetime_guard = {})
     {
         auto adapted_callback = [callback = std::forward<TCallback>(callback)](void *event)
-        { callback(*static_cast<const TEvent *>(event)); };
+        { std::invoke(callback, *static_cast<const TEvent *>(event)); };
 
         auto connection       = std::make_shared<EventConnection>();
         connection->callback_ = std::move(adapted_callback);
 
-        connections_<TEvent>().push_back(connection);
+        auto slot = ConnectionSlot_{ connection };
+
+        if (!lifetime_guard.expired())
+        {
+            slot.lifetime_guard = std::move(lifetime_guard);
+            slot.ownership      = connection;
+        }
+
+        connection_slots_<TEvent>().push_back(slot);
 
         return connection;
     }
 
-    // Adapts bind to support callbacks that take no parameters, by ignoring the event parameter.
+    // Adapts `bind` method to support callbacks with no parameters, by ignoring the event value.
     template <class TEvent, class TCallback>
         requires std::is_invocable_v<TCallback>
     [[nodiscard]] std::shared_ptr<EventConnection>
-    bind(TCallback &&callback)
+    bind(TCallback &&callback, std::weak_ptr<void> lifetime_guard = {})
     {
         auto adapted_callback
             = [callback = std::forward<TCallback>(callback)](const TEvent &) { callback(); };
 
-        return bind(adapted_callback);
+        return bind(adapted_callback, lifetime_guard);
     }
 
-    // Adapts bind to support member function pointers as callbacks, with an implicit instance
-    // parameter.
+    // Adapts `bind` method to support member function pointers as callbacks, with an implicit
+    // instance parameter that doubles as a lifetime guard.
     template <class T, class Event>
     [[nodiscard]] std::shared_ptr<EventConnection>
-    bind(void (T::*member)(const Event &), T *instance)
+    bind(void (T::*member)(const Event &), std::weak_ptr<T> instance)
     {
         auto callback = [instance, member](const Event &event) { (instance->*member)(event); };
 
-        return bind(callback);
+        return bind(callback, instance);
     }
 };
 

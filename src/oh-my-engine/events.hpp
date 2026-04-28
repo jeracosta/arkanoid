@@ -1,5 +1,6 @@
 #pragma once
 
+#include <boost/callable_traits/args.hpp>
 #include <boost/mp11.hpp>
 #include <functional>
 #include <memory>
@@ -51,17 +52,21 @@ class EventDispatcher
     // Registers a callback for an event and returns a handle to the connection.
     // The callback is invoked whenever the event is emitted, receiving the event as an argument.
     // The subscription remains active while the returned connection handle is alive.
-    template <class TEvent, class TCallable>
+    template <class TCallback>
     [[nodiscard]] std::shared_ptr<EventConnection>
-    bind(TCallable &&callback)
+    bind(TCallback &&callback)
     {
+        using CallbackArgs = boost::callable_traits::args_t<TCallback>;
+        using TEvent       = std::remove_cvref_t<std::tuple_element_t<0, CallbackArgs>>;
+        static_assert(std::is_invocable_v<TCallback, const TEvent &>);
+
         static_assert(supported_<TEvent>,
                       "Tried binding to an event that is not supported by the dispatcher.");
 
-        static_assert(std::is_invocable_v<TCallable, const TEvent &>,
+        static_assert(std::is_invocable_v<TCallback, const TEvent &>,
                       "Tried binding a callback that cannot be invoked with the event type.");
 
-        auto adapted_callback = [callback = std::forward<TCallable>(callback)](void *event)
+        auto adapted_callback = [callback = std::forward<TCallback>(callback)](void *event)
         { callback(*static_cast<const TEvent *>(event)); };
 
         auto connection       = std::make_shared<EventConnection>();

@@ -371,7 +371,7 @@ main()
               camera_node->set_view(view);
 
               auto message = std::format("Switched to {} view", view == CameraView::FirstPerson ? "first person" : "third person");
-              camera_node->log(message);
+              camera_node->log(message, LogLevel::Debug);
           });
 
           inputs.keyboard.bind(SDLK_SPACE, {Press, Repeat}, [&]

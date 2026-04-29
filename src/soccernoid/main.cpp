@@ -229,13 +229,13 @@ class DespawningNode : public Node
     virtual void
     on_mount_() override
     {
-        log(*this, "Hello, world!", game()->logger());
+        log("Hello, world!");
     }
 
     virtual void
     tick_() override
     {
-        log(*this, std::format("{} ticks left", counter_), game()->logger(), LogLevel::Debug);
+        log(std::format("{} ticks left", counter_), LogLevel::Debug);
 
         if (counter_-- == 0)
         {
@@ -246,7 +246,7 @@ class DespawningNode : public Node
     virtual void
     on_unmount_() override
     {
-        log(*this, "Bye, bye!", game()->logger());
+        log("Bye, bye!");
         std::println("Updated tree:");
         print_tree(find_root(this));
     }
@@ -274,7 +274,7 @@ class FrameRateNode : public Eventful<Node, FrameRateEvent>
     {
         auto frame_rate = game()->instant_frame_rate();
 
-        log(*this, std::format("FPS: {}", frame_rate), game()->logger());
+        log(std::format("FPS: {}", frame_rate));
 
         emit_(FrameRateEvent{ frame_rate });
     }
@@ -296,7 +296,7 @@ class FrameRateObserverNode : public Slowed<DespawningNode, 1.0f>
         auto callback = [this](const FrameRateEvent &event)
         {
             auto message = std::format("Observed FPS: {}", event.frame_rate);
-            log(*this, message, game()->logger(), LogLevel::Debug);
+            log(message, LogLevel::Debug);
         };
 
         auto connection = find_ancestor<FrameRateNode>(this)->bind(callback);
@@ -371,7 +371,7 @@ main()
               camera_node->set_view(view);
 
               auto message = std::format("Switched to {} view", view == CameraView::FirstPerson ? "first person" : "third person");
-              log(*camera_node, message, game.logger());
+              camera_node->log(message);
           });
 
           inputs.keyboard.bind(SDLK_SPACE, {Press, Repeat}, [&]
@@ -518,7 +518,7 @@ main()
           auto root = std::make_shared<Node>("Root");
 
           root->hold(root->bind<NodeGotReady>([&root = *root]{
-              log(root, "¡Si capitán, estamos listos!", root.game()->logger());
+              root.log("¡Si capitán, estamos listos!");
               print_tree(root);
           }));
 

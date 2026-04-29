@@ -195,6 +195,16 @@ class Node : public std::enable_shared_from_this<Node>,
         emit_(NodeTicked{});
     }
 
+    void
+    log(const auto &message, LogLevel level = LogLevel::Info)
+    {
+        assert(is_mounted() && "Tried logging from an unmounted node; mount it first.");
+
+        auto prefix = std::format("\033[34m{} ({}): \033[0m", name(), address_string(this));
+
+        game()->logger().log(prefix + message, level);
+    }
+
     virtual ~Node()
     {
         // note: node cannot be unmounted here, as it implies a virtual call
@@ -491,13 +501,6 @@ print_tree(Node &root)
         bool last = std::next(it) == children.end();
         recursive_step(recursive_step, **it, "", last);
     }
-}
-
-void
-log(const auto &node, auto &&message, Logger &logger, LogLevel level = LogLevel::Info)
-{
-    auto prefix = std::format("\033[34m{} ({}): \033[0m", node.name(), address_string(&node));
-    logger.log(prefix + message, level);
 }
 
 } // namespace ome

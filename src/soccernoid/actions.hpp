@@ -1,3 +1,5 @@
+#pragma once
+
 #include "oh-my-engine/input.hpp"
 
 // Definition of the Action enum for the soccernoid game.

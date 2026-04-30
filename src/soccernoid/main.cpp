@@ -21,7 +21,6 @@
 #include "oh-my-engine/math/vector.hpp"
 #include "oh-my-engine/node.hpp"
 #include "oh-my-engine/nodes/gravity_node.hpp"
-#include "oh-my-engine/nodes/mixins/eventful.hpp"
 #include "oh-my-engine/nodes/mixins/slowed.hpp"
 #include "oh-my-engine/nodes/particle_emitter_node.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
@@ -395,13 +394,13 @@ main()
               std::println("Time scale: {} // {}{}", new_scale, delta > 0 ? "+" : "-", delta);
           }));
 
-          inputs.bind(SDLK_w,      { Press, Release }, Action::CameraForward);
-          inputs.bind(SDLK_s,      { Press, Release }, Action::CameraBackward);
-          inputs.bind(SDLK_a,      { Press, Release }, Action::CameraLeft);
-          inputs.bind(SDLK_d,      { Press, Release }, Action::CameraRight);
-          inputs.bind(SDLK_SPACE,  { Press, Release }, Action::CameraUp);
-          inputs.bind(SDLK_LCTRL,  { Press, Release }, Action::CameraDown);
-          inputs.bind(SDLK_LSHIFT, { Press, Release }, Action::CameraSprint);
+          inputs.bind(SDLK_w,      Press, Action::CameraForward);
+          inputs.bind(SDLK_s,      Press, Action::CameraBackward);
+          inputs.bind(SDLK_a,      Press, Action::CameraLeft);
+          inputs.bind(SDLK_d,      Press, Action::CameraRight);
+          inputs.bind(SDLK_SPACE,  Press, Action::CameraUp);
+          inputs.bind(SDLK_LCTRL,  Press, Action::CameraDown);
+          inputs.bind(SDLK_LSHIFT, Press, Action::CameraSprint);
 
           game.hold(inputs.bind<MouseMotionInput>([&]
           {

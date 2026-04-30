@@ -26,8 +26,8 @@ class CameraControlNode : public ome::Node
     CameraView   view_ = CameraView::ThirdPerson;
 
     // TODO: Make these configurable
-    static constexpr float sensitivity_    = 0.01f;
-    static constexpr float movement_speed_ = 0.02f;
+    static constexpr float sensitivity_ = 0.01f;
+    static constexpr float base_speed_  = 0.02f;
 
     template <CameraView>
     void
@@ -78,7 +78,7 @@ class CameraControlNode : public ome::Node
 #define CHECK_AND_MOVE(action, direction)                                                          \
     if (game()->input.is_pressed(action))                                                          \
     {                                                                                              \
-        camera_->move_target(camera_->direction() * movement_speed_ * speed_factor);               \
+        camera_->move_target(camera_->direction() * speed);                                        \
     }
 
     void
@@ -87,6 +87,7 @@ class CameraControlNode : public ome::Node
         if (view_ == CameraView::FirstPerson)
         {
             auto speed_factor = game()->input.is_pressed(Action::CameraSprint) ? 2.0f : 1.0f;
+            auto speed        = base_speed_ * speed_factor;
 
             CHECK_AND_MOVE(Action::CameraForward, forward);
             CHECK_AND_MOVE(Action::CameraBackward, backward);

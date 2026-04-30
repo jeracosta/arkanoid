@@ -15,6 +15,7 @@
 #include <typeinfo>
 
 #include "oh-my-engine/game.hpp"
+#include "oh-my-engine/input.hpp"
 #include "oh-my-engine/interpolation.hpp"
 #include "oh-my-engine/math/curve.hpp"
 #include "oh-my-engine/math/vector.hpp"
@@ -25,6 +26,7 @@
 #include "oh-my-engine/nodes/particle_emitter_node.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
 #include "oh-my-engine/shared_from.hpp"
+#include "soccernoid/actions.hpp"
 #include "soccernoid/level.hpp"
 #include "soccernoid/nodes/camera_control.hpp"
 
@@ -343,26 +345,32 @@ main()
 
       .configure_input = [&](auto &inputs, auto &game)
       {
-          using enum input::KeyInput;
+          using namespace input;
+          using enum KeyInput;
 
-          inputs.keyboard.bind(SDLK_ESCAPE, Release, [&]{ game.stop(); });
+          inputs.keyboard.bind(SDLK_ESCAPE, Release, Action::Quit);
+          game.hold(inputs.keyboard.bind(Action::Quit, [&](const KeyboardInput &){ game.stop(); }));
 
-          inputs.keyboard.bind(SDLK_F10, Press, [&]
+          inputs.keyboard.bind(SDLK_F10, Press, Action::ToggleFullscreen);
+          game.hold(inputs.keyboard.bind(Action::ToggleFullscreen, [&](const KeyboardInput &)
           {
               auto size = game.window.size();
 
               std::println("Toggling fullscreen mode. Current size: {} x {}", size[0], size[1]);
 
               game.window.toggle_fullscreen();
-          });
+          }));
 
-          inputs.keyboard.bind(SDLK_p, Press, [&]
+          inputs.keyboard.bind(SDLK_p, Press, Action::Pause);
+          game.hold(inputs.keyboard.bind(Action::Pause, [&](const KeyboardInput &)
           {
               game.pause.toggle();
               std::println("{}", game.pause.is_paused() ? "Paused" : "Resumed");
-          });
+          }));
 
-          inputs.keyboard.bind(SDLK_TAB, Press, [&]
+          
+          inputs.keyboard.bind(SDLK_TAB, Press, Action::ChangeView);
+          game.hold(inputs.keyboard.bind(Action::ChangeView, [&](const KeyboardInput &)
           {
               using enum CameraView;
 
@@ -372,11 +380,12 @@ main()
 
               auto message = std::format("Switched to {} view", view == CameraView::FirstPerson ? "first person" : "third person");
               camera_node->log(message, LogLevel::Debug);
-          });
+          }));
 
-          inputs.keyboard.bind(SDLK_SPACE, {Press, Repeat}, [&]
+          
+          inputs.keyboard.bind(SDLK_SPACE, {Press, Repeat}, Action::MoveUp);
+          game.hold(inputs.keyboard.bind(Action::MoveUp, [&](const KeyboardInput &) 
           {
-
               auto radius = 0.03f;
 
               auto spawn = [&] {
@@ -405,61 +414,67 @@ main()
               }
 
               std::println("Entity count: {}", game.entities.living_count());
-          });
+          }));
 
-          inputs.keyboard.bind(SDLK_RETURN, {Press, Repeat}, [&]
+          inputs.keyboard.bind(SDLK_RETURN, {Press, Repeat}, Action::JiggleBalls);
+          game.hold(inputs.keyboard.bind(Action::JiggleBalls, [&](const KeyboardInput &)
           {
             for (auto entity: game.entities.living())
             {
                 auto &velocity = entity.template get<components::Velocity>()->vector;
                 velocity[1] += std::uniform_real_distribution<>{0, 5}(rng);
             }
-          });
+          }));
 
-          inputs.keyboard.bind(SDLK_r, Press, [&]
+          inputs.keyboard.bind(SDLK_r, Press, Action::Reset);
+          game.hold(inputs.keyboard.bind(Action::Reset , [&](const KeyboardInput &)
           {
               game.entities.kill_all();
               std::println("Wiped entities");
-          });
+          }));
 
-          inputs.keyboard.bind(SDLK_i, Press, [&]
+          inputs.keyboard.bind(SDLK_i, Press, Action::PrintInfo);
+          game.hold(inputs.keyboard.bind(Action::PrintInfo, [&](const KeyboardInput &)
           {
               std::println("Entities: {}", game.entities.living());
-          });
+          }));
 
-          inputs.keyboard.bind(SDLK_PLUS, Press, [&]
+          inputs.keyboard.bind(SDLK_PLUS, Press, Action::SpeedUp);
+          game.hold(inputs.keyboard.bind(Action::SpeedUp, [&](const KeyboardInput &)
           {
               auto scale = game.time.scale();
               auto new_scale = scale * 1.5f;
               auto delta = new_scale - scale;
               game.time.scale(new_scale);
               std::println("Time scale: {} // {}{}", new_scale, delta > 0 ? "+" : "-", delta);
-          });
+          }));
 
-          inputs.keyboard.bind(SDLK_MINUS, Press, [&]
+          inputs.keyboard.bind(SDLK_MINUS, Press, Action::SpeedDown);
+          game.hold(inputs.keyboard.bind(Action::SpeedDown, [&](const KeyboardInput &)
           {
               auto scale = game.time.scale();
               auto new_scale = scale / 1.5f;
               auto delta = new_scale - scale;
               game.time.scale(new_scale);
               std::println("Time scale: {} // {}{}", new_scale, delta > 0 ? "+" : "-", delta);
-          });
+          }));
 
         // clang-format off
-          #define BIND_MOVE(KEY, DIR)                                           \
-              inputs.keyboard.bind(KEY, { Press, Release }, [&](auto input) {   \
-                  auto dir = DIR;                                               \
-                  player.moving_direction += (input == Press ? dir : -dir);     \
-              })
-          BIND_MOVE(SDLK_w, forward);
-          BIND_MOVE(SDLK_s, backward);
-          BIND_MOVE(SDLK_a, left);
-          BIND_MOVE(SDLK_d, right);
-          BIND_MOVE(SDLK_SPACE, up);
-          BIND_MOVE(SDLK_LCTRL, down);
+          #define BIND_MOVE(KEY, DIR, ACTION)                                                   \
+              inputs.keyboard.bind(KEY, { Press, Release }, Action::ACTION);                    \
+              game.hold(inputs.keyboard.bind(Action::ACTION, [&](const KeyboardInput &input) {  \
+                  auto dir = DIR;                                                               \
+                  player.moving_direction += (input == Press ? dir : -dir);                     \
+              }))
+          BIND_MOVE(SDLK_w, forward, MoveForward);
+          BIND_MOVE(SDLK_s, backward, MoveBackward);
+          BIND_MOVE(SDLK_a, left, MoveLeft);
+          BIND_MOVE(SDLK_d, right, MoveRight);
+          BIND_MOVE(SDLK_SPACE, up, MoveUp);
+          BIND_MOVE(SDLK_LCTRL, down, MoveDown);
         // clang-format on
 
-          inputs.mouse_motion.bind([&](auto input)
+          game.hold(inputs.mouse_motion.bind([&](const MouseMotionInput &input)
           {
               auto& camera = game.camera;
 
@@ -489,8 +504,7 @@ main()
 
               spawn_area.from = from_camera_space({ -0.5f, 3.0f, -camera.distance() - 0.5f }, camera);
               spawn_area.to   = from_camera_space({ 0.5f, 4.0f, -camera.distance() + 0.5f }, camera);
-
-          });
+          }));
       },
 
       .configure_systems = [&](auto &systems, auto &game) {

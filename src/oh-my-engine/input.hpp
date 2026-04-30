@@ -12,62 +12,76 @@
 #include <stdexcept>
 #include <utility>
 
+#include "oh-my-engine/events.hpp"
 #include "oh-my-engine/math/vector.hpp"
 
 namespace ome::input {
 
+// Actions categorize keyboard inputs and represent game intent, such as "jump" or "move left".
+// They are mapped to specific keyboard inputs.
+// NOTE: The enum is left undefined to allow users to define their own actions as needed.
+// WARN: For performance reasons, values should be 0-indexed and contiguous.
+enum class Action;
+
 enum class KeyInput : uint8_t
 {
-    Press,
-    Repeat,
-    Release,
+    Press,   // The key was pressed down.
+    Repeat,  // The OS simulated a key press because it is being held down.
+    Release, // The key was released (after being pressed).
 };
 
-using KeyInputAction = std::function<void(KeyInput)>;
-
-struct KeyInputActionTrigger
+struct KeyboardInput
 {
-    SDL_Keycode key;
-    KeyInput    input;
+    SDL_Keycode key_code;
+    KeyInput    key_input;
 
     constexpr auto
-    operator<=>(const KeyInputActionTrigger &) const
+    operator<=>(const KeyboardInput &) const
         = default;
+
+    operator KeyInput() const
+    {
+        return key_input;
+    }
 };
 
 class KeyboardInputMapper
 {
   private:
-    std::flat_multimap<KeyInputActionTrigger, KeyInputAction> bindings_;
+    std::flat_multimap<KeyboardInput, Action> input_actions_;
+    std::vector<EventBus<KeyboardInput>>      action_event_buses_;
 
     auto
-    actions_for_(KeyInputActionTrigger trigger) const
+    actions_for_(KeyboardInput input) const
     {
-        auto [begin, end] = bindings_.equal_range(trigger);
+        auto [begin, end] = input_actions_.equal_range(input);
         return std::ranges::subrange(begin, end) | std::views::values;
+    }
+
+    EventBus<KeyboardInput> &
+    event_bus_of_(Action action)
+    {
+        // Here we assume that actions are 0-indexed and contiguous.
+
+        auto index = static_cast<size_t>(action);
+
+        if (index >= action_event_buses_.size())
+        {
+            action_event_buses_.resize(index + 1);
+        }
+
+        return action_event_buses_[index];
     }
 
   public:
     void
-    bind(SDL_Keycode key, KeyInput input, auto action)
+    bind(SDL_Keycode key, KeyInput input, Action action)
     {
-
-        KeyInputAction callback;
-
-        if constexpr (std::is_invocable_v<std::decay_t<decltype(action)>>)
-        {
-            callback = [action = std::move(action)](KeyInput) { action(); };
-        }
-        else
-        {
-            callback = std::move(action);
-        }
-
-        bindings_.emplace(KeyInputActionTrigger{ key, input }, std::move(callback));
+        input_actions_.emplace(KeyboardInput{ key, input }, action);
     }
 
     void
-    bind(SDL_Keycode key, std::initializer_list<KeyInput> inputs, auto action)
+    bind(SDL_Keycode key, std::initializer_list<KeyInput> inputs, Action action)
     {
         for (auto input : inputs)
         {
@@ -78,43 +92,15 @@ class KeyboardInputMapper
     void
     unbind(SDL_Keycode key, KeyInput input)
     {
-        bindings_.erase(KeyInputActionTrigger{ key, input });
+        input_actions_.erase(KeyboardInput{ key, input });
     }
 
-    template <class T>
-    void
-    bind(SDL_Keycode key, KeyInput input, void (T::*method)(), T *object)
+    template <typename... Args>
+    decltype(auto)
+    bind(Action action, Args &&...args)
     {
-        bind(key, input, [object, method] { (object->*method)(); });
-    }
-
-    template <class T>
-    void
-    bind(SDL_Keycode key, KeyInput input, void (T::*method)(), std::shared_ptr<T> object)
-    {
-        bind(key,
-             input,
-             [weak = std::weak_ptr<T>(std::move(object)), method]
-        {
-            if (auto obj = weak.lock())
-            {
-                (obj.get()->*method)();
-            }
-            else
-            {
-                throw std::runtime_error("Input binding target expired");
-            }
-        });
-    }
-
-    template <class Method, class Object>
-    void
-    bind(SDL_Keycode key, std::initializer_list<KeyInput> inputs, Method method, Object object)
-    {
-        for (auto input : inputs)
-        {
-            bind(key, input, method, object);
-        }
+        auto &event_bus = event_bus_of_(action);
+        return event_bus.bind(std::forward<Args>(args)...);
     }
 
     void
@@ -125,15 +111,16 @@ class KeyboardInputMapper
             return;
         }
 
-        auto key = event.key.keysym.sym;
+        auto input = KeyboardInput{
+            .key_code  = event.key.keysym.sym,
+            .key_input = event.key.repeat
+                             ? KeyInput::Repeat
+                             : (event.type == SDL_KEYDOWN ? KeyInput::Press : KeyInput::Release),
+        };
 
-        auto input = event.key.repeat
-                         ? KeyInput::Repeat
-                         : (event.type == SDL_KEYDOWN ? KeyInput::Press : KeyInput::Release);
-
-        for (const auto &action : actions_for_({ key, input }))
+        for (auto &action : actions_for_(input))
         {
-            action(input);
+            event_bus_of_(action).emit(input);
         }
     }
 };
@@ -144,19 +131,11 @@ struct MouseMotionInput
     Vec2u position;
 };
 
-using MouseMotionInputAction = std::function<void(const MouseMotionInput &)>;
-
-class MouseMotionInputMapper
+class MouseMotionInputMapper : private EventBus<MouseMotionInput>
 {
-  private:
-    std::vector<MouseMotionInputAction> actions_;
 
   public:
-    void
-    bind(MouseMotionInputAction action)
-    {
-        actions_.emplace_back(std::move(action));
-    }
+    using EventBus::bind;
 
     void
     handle(const SDL_Event &event)
@@ -171,10 +150,7 @@ class MouseMotionInputMapper
             .position = { event.motion.x, event.motion.y },
         };
 
-        for (const auto &action : actions_)
-        {
-            action(input);
-        }
+        EventBus::emit(input);
     }
 };
 

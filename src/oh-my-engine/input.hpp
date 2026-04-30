@@ -4,12 +4,9 @@
 #include <cassert>
 #include <cstdint>
 #include <flat_map>
-#include <functional>
 #include <glm/ext/vector_float2.hpp>
 #include <initializer_list>
-#include <memory>
 #include <ranges>
-#include <stdexcept>
 #include <utility>
 
 #include "oh-my-engine/events.hpp"
@@ -48,8 +45,21 @@ struct KeyboardInput
 class KeyboardInputMapper
 {
   private:
+    struct ActionSlot_
+    {
+        EventBus<KeyboardInput> bus;
+        std::size_t             pressed_count = 0;
+    };
+
     std::flat_multimap<KeyboardInput, Action> input_actions_;
-    std::vector<EventBus<KeyboardInput>>      action_event_buses_;
+    std::vector<ActionSlot_>                  action_slots_;
+
+    static std::size_t
+    index_of_(Action action) noexcept
+    {
+        // NOTE: Here we assume that Action values are 0-indexed and contiguous.
+        return static_cast<std::size_t>(action);
+    }
 
     auto
     actions_for_(KeyboardInput input) const
@@ -58,19 +68,17 @@ class KeyboardInputMapper
         return std::ranges::subrange(begin, end) | std::views::values;
     }
 
-    EventBus<KeyboardInput> &
-    event_bus_of_(Action action)
+    ActionSlot_ &
+    slot_of_(Action action)
     {
-        // Here we assume that actions are 0-indexed and contiguous.
+        auto index = index_of_(action);
 
-        auto index = static_cast<size_t>(action);
-
-        if (index >= action_event_buses_.size())
+        if (index >= action_slots_.size())
         {
-            action_event_buses_.resize(index + 1);
+            action_slots_.resize(index + 1);
         }
 
-        return action_event_buses_[index];
+        return action_slots_[index];
     }
 
   public:
@@ -96,11 +104,17 @@ class KeyboardInputMapper
     }
 
     template <typename... Args>
-    decltype(auto)
+    [[nodiscard]] decltype(auto)
     bind(Action action, Args &&...args)
     {
-        auto &event_bus = event_bus_of_(action);
-        return event_bus.bind(std::forward<Args>(args)...);
+        return slot_of_(action).bus.bind(std::forward<Args>(args)...);
+    }
+
+    [[nodiscard]] bool
+    is_pressed(Action action) const noexcept
+    {
+        auto index = index_of_(action);
+        return index < action_slots_.size() && action_slots_[index].pressed_count != 0;
     }
 
     void
@@ -118,9 +132,22 @@ class KeyboardInputMapper
                              : (event.type == SDL_KEYDOWN ? KeyInput::Press : KeyInput::Release),
         };
 
-        for (auto &action : actions_for_(input))
+        const bool is_down = input.key_input != KeyInput::Release;
+
+        for (auto action : actions_for_(input))
         {
-            event_bus_of_(action).emit(input);
+            auto &slot = slot_of_(action);
+
+            if (is_down)
+            {
+                ++slot.pressed_count;
+            }
+            else if (slot.pressed_count != 0)
+            {
+                --slot.pressed_count;
+            }
+
+            slot.bus.emit(input);
         }
     }
 };

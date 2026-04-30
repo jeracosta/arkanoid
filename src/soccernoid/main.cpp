@@ -28,6 +28,7 @@
 #include "soccernoid/actions.hpp"
 #include "soccernoid/nodes/camera_control.hpp"
 #include "soccernoid/nodes/frame_rate.hpp"
+#include "soccernoid/nodes/time_speed.hpp"
 
 using namespace ome;
 using namespace ome::ecs;
@@ -374,25 +375,8 @@ main()
               std::println("Entities: {}", game.entities.living());
           }));
 
-          inputs.bind(SDLK_PLUS, Press, Action::SpeedUp);
-          game.hold(inputs.bind(Action::SpeedUp, [&]
-          {
-              auto scale = game.time.scale();
-              auto new_scale = scale * 1.5f;
-              auto delta = new_scale - scale;
-              game.time.scale(new_scale);
-              std::println("Time scale: {} // {}{}", new_scale, delta > 0 ? "+" : "-", delta);
-          }));
-
-          inputs.bind(SDLK_MINUS, Press, Action::SpeedDown);
-          game.hold(inputs.bind(Action::SpeedDown, [&]
-          {
-              auto scale = game.time.scale();
-              auto new_scale = scale / 1.5f;
-              auto delta = new_scale - scale;
-              game.time.scale(new_scale);
-              std::println("Time scale: {} // {}{}", new_scale, delta > 0 ? "+" : "-", delta);
-          }));
+          inputs.bind(SDLK_PLUS,  { Press, Repeat}, Action::TimeSpeedUp);
+          inputs.bind(SDLK_MINUS, { Press, Repeat}, Action::TimeSpeedDown);
 
           inputs.bind(SDLK_w,      Press, Action::CameraForward);
           inputs.bind(SDLK_s,      Press, Action::CameraBackward);
@@ -475,9 +459,9 @@ main()
           });
 
           extending(*root)
-              .add<CameraControlNode>().named("Camera")
-              .up()
-              .add<Slowed<FrameRateNode, 1.0f>>().named("FPS");
+              .add<CameraControlNode>().named("Camera").up()
+              .add<Slowed<FrameRateNode, 1.0f>>().named("FPS").up()
+              .add<TimeSpeedNode>().named("TimeSpeed").up();
 
           return root;
       },

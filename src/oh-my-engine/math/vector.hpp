@@ -383,3 +383,41 @@ struct tuple_element<I, Vector>
 };
 
 } // namespace std
+
+// The following are required to support structured bindings.
+// e.g. auto [x, y, z] = Vec3f{1.0f, 2.0f, 3.0f};
+namespace ome::math {
+
+template <std::size_t I, std::size_t D, typename C, CoordinateSystem S>
+constexpr C &
+get(Vector<D, C, S> &v) noexcept
+{
+    static_assert(I < D);
+    return v[I];
+}
+
+template <std::size_t I, std::size_t D, typename C, CoordinateSystem S>
+constexpr const C &
+get(const Vector<D, C, S> &v) noexcept
+{
+    static_assert(I < D);
+    return v[I];
+}
+
+template <std::size_t I, std::size_t D, typename C, CoordinateSystem S>
+constexpr C &&
+get(Vector<D, C, S> &&v) noexcept
+{
+    static_assert(I < D);
+    return std::move(v[I]);
+}
+
+template <std::size_t I, std::size_t D, typename C, CoordinateSystem S>
+constexpr const C &&
+get(const Vector<D, C, S> &&v) noexcept
+{
+    static_assert(I < D);
+    return std::move(v[I]);
+}
+
+} // namespace ome::math

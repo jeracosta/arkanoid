@@ -110,6 +110,14 @@ class KeyboardInputMapper
         return slot_of_(action).bus.bind(std::forward<Args>(args)...);
     }
 
+    template <typename TCallback>
+        requires std::invocable<TCallback> // no-arg callback
+    [[nodiscard]] decltype(auto)
+    bind(Action action, TCallback &&callback)
+    {
+        return slot_of_(action).bus.bind<KeyboardInput>(std::forward<TCallback>(callback));
+    }
+
     [[nodiscard]] bool
     is_pressed(Action action) const noexcept
     {

@@ -349,10 +349,10 @@ main()
           using enum KeyInput;
 
           inputs.bind(SDLK_ESCAPE, Release, Action::Quit);
-          game.hold(inputs.bind(Action::Quit, [&](const KeyboardInput &){ game.stop(); }));
+          game.hold(inputs.bind(Action::Quit, [&]{ game.stop(); }));
 
           inputs.bind(SDLK_F10, Press, Action::ToggleFullscreen);
-          game.hold(inputs.bind(Action::ToggleFullscreen, [&](const KeyboardInput &)
+          game.hold(inputs.bind(Action::ToggleFullscreen, [&]
           {
               auto size = game.window.size();
 
@@ -362,7 +362,7 @@ main()
           }));
 
           inputs.bind(SDLK_p, Press, Action::Pause);
-          game.hold(inputs.bind(Action::Pause, [&](const KeyboardInput &)
+          game.hold(inputs.bind(Action::Pause, [&]
           {
               game.pause.toggle();
               std::println("{}", game.pause.is_paused() ? "Paused" : "Resumed");
@@ -370,7 +370,7 @@ main()
 
           
           inputs.bind(SDLK_TAB, Press, Action::ChangeView);
-          game.hold(inputs.bind(Action::ChangeView, [&](const KeyboardInput &)
+          game.hold(inputs.bind(Action::ChangeView, [&]
           {
               using enum CameraView;
 
@@ -384,7 +384,7 @@ main()
 
           
           inputs.bind(SDLK_SPACE, {Press, Repeat}, Action::MoveUp);
-          game.hold(inputs.bind(Action::MoveUp, [&](const KeyboardInput &) 
+          game.hold(inputs.bind(Action::MoveUp, [&] 
           {
               auto radius = 0.03f;
 
@@ -417,7 +417,7 @@ main()
           }));
 
           inputs.bind(SDLK_RETURN, {Press, Repeat}, Action::JiggleBalls);
-          game.hold(inputs.bind(Action::JiggleBalls, [&](const KeyboardInput &)
+          game.hold(inputs.bind(Action::JiggleBalls, [&]
           {
             for (auto entity: game.entities.living())
             {
@@ -427,20 +427,20 @@ main()
           }));
 
           inputs.bind(SDLK_r, Press, Action::Reset);
-          game.hold(inputs.bind(Action::Reset , [&](const KeyboardInput &)
+          game.hold(inputs.bind(Action::Reset , [&]
           {
               game.entities.kill_all();
               std::println("Wiped entities");
           }));
 
           inputs.bind(SDLK_i, Press, Action::PrintInfo);
-          game.hold(inputs.bind(Action::PrintInfo, [&](const KeyboardInput &)
+          game.hold(inputs.bind(Action::PrintInfo, [&]
           {
               std::println("Entities: {}", game.entities.living());
           }));
 
           inputs.bind(SDLK_PLUS, Press, Action::SpeedUp);
-          game.hold(inputs.bind(Action::SpeedUp, [&](const KeyboardInput &)
+          game.hold(inputs.bind(Action::SpeedUp, [&]
           {
               auto scale = game.time.scale();
               auto new_scale = scale * 1.5f;
@@ -450,7 +450,7 @@ main()
           }));
 
           inputs.bind(SDLK_MINUS, Press, Action::SpeedDown);
-          game.hold(inputs.bind(Action::SpeedDown, [&](const KeyboardInput &)
+          game.hold(inputs.bind(Action::SpeedDown, [&]
           {
               auto scale = game.time.scale();
               auto new_scale = scale / 1.5f;

@@ -348,11 +348,11 @@ main()
           using namespace input;
           using enum KeyInput;
 
-          inputs.keyboard.bind(SDLK_ESCAPE, Release, Action::Quit);
-          game.hold(inputs.keyboard.bind(Action::Quit, [&](const KeyboardInput &){ game.stop(); }));
+          inputs.bind(SDLK_ESCAPE, Release, Action::Quit);
+          game.hold(inputs.bind(Action::Quit, [&](const KeyboardInput &){ game.stop(); }));
 
-          inputs.keyboard.bind(SDLK_F10, Press, Action::ToggleFullscreen);
-          game.hold(inputs.keyboard.bind(Action::ToggleFullscreen, [&](const KeyboardInput &)
+          inputs.bind(SDLK_F10, Press, Action::ToggleFullscreen);
+          game.hold(inputs.bind(Action::ToggleFullscreen, [&](const KeyboardInput &)
           {
               auto size = game.window.size();
 
@@ -361,16 +361,16 @@ main()
               game.window.toggle_fullscreen();
           }));
 
-          inputs.keyboard.bind(SDLK_p, Press, Action::Pause);
-          game.hold(inputs.keyboard.bind(Action::Pause, [&](const KeyboardInput &)
+          inputs.bind(SDLK_p, Press, Action::Pause);
+          game.hold(inputs.bind(Action::Pause, [&](const KeyboardInput &)
           {
               game.pause.toggle();
               std::println("{}", game.pause.is_paused() ? "Paused" : "Resumed");
           }));
 
           
-          inputs.keyboard.bind(SDLK_TAB, Press, Action::ChangeView);
-          game.hold(inputs.keyboard.bind(Action::ChangeView, [&](const KeyboardInput &)
+          inputs.bind(SDLK_TAB, Press, Action::ChangeView);
+          game.hold(inputs.bind(Action::ChangeView, [&](const KeyboardInput &)
           {
               using enum CameraView;
 
@@ -383,8 +383,8 @@ main()
           }));
 
           
-          inputs.keyboard.bind(SDLK_SPACE, {Press, Repeat}, Action::MoveUp);
-          game.hold(inputs.keyboard.bind(Action::MoveUp, [&](const KeyboardInput &) 
+          inputs.bind(SDLK_SPACE, {Press, Repeat}, Action::MoveUp);
+          game.hold(inputs.bind(Action::MoveUp, [&](const KeyboardInput &) 
           {
               auto radius = 0.03f;
 
@@ -416,8 +416,8 @@ main()
               std::println("Entity count: {}", game.entities.living_count());
           }));
 
-          inputs.keyboard.bind(SDLK_RETURN, {Press, Repeat}, Action::JiggleBalls);
-          game.hold(inputs.keyboard.bind(Action::JiggleBalls, [&](const KeyboardInput &)
+          inputs.bind(SDLK_RETURN, {Press, Repeat}, Action::JiggleBalls);
+          game.hold(inputs.bind(Action::JiggleBalls, [&](const KeyboardInput &)
           {
             for (auto entity: game.entities.living())
             {
@@ -426,21 +426,21 @@ main()
             }
           }));
 
-          inputs.keyboard.bind(SDLK_r, Press, Action::Reset);
-          game.hold(inputs.keyboard.bind(Action::Reset , [&](const KeyboardInput &)
+          inputs.bind(SDLK_r, Press, Action::Reset);
+          game.hold(inputs.bind(Action::Reset , [&](const KeyboardInput &)
           {
               game.entities.kill_all();
               std::println("Wiped entities");
           }));
 
-          inputs.keyboard.bind(SDLK_i, Press, Action::PrintInfo);
-          game.hold(inputs.keyboard.bind(Action::PrintInfo, [&](const KeyboardInput &)
+          inputs.bind(SDLK_i, Press, Action::PrintInfo);
+          game.hold(inputs.bind(Action::PrintInfo, [&](const KeyboardInput &)
           {
               std::println("Entities: {}", game.entities.living());
           }));
 
-          inputs.keyboard.bind(SDLK_PLUS, Press, Action::SpeedUp);
-          game.hold(inputs.keyboard.bind(Action::SpeedUp, [&](const KeyboardInput &)
+          inputs.bind(SDLK_PLUS, Press, Action::SpeedUp);
+          game.hold(inputs.bind(Action::SpeedUp, [&](const KeyboardInput &)
           {
               auto scale = game.time.scale();
               auto new_scale = scale * 1.5f;
@@ -449,8 +449,8 @@ main()
               std::println("Time scale: {} // {}{}", new_scale, delta > 0 ? "+" : "-", delta);
           }));
 
-          inputs.keyboard.bind(SDLK_MINUS, Press, Action::SpeedDown);
-          game.hold(inputs.keyboard.bind(Action::SpeedDown, [&](const KeyboardInput &)
+          inputs.bind(SDLK_MINUS, Press, Action::SpeedDown);
+          game.hold(inputs.bind(Action::SpeedDown, [&](const KeyboardInput &)
           {
               auto scale = game.time.scale();
               auto new_scale = scale / 1.5f;
@@ -461,8 +461,8 @@ main()
 
         // clang-format off
           #define BIND_MOVE(KEY, DIR, ACTION)                                                   \
-              inputs.keyboard.bind(KEY, { Press, Release }, Action::ACTION);                    \
-              game.hold(inputs.keyboard.bind(Action::ACTION, [&](const KeyboardInput &input) {  \
+              inputs.bind(KEY, { Press, Release }, Action::ACTION);                    \
+              game.hold(inputs.bind(Action::ACTION, [&](const KeyboardInput &input) {  \
                   auto dir = DIR;                                                               \
                   player.moving_direction += (input == Press ? dir : -dir);                     \
               }))
@@ -474,7 +474,7 @@ main()
           BIND_MOVE(SDLK_LCTRL, down, MoveDown);
         // clang-format on
 
-          game.hold(inputs.mouse_motion.bind([&](const MouseMotionInput &input)
+          game.hold(inputs.bind([&](const MouseMotionInput &input)
           {
               auto& camera = game.camera;
 

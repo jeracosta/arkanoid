@@ -181,17 +181,17 @@ class MouseMotionInputMapper : private EventBus<MouseMotionInput>
     }
 };
 
-struct InputMapper
+struct InputMapper : public KeyboardInputMapper, public MouseMotionInputMapper
 {
-    KeyboardInputMapper    keyboard;
-    MouseMotionInputMapper mouse_motion;
-
     void
     handle(const SDL_Event &event)
     {
-        keyboard.handle(event);
-        mouse_motion.handle(event);
+        KeyboardInputMapper::handle(event);
+        MouseMotionInputMapper::handle(event);
     }
+
+    using KeyboardInputMapper::bind;
+    using MouseMotionInputMapper::bind;
 };
 
 } // namespace ome::input

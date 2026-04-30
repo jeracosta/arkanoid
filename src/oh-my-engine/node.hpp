@@ -41,7 +41,7 @@ struct NodeUnmounted {};
 // clang-format on
 
 class Node : public std::enable_shared_from_this<Node>,
-             public EventBus<NodeMounted, NodeGotReady, NodeTicked, NodeUnmounted>,
+             private EventBus<NodeMounted, NodeGotReady, NodeTicked, NodeUnmounted>,
              public EventConnectionHolder
 {
   public:
@@ -192,7 +192,7 @@ class Node : public std::enable_shared_from_this<Node>,
         assert(is_alive && "Tried ticking a dead node; free it instead.");
 
         tick_();
-        emit_(NodeTicked{});
+        emit(NodeTicked{});
     }
 
     void
@@ -210,6 +210,8 @@ class Node : public std::enable_shared_from_this<Node>,
         // note: node cannot be unmounted here, as it implies a virtual call
         assert(!is_mounted() && "Tried to destroy a mounted node; unmount it first.");
     }
+
+    using EventBus::bind;
 
     class CompositionCursor;
 
@@ -281,7 +283,7 @@ class Node : public std::enable_shared_from_this<Node>,
         game_ = game;
 
         on_mount_();
-        emit_(NodeMounted{});
+        emit(NodeMounted{});
 
         for (auto child : children())
         {
@@ -289,7 +291,7 @@ class Node : public std::enable_shared_from_this<Node>,
         }
 
         on_ready_();
-        emit_(NodeGotReady{});
+        emit(NodeGotReady{});
     }
 
     void
@@ -301,7 +303,7 @@ class Node : public std::enable_shared_from_this<Node>,
         }
 
         on_unmount_();
-        emit_(NodeUnmounted{});
+        emit(NodeUnmounted{});
 
         game_ = nullptr;
     }

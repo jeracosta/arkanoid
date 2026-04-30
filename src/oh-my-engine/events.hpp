@@ -77,29 +77,6 @@ class EventBus
     template <class TCallback>
     using arg0_t_ = std::tuple_element_t<0, boost::callable_traits::args_t<TCallback>>;
 
-  protected:
-    // Calls all registered callbacks with live connections to the event.
-    template <class TEvent>
-        requires supported_<TEvent>
-    void
-    emit_(const TEvent &event)
-    {
-        auto &connections = connections_<TEvent>();
-
-        for (auto it = connections.begin(); it != connections.end();)
-        {
-            if (auto connection = it->lock())
-            {
-                std::invoke(connection->callback_, const_cast<TEvent *>(&event));
-                ++it;
-            }
-            else
-            {
-                it = connections.erase(it);
-            }
-        }
-    }
-
   public:
     // Registers a callback for an event and returns ownership of a handle to the connection.
     // While that handle remains alive, the callback is invoked whenever the event is emitted.
@@ -140,6 +117,28 @@ class EventBus
         auto callback = [instance, member](const Event &event) { (instance->*member)(event); };
 
         return bind(callback);
+    }
+
+    // Calls all registered callbacks with live connections to the event.
+    template <class TEvent>
+        requires supported_<TEvent>
+    void
+    emit(const TEvent &event)
+    {
+        auto &connections = connections_<TEvent>();
+
+        for (auto it = connections.begin(); it != connections.end();)
+        {
+            if (auto connection = it->lock())
+            {
+                std::invoke(connection->callback_, const_cast<TEvent *>(&event));
+                ++it;
+            }
+            else
+            {
+                it = connections.erase(it);
+            }
+        }
     }
 };
 

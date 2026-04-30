@@ -12,7 +12,7 @@ template <typename Base, typename... Events>
 class Eventful : public Base, protected EventBus<Events...>
 {
   protected:
-    using EventBus<Events...>::emit_;
+    using EventBus<Events...>::emit;
 
   public:
     using Node::bind;

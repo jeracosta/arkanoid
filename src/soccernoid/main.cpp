@@ -276,7 +276,7 @@ class FrameRateNode : public Eventful<Node, FrameRateEvent>
 
         log(std::format("FPS: {}", frame_rate));
 
-        emit_(FrameRateEvent{ frame_rate });
+        emit(FrameRateEvent{ frame_rate });
     }
 };
 

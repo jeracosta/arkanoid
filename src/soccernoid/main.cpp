@@ -311,12 +311,6 @@ using namespace soccernoid;
 int
 main()
 {
-    struct
-    {
-        float speed = 1.5f;
-        Vec3f moving_direction{};
-    } player;
-
     std::function<void(Color)> color_filter;
 
     auto pause_curve = ome::Curve::smoothstep(5.0f);
@@ -328,10 +322,6 @@ main()
     } spawn_area;
 
     Vec3f *gravity;
-
-    auto camera_node = std::make_shared<CameraControlNode>();
-
-    auto test_connection = std::make_shared<EventConnection>();
 
     Game::run({
       .window = {
@@ -372,21 +362,9 @@ main()
 
           
           inputs.bind(SDLK_TAB, Press, Action::ChangeView);
-          game.hold(inputs.bind(Action::ChangeView, [&]
-          {
-              using enum CameraView;
-
-              auto view = succesor(camera_node->current_view());
-
-              camera_node->set_view(view);
-
-              auto message = std::format("Switched to {} view", view == CameraView::FirstPerson ? "first person" : "third person");
-              camera_node->log(message, LogLevel::Debug);
-          }));
-
           
-          inputs.bind(SDLK_SPACE, {Press, Repeat}, Action::MoveUp);
-          game.hold(inputs.bind(Action::MoveUp, [&] 
+          inputs.bind(SDLK_SPACE, {Press, Repeat}, Action::SummonBalls);
+          game.hold(inputs.bind(Action::SummonBalls, [&] 
           {
               auto radius = 0.03f;
 
@@ -461,46 +439,17 @@ main()
               std::println("Time scale: {} // {}{}", new_scale, delta > 0 ? "+" : "-", delta);
           }));
 
-        // clang-format off
-          #define BIND_MOVE(KEY, DIR, ACTION)                                                   \
-              inputs.bind(KEY, { Press, Release }, Action::ACTION);                    \
-              game.hold(inputs.bind(Action::ACTION, [&](const KeyboardInput &input) {  \
-                  auto dir = DIR;                                                               \
-                  player.moving_direction += (input == Press ? dir : -dir);                     \
-              }))
-          BIND_MOVE(SDLK_w, forward, MoveForward);
-          BIND_MOVE(SDLK_s, backward, MoveBackward);
-          BIND_MOVE(SDLK_a, left, MoveLeft);
-          BIND_MOVE(SDLK_d, right, MoveRight);
-          BIND_MOVE(SDLK_SPACE, up, MoveUp);
-          BIND_MOVE(SDLK_LCTRL, down, MoveDown);
-        // clang-format on
+          inputs.bind(SDLK_w,      { Press, Release }, Action::CameraForward);
+          inputs.bind(SDLK_s,      { Press, Release }, Action::CameraBackward);
+          inputs.bind(SDLK_a,      { Press, Release }, Action::CameraLeft);
+          inputs.bind(SDLK_d,      { Press, Release }, Action::CameraRight);
+          inputs.bind(SDLK_SPACE,  { Press, Release }, Action::CameraUp);
+          inputs.bind(SDLK_LCTRL,  { Press, Release }, Action::CameraDown);
+          inputs.bind(SDLK_LSHIFT, { Press, Release }, Action::CameraSprint);
 
-          game.hold(inputs.bind([&](const MouseMotionInput &input)
+          game.hold(inputs.bind<MouseMotionInput>([&]
           {
               auto& camera = game.camera;
-
-              float yaw   = -input.delta[0] * 0.01f;
-              float pitch = -input.delta[1] * 0.01f;
-
-              switch (camera_node->current_view())
-              {
-                case CameraView::FirstPerson:
-                {
-                    camera.steer_yaw(yaw);
-                    camera.steer_pitch(pitch);
-                    break;
-                }
-                case CameraView::ThirdPerson:
-                {
-                    // FIXME: it tilts
-                    camera.rotate(yaw, camera.up());
-                    camera.rotate(pitch, camera.right());
-                    break;
-                }
-                default:
-                    throw std::runtime_error("Unsuported camera view");
-              }
 
               *gravity = camera.down() * 9.81f;
 
@@ -571,7 +520,7 @@ main()
           });
 
           extending(*root)
-              .add(camera_node).named("Camera")
+              .add<CameraControlNode>().named("Camera")
               .add<Node>().named("Manolito")
                   .add<Node>().named("Fede")
                   .up()
@@ -596,14 +545,8 @@ main()
         gluPerspective(45.0, 640.0 / 480.0, 0.1, 100.0);
     },
 
-    .on_update = [&](auto &game)
+    .on_update = [&](auto &)
     {
-        if (camera_node->current_view() == CameraView::FirstPerson)
-        {
-            auto dir = game.camera.orientation().quat() * glm::vec3(player.moving_direction);
-            game.camera.target(game.camera.target() + dir * player.speed * game.time.unscaled.delta());
-        }
-
         // cancha
         glBegin(GL_QUADS);
         {

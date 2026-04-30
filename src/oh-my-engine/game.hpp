@@ -41,8 +41,7 @@ class Game : public EventConnectionHolder
 
         Camera::Settings camera;
 
-        // Configures the input mapper. Called once at the beginning of the session.
-        std::function<void(input::InputMapper &, Game &)> configure_input = {};
+        std::function<input::InputMapper(Game &)> make_input_mapper = {};
 
         std::function<void(ecs::SystemStore &, Game &)> configure_systems = {};
 
@@ -60,7 +59,6 @@ class Game : public EventConnectionHolder
 
   private:
     Configuration                      config_;
-    input::InputMapper                 input_mapper_;
     bool                               running_     = false;
     unsigned long                      frame_count_ = 0;
     std::shared_ptr<Enviroment>        enviroment_  = Enviroment::instance();
@@ -102,6 +100,8 @@ class Game : public EventConnectionHolder
     ecs::EntityStore entities;
 
     ecs::SystemStore systems;
+
+    input::InputMapper input;
 
     void
     stop()

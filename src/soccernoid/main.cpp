@@ -343,10 +343,12 @@ main()
           .distance = 3,
       },
 
-      .configure_input = [&](auto &inputs, auto &game)
+      .make_input_mapper = [&](auto &game)
       {
           using namespace input;
           using enum KeyInput;
+
+          auto inputs = InputMapper();
 
           inputs.bind(SDLK_ESCAPE, Release, Action::Quit);
           game.hold(inputs.bind(Action::Quit, [&]{ game.stop(); }));
@@ -505,6 +507,8 @@ main()
               spawn_area.from = from_camera_space({ -0.5f, 3.0f, -camera.distance() - 0.5f }, camera);
               spawn_area.to   = from_camera_space({ 0.5f, 4.0f, -camera.distance() + 0.5f }, camera);
           }));
+
+          return inputs;
       },
 
       .configure_systems = [&](auto &systems, auto &game) {

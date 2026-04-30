@@ -61,9 +61,9 @@ Game::Game(const Configuration &config)
         logger_ = config_.make_logger();
     }
 
-    if (config_.configure_input)
+    if (config_.make_input_mapper)
     {
-        config_.configure_input(input_mapper_, *this);
+        input = config_.make_input_mapper(*this);
     }
 
     if (config_.configure_systems)
@@ -114,7 +114,7 @@ Game::update_()
         {
             running_ = false;
         }
-        input_mapper_.handle(event);
+        input.handle(event);
     }
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

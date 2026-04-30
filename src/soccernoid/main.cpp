@@ -27,11 +27,12 @@
 #include "oh-my-engine/nodes/transform_node.hpp"
 #include "oh-my-engine/shared_from.hpp"
 #include "soccernoid/actions.hpp"
-#include "soccernoid/level.hpp"
 #include "soccernoid/nodes/camera_control.hpp"
+#include "soccernoid/nodes/frame_rate.hpp"
 
 using namespace ome;
 using namespace ome::ecs;
+using namespace soccernoid;
 
 static auto rng = std::mt19937{ std::random_device{}() };
 
@@ -263,51 +264,6 @@ class FallingNode : public Node
     }
 };
 
-struct FrameRateEvent
-{
-    float frame_rate;
-};
-
-class FrameRateNode : public Eventful<Node, FrameRateEvent>
-{
-  public:
-    void
-    tick_() override
-    {
-        auto frame_rate = game()->instant_frame_rate();
-
-        log(std::format("FPS: {}", frame_rate));
-
-        emit(FrameRateEvent{ frame_rate });
-    }
-};
-
-class FrameRateObserverNode : public Slowed<DespawningNode, 1.0f>
-{
-  public:
-    FrameRateObserverNode()
-        : Slowed<DespawningNode, 1.0f>(5) // 5 tics de vida
-    {
-    }
-
-    void
-    on_mount_() override
-    {
-        DespawningNode::on_mount_();
-
-        auto callback = [this](const FrameRateEvent &event)
-        {
-            auto message = std::format("Observed FPS: {}", event.frame_rate);
-            log(message, LogLevel::Debug);
-        };
-
-        auto connection = find_ancestor<FrameRateNode>(this)->bind(callback);
-        hold(connection);
-    }
-};
-
-using namespace soccernoid;
-
 int
 main()
 {
@@ -521,19 +477,8 @@ main()
 
           extending(*root)
               .add<CameraControlNode>().named("Camera")
-              .add<Node>().named("Manolito")
-                  .add<Node>().named("Fede")
-                  .up()
               .up()
-              .add<Node>().named("Jaimito")
-                  .add(particle_node).named("Particulas")
-                  .up()
-              .up()
-              .add<Node>()
-                  .add<FallingNode>().named("Falling")
-                  .up()
-                  .add<Slowed<FrameRateNode, 1.0f>>().named("FPS")
-                      .add<FrameRateObserverNode>().named("Observador");
+              .add<Slowed<FrameRateNode, 1.0f>>().named("FPS");
 
           return root;
       },

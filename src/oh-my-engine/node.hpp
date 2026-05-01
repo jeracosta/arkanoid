@@ -32,12 +32,15 @@
 
 namespace ome {
 
-// Lifecycle events
+// #region Lifecycle events
 // clang-format off
+
 struct NodeMounted {};
 struct NodeGotReady {};
 struct NodeTicked {};
 struct NodeUnmounted {};
+
+// #endregion
 // clang-format on
 
 class Node : public std::enable_shared_from_this<Node>,
@@ -45,31 +48,34 @@ class Node : public std::enable_shared_from_this<Node>,
              public EventConnectionHolder
 {
   public:
+    enum LifecyclePhase
+    {
+        Unmounted,      // Before first mount, or after unmounting
+        Mounting,       // During mount recursion (downward)
+        Mounted,        // Got ready and it's tickable
+        PendingUnmount, // Between calling die() and the end-of-frame cleanup
+        Unmounting,     // During unmount recursion (upward)
+    };
+
     Node(std::string_view name = {})
         : name_(name)
     {
     }
 
-    // non-movable to avoid dangling pointers in parent and children
+    // NOTE: Nodes are not movable to avoid dangling pointers in parent/children relationships
+
     Node(Node &&) = delete;
 
     Node &
     operator=(Node &&)
         = delete;
 
+    // #region Properties
+
     std::string_view
     name() const
     {
         return name_;
-    }
-
-    std::string
-    default_name() const
-    {
-        auto type_str   = boost::typeindex::type_id_runtime(*this).pretty_name();
-        auto addres_str = address_string(this);
-
-        return type_str + "@" + addres_str;
     }
 
     Game *
@@ -84,23 +90,62 @@ class Node : public std::enable_shared_from_this<Node>,
         return parent_;
     }
 
+    LifecyclePhase
+    lifecycle_phase() const
+    {
+        return phase_;
+    }
+
+    bool
+    is_unmounted() const
+    {
+        return phase_ == Unmounted;
+    }
+
+    bool
+    is_ready() const
+    {
+        return phase_ == Mounted;
+    }
+
+    std::string
+    default_name() const
+    {
+        return boost::typeindex::type_id_runtime(*this).pretty_name() + "@" + address_string(this);
+    }
+
     void
     rename(std::string new_name)
     {
+        [[unlikely]]
         if (new_name == name_)
         {
             return;
         }
 
+        [[unlikely]]
+        if (is_in_transition_())
+        {
+            // We defer it to prevent children iterator invalidation
+
+            auto &&task = [this, name = std::move(new_name)]() mutable { rename(std::move(name)); };
+            game_->schedule(task);
+
+            return;
+        }
+
+        [[unlikely]]
         if (!parent_)
         {
             name_ = std::move(new_name);
             return;
         }
 
+        [[unlikely]]
         if (parent_->children_.contains(new_name))
         {
-            throw std::runtime_error("Tried renaming node to sibling name.");
+            throw std::runtime_error(
+                std::format("Tried renaming node '{}' to sibling name '{}'", name_, new_name));
         }
 
         auto it   = parent_->children_.find(name_);
@@ -111,17 +156,15 @@ class Node : public std::enable_shared_from_this<Node>,
         parent_->children_.emplace(name_, std::move(node));
     }
 
-    Node *
-    child(const std::string &name)
-    {
-        auto it = children_.find(name);
-        return it != children_.end() ? it->second.get() : nullptr;
-    }
+    // #endregion
 
-    bool
-    is_mounted() const
+    // #region Tree-related methods
+
+    auto
+    children(this auto &&self)
     {
-        return game_ != nullptr;
+        return self.children_ // view over its stored pointers:
+               | std::views::values | std::views::transform(&std::shared_ptr<Node>::get);
     }
 
     Node *
@@ -130,25 +173,46 @@ class Node : public std::enable_shared_from_this<Node>,
         auto child = child_owner.get();
 
         [[unlikely]]
-        if (child->is_mounted())
+        if (child->parent_)
         {
-            throw std::runtime_error(
-                "Tried reassigning a mounted node's parent; unmount it first.");
+            throw std::runtime_error(std::format(
+                "Node '{}' tried reassigning the parent of node '{}'", name(), child->name()));
+        }
+
+        [[unlikely]]
+        if (!child->is_unmounted())
+        {
+            throw std::runtime_error(std::format(
+                "Node '{}' tried mounting the already mounted node '{}'", name(), child->name()));
+        }
+
+        [[unlikely]]
+        if (is_in_transition_())
+        {
+            // We defer it to prevent children iterator invalidation
+
+            auto &&task = [this, child_owner = std::move(child_owner)]() mutable
+            { //
+                add_child(std::move(child_owner));
+            };
+
+            game_->schedule(task);
+
+            return child;
         }
 
         [[unlikely]]
         if (children_.contains(child->name_))
         {
-            throw std::runtime_error(
-                "Tried adding a child node to a node with a pre-existing child with the same "
-                "name; rename first.");
+            throw std::runtime_error(std::format(
+                "Node '{}' tried adding a child with colliding name '{}'", name(), child->name()));
         }
 
+        child->parent_ = this;
         children_.emplace(child->name_, std::move(child_owner));
 
-        child->parent_ = this;
-
-        if (is_mounted())
+        [[likely]]
+        if (game_ != nullptr)
         {
             child->mount_to_(game_);
         }
@@ -161,37 +225,49 @@ class Node : public std::enable_shared_from_this<Node>,
     {
         auto it = children_.find(name);
 
+        [[unlikely]]
         if (it == children_.end())
         {
             return nullptr;
         }
 
-        auto child = std::move(it->second);
+        if (is_in_transition_())
+        {
+            // We defer it to prevent children iterator invalidation
 
+            auto target = it->second;
+
+            auto &&task = [this, target = std::string(name)] { remove_child(target); };
+            game_->schedule(task);
+
+            return target;
+        }
+
+        auto child = std::move(it->second);
         children_.erase(it);
 
-        child->unmount_();
+        if (!child->is_unmounted())
+        {
+            child->unmount_();
+        }
 
         child->parent_ = nullptr;
-
         return child;
     }
 
-    auto
-    children(this auto &&self)
-    {
-        using namespace std::views;
-
-        return self.children_ | values | transform(&std::shared_ptr<Node>::get);
-    }
+    // #endregion
 
     void
     tick()
     {
-        assert(is_mounted() && "Tried ticking an unmounted node; mount it first.");
-        assert(is_alive && "Tried ticking a dead node; free it instead.");
+        [[unlikely]]
+        if (!is_ready())
+        {
+            return;
+        }
 
         tick_();
+
         emit(NodeTicked{});
     }
 
@@ -207,8 +283,7 @@ class Node : public std::enable_shared_from_this<Node>,
 
     virtual ~Node()
     {
-        // note: node cannot be unmounted here, as it implies a virtual call
-        assert(!is_mounted() && "Tried to destroy a mounted node; unmount it first.");
+        assert(is_unmounted() && "Node destroyed while still mounted!");
     }
 
     using EventBus::bind;
@@ -216,73 +291,76 @@ class Node : public std::enable_shared_from_this<Node>,
     class CompositionCursor;
 
   protected:
-    virtual void
-    on_mount_()
-    {
-    }
+    // #region Lifecycle hooks
+    // clang-format off
 
-    virtual void
-    on_ready_()
-    {
-    }
+    virtual void  on_mount_   (){}
+    virtual void  on_ready_   (){}
+    virtual void  tick_       (){} // TODO: rename to on_tick_ for consistency with other hooks
+    virtual void  on_unmount_ (){}
 
-    virtual void
-    tick_()
-    {
-    }
+    // #endregion
+    // clang-format on
 
-    virtual void
-    on_unmount_()
-    {
-    }
-
+    // Schedules the node for unmounting at the end of the current frame. The node will stop ticking
+    // TODO: rename to schedule_unmount_
+    // TODO: make it public
     void
     die_()
     {
         [[unlikely]]
-        if (!is_mounted())
+        if (is_unmounted() || phase_ == PendingUnmount)
         {
             return;
         }
 
-        auto task = [this]
+        phase_ = PendingUnmount;
+
+        game()->schedule([this]
         {
-            [[likely]]
             if (parent())
             {
                 parent()->remove_child(name());
             }
             else
             {
-                throw std::runtime_error("Tried to kill root game node.");
+                throw std::runtime_error(std::format("Tried to schedule unmounting of root node "
+                                                     "'{}'. Root nodes cannot be unmounted,",
+                                                     name()));
             }
-        };
-
-        game()->schedule(std::move(task));
+        });
     }
 
   private:
     using ChildrenMap_ = std::flat_map<std::string, std::shared_ptr<Node>, std::less<>>;
 
-    std::string  name_     = "";      // empty placeholder; default name is set on mount if unset
-    bool         enabled_  = true;    // disabled nodes don't tick
-    Game        *game_     = nullptr; // the game this node is mounted to, or nullptr if unmounted
-    Node        *parent_   = nullptr;
-    ChildrenMap_ children_ = {};
+    std::string    name_     = ""; // If left empty, it will be defaulted on mount
+    LifecyclePhase phase_    = Unmounted;
+    Game          *game_     = nullptr;
+    Node          *parent_   = nullptr;
+    ChildrenMap_   children_ = {};
+
+    bool
+    is_in_transition_() const
+    {
+        return phase_ == Mounting || phase_ == Unmounting;
+    }
 
     void
     mount_to_(Game *game)
     {
-        assert(!is_mounted());
+        assert(phase_ == Unmounted);
+
+        game_  = game;
+        phase_ = Mounting;
 
         if (name_.empty())
         {
             name_ = default_name();
         }
 
-        game_ = game;
-
         on_mount_();
+
         emit(NodeMounted{});
 
         for (auto child : children())
@@ -290,13 +368,21 @@ class Node : public std::enable_shared_from_this<Node>,
             child->mount_to_(game);
         }
 
+        phase_ = Mounted;
+
         on_ready_();
+
         emit(NodeGotReady{});
     }
 
     void
     unmount_()
     {
+        assert(is_mounted());
+
+        phase_ = Unmounting;
+
+        // Unmount children first (down-up order)
         for (auto child : children())
         {
             child->unmount_();
@@ -305,10 +391,11 @@ class Node : public std::enable_shared_from_this<Node>,
         on_unmount_();
         emit(NodeUnmounted{});
 
-        game_ = nullptr;
+        game_  = nullptr;
+        phase_ = Unmounted;
     }
 
-    friend class Game; // needed for Game to mount and unmount nodes.
+    friend class Game; // allows Game to mount and unmount nodes.
 };
 
 // Stateful fluent interface for building a node tree.
@@ -373,6 +460,8 @@ extending(Node &root)
 {
     return Node::CompositionCursor(root);
 }
+
+// #region Tree traversal utilities
 
 // Follows parent pointers up a game node tree until it finds the root node, which is returned.
 inline Node &
@@ -477,6 +566,8 @@ visit_bfs(Node &root, auto &&visit)
         }
     }
 }
+
+// #endregion
 
 inline void
 print_tree(Node &root)

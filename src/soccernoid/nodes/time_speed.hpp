@@ -1,3 +1,4 @@
+#include "oh-my-engine/game.hpp"
 #include "oh-my-engine/interpolation.hpp"
 #include "oh-my-engine/node.hpp"
 #include "soccernoid/actions.hpp"
@@ -22,13 +23,22 @@ class TimeSpeedNode : public ome::Node
         log(std::format("Time speed: {}", speed));
     }
 
+    void
+    on_toggle_pause_()
+    {
+        speed_interpolation_.reverse();
+
+        log(speed_interpolation_.is_reversed() ? "Paused" : "Resumed");
+    }
+
   public:
     void
     on_mount_() override
     {
         hold(game()->input.bind(Action::TimeSpeedUp, [&] { speed_by_(scaling_factor_); }));
         hold(game()->input.bind(Action::TimeSpeedDown, [&] { speed_by_(1.0f / scaling_factor_); }));
-        hold(game()->input.bind(Action::TogglePause, [&] { speed_interpolation_.reverse(); }));
+
+        hold(game()->input.bind(Action::TogglePause, [&] { on_toggle_pause_(); }));
     }
 
     void

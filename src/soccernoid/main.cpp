@@ -172,7 +172,7 @@ class PauseColorSystem : public System
     }
 
     Color
-    filter(Color color, Game &game) const
+    filter(Color color, Game &) const
     {
         // auto intensity     = game.time.unscaled.since(game.pause.paused_at()) * config.speed;
         // auto interpolation = ome::Interpolation(color.rgb(), grayscale(color).rgb(),
@@ -382,7 +382,7 @@ main()
           return inputs;
       },
 
-      .configure_systems = [&](auto &systems, auto &game) {
+      .configure_systems = [&](auto &systems, auto &) {
           auto &fall_system = systems.push(FallSystem({}));
           systems.push(BounceSystem({
               .elasticity = 0.7f,

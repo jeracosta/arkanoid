@@ -1,3 +1,4 @@
+#include "oh-my-engine/interpolation.hpp"
 #include "oh-my-engine/node.hpp"
 #include "soccernoid/actions.hpp"
 
@@ -8,12 +9,15 @@ class TimeSpeedNode : public ome::Node
   private:
     float scaling_factor_ = 1.1f;
 
+    ome::Interpolation<float>::Process speed_interpolation_
+        = { 0.0f, 1.0f, ome::EasingCurve::smoothstep(1), 2.5 };
+
     void
     speed_by_(float factor_)
     {
-        auto speed = game()->time.scale() * factor_;
+        auto speed = speed_interpolation_.to() * factor_;
 
-        game()->time.scale(speed);
+        speed_interpolation_.to(speed);
 
         log(std::format("Time speed: {}", speed));
     }
@@ -24,6 +28,14 @@ class TimeSpeedNode : public ome::Node
     {
         hold(game()->input.bind(Action::TimeSpeedUp, [&] { speed_by_(scaling_factor_); }));
         hold(game()->input.bind(Action::TimeSpeedDown, [&] { speed_by_(1.0f / scaling_factor_); }));
+        hold(game()->input.bind(Action::TogglePause, [&] { speed_interpolation_.reverse(); }));
+    }
+
+    void
+    on_tick_() override
+    {
+        speed_interpolation_.update(game()->time.unscaled.delta());
+        game()->time.scale(speed_interpolation_.value());
     }
 };
 

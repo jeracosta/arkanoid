@@ -6,7 +6,7 @@
 enum class ome::input::Action
 {
     Quit,
-    Pause,
+    TogglePause,
     ToggleFullscreen,
     ChangeView,
     SummonBalls,

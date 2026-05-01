@@ -18,7 +18,6 @@ class Interpolator
     Interpolation<T> interpolation_;
     Callbacks        callbacks_;
     float            progress_ = 0;
-    float            speed_    = 1;
 
   public:
     Interpolator(Interpolation<T> interpolation, Callbacks callbacks = {})

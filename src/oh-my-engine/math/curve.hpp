@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cmath>
 #include <functional>
 
 #include "oh-my-engine/math/vector.hpp"
@@ -9,75 +10,53 @@ namespace ome {
 
 namespace math {
 
-template <class T>
-struct ParametricCurve
+template <std::size_t Dimension = 1, float DomainMin = 0.0f, float DomainMax = 1.0f>
+    requires(DomainMin < DomainMax)
+class ParametricCurve
 {
+  private:
+    using Vector_ = math::Vector<Dimension>;
+
+    std::function<Vector_(float)> function_;
+
   public:
-    struct Domain
+    ParametricCurve(std::function<Vector_(float)> function)
+        : function_(std::move(function))
     {
-        float from = 0.0f;
-        float to   = 1.0f;
-    };
+    }
 
-    std::function<T(float, Domain)> function;
-
-    Domain domain;
-
-    T
+    Vector_
     operator()(float t) const
     {
-        auto clamped = rising() ? std::clamp(t, domain.to, domain.from)
-                                : std::clamp(t, domain.from, domain.to);
-
-        return function(clamped, domain);
-    }
-
-    void
-    flip_domain()
-    {
-        std::swap(domain.from, domain.to);
-    }
-
-    bool
-    rising() const
-    {
-        return domain.to > domain.from;
+        return function_(std::clamp(t, DomainMin, DomainMax));
     }
 
     static ParametricCurve
-    line(Domain domain)
+    linear()
     {
-        auto &&function
-            = [](float t, Domain domain) { return (t - domain.from) / (domain.to - domain.from); };
-
-        return { function, domain };
+        return { [](float t) { return (t - DomainMin) / (DomainMax - DomainMin); } };
     }
 
-    static ParametricCurve
-    smoothstep(Domain domain, float steepness = 1.0f)
+    static constexpr ParametricCurve
+    smoothstep(float steepness = 1.0f)
     {
-        auto &&function = [steepness](float t, Domain domain)
+        return { [steepness](float t)
         {
-            const float denom = (domain.to - domain.from);
-            const float x     = denom != 0.0f ? (t - domain.from) / denom : 0.0f;
+            float x = std::clamp(t, 0.0f, 1.0f);
 
-            const float clamped = std::clamp(x, 0.0f, 1.0f);
+            float a = std::pow(x, steepness);
+            float b = std::pow(1.0f - x, steepness);
 
-            const float k = std::max(1.0f, steepness);
-            const float s = std::pow(clamped, k);
+            float s = a / (a + b);
 
-            const float smooth = s * s * (3.0f - 2.0f * s);
-
-            return T(smooth);
-        };
-
-        return { function, domain };
+            return s * s * (3.0f - 2.0f * s);
+        } };
     }
 };
 
 }; // namespace math
 
-using Curve      = math::ParametricCurve<float>;
-using PlaneCurve = math::ParametricCurve<Vec2f>;
-using SpaceCurve = math::ParametricCurve<Vec3f>;
+using Curve      = math::ParametricCurve<1>;
+using PlaneCurve = math::ParametricCurve<2>;
+using SpaceCurve = math::ParametricCurve<3>;
 } // namespace ome

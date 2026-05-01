@@ -8,7 +8,7 @@ class FrameRateNode : public ome::Node
 {
   public:
     void
-    tick_() override
+    on_tick_() override
     {
         log(std::format("FPS: {}", game()->instant_frame_rate()));
     }

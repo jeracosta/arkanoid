@@ -232,7 +232,7 @@ class DespawningNode : public Node
     }
 
     virtual void
-    tick_() override
+    on_tick_() override
     {
         log(std::format("{} ticks left", counter_), LogLevel::Debug);
 

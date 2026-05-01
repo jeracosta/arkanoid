@@ -24,7 +24,7 @@ class Slowed : public TBase
     }
 
     void
-    tick_() override
+    on_tick_() override
     {
         cooldown_ -= Node::game()->time.delta();
 

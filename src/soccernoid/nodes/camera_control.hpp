@@ -82,7 +82,7 @@ class CameraControlNode : public ome::Node
     }
 
     void
-    tick_() override
+    on_tick_() override
     {
         if (view_ == CameraView::FirstPerson)
         {

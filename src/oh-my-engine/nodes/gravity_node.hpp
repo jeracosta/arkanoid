@@ -26,7 +26,7 @@ class GravityNode : public Node
     }
 
     void
-    tick_() override
+    on_tick_() override
     {
         target_->position += force * game()->time.delta();
     }

@@ -265,7 +265,7 @@ class Node : public std::enable_shared_from_this<Node>,
             return;
         }
 
-        tick_();
+        on_tick_();
 
         emit(NodeTicked{});
     }
@@ -295,7 +295,7 @@ class Node : public std::enable_shared_from_this<Node>,
 
     virtual void  on_mount_   (){}
     virtual void  on_ready_   (){}
-    virtual void  tick_       (){} // TODO: rename to on_tick_ for consistency with other hooks
+    virtual void  on_tick_    (){}
     virtual void  on_unmount_ (){}
 
     // #endregion

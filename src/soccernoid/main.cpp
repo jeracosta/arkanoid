@@ -238,7 +238,7 @@ class DespawningNode : public Node
 
         if (counter_-- == 0)
         {
-            die_();
+            schedule_unmount();
         }
     }
 
@@ -310,9 +310,9 @@ main()
               std::println("{}", game.pause.is_paused() ? "Paused" : "Resumed");
           }));
 
-          
+
           inputs.bind(SDLK_TAB, Press, Action::ChangeView);
-          
+
           inputs.bind(SDLK_SPACE, {Press, Repeat}, Action::SummonBalls);
           game.hold(inputs.bind(Action::SummonBalls, [&] 
           {

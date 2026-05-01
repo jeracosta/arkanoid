@@ -270,6 +270,33 @@ class Node : public std::enable_shared_from_this<Node>,
         emit(NodeTicked{});
     }
 
+    // Schedules the node for unmounting at the end of the current frame. The node will stop ticking
+    void
+    schedule_unmount()
+    {
+        [[unlikely]]
+        if (is_unmounted() || phase_ == PendingUnmount)
+        {
+            return;
+        }
+
+        phase_ = PendingUnmount;
+
+        game()->schedule([this]
+        {
+            if (parent())
+            {
+                parent()->remove_child(name());
+            }
+            else
+            {
+                throw std::runtime_error(std::format("Tried to schedule unmounting of root node "
+                                                     "'{}'. Root nodes cannot be unmounted,",
+                                                     name()));
+            }
+        });
+    }
+
     void
     log(const auto &message, LogLevel level = LogLevel::Info)
     {
@@ -300,35 +327,6 @@ class Node : public std::enable_shared_from_this<Node>,
 
     // #endregion
     // clang-format on
-
-    // Schedules the node for unmounting at the end of the current frame. The node will stop ticking
-    // TODO: rename to schedule_unmount_
-    // TODO: make it public
-    void
-    die_()
-    {
-        [[unlikely]]
-        if (is_unmounted() || phase_ == PendingUnmount)
-        {
-            return;
-        }
-
-        phase_ = PendingUnmount;
-
-        game()->schedule([this]
-        {
-            if (parent())
-            {
-                parent()->remove_child(name());
-            }
-            else
-            {
-                throw std::runtime_error(std::format("Tried to schedule unmounting of root node "
-                                                     "'{}'. Root nodes cannot be unmounted,",
-                                                     name()));
-            }
-        });
-    }
 
   private:
     using ChildrenMap_ = std::flat_map<std::string, std::shared_ptr<Node>, std::less<>>;

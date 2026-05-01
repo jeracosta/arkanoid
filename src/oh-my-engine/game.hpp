@@ -124,7 +124,7 @@ class Game : public EventConnectionHolder
     float
     instant_frame_rate() const
     {
-        return 1.0f / time.delta();
+        return 1.0f / time.unscaled.delta();
     }
 
     bool

@@ -111,6 +111,8 @@ class EventBus
     // Adapts bind to support member function pointers as callbacks, with an implicit instance
     // parameter.
     template <class T, class Event>
+        requires supported_<Event>
+                 && std::is_invocable_v<void (T::*)(const Event &), T *, const Event &>
     [[nodiscard]] std::shared_ptr<EventConnection>
     bind(void (T::*member)(const Event &), T *instance)
     {

@@ -82,6 +82,8 @@ Game::Game(const Configuration &config)
     }
 
     hold(camera.bind(&Game::on_projection_update_, this));
+
+    hold(window.bind(&Game::on_window_resize_, this));
 }
 
 Game::~Game() = default;
@@ -166,6 +168,12 @@ Game::on_projection_update_(const ProjectionUpdated &event)
     glLoadIdentity();
 
     gluPerspective(projection.fov_degrees, projection.aspect_ratio, camera.near(), camera.far());
+}
+
+void
+Game::on_window_resize_(const WindowResized &)
+{
+    camera.aspect_ratio(window.aspect_ratio());
 }
 
 } // namespace ome

@@ -3,15 +3,28 @@
 #include <GL/gl.h>
 #include <SDL2/SDL.h>
 
+#include "oh-my-engine/events.hpp"
 #include "oh-my-engine/math/vector.hpp"
 
 namespace ome {
 
-class Window
+struct WindowResized
+{
+    Vec2u new_size;
+};
+
+class Window : EventBus<WindowResized>
 {
   private:
     SDL_Window   *window_;
     SDL_GLContext gl_context_;
+
+    void
+    resize_viewport_(Vec2u new_size)
+    {
+        auto &[width, height] = new_size;
+        glViewport(0, 0, width, height);
+    }
 
   public:
     struct Configuration
@@ -66,16 +79,17 @@ class Window
     Vec2u
     size() const
     {
-        int width, height;
+        Vec2i size;
+        auto &[width, height] = size;
         SDL_GetWindowSize(window_, &width, &height);
-        return { static_cast<unsigned>(width), static_cast<unsigned>(height) };
+        return Vec2u(size);
     }
 
     double
     aspect_ratio() const
     {
-        auto size = this->size();
-        return static_cast<double>(size[0]) / static_cast<double>(size[1]);
+        auto [width, height] = Vec2f(this->size());
+        return width / height;
     }
 
     bool
@@ -89,6 +103,10 @@ class Window
     {
         auto flag = is_fullscreen() ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
         SDL_SetWindowFullscreen(window_, flag);
+
+        resize_viewport_(size());
+
+        emit(WindowResized{ size() });
     }
 
     friend void
@@ -96,6 +114,8 @@ class Window
     {
         return SDL_GL_SwapWindow(window.window_);
     };
+
+    using EventBus::bind;
 };
 
 inline Vec2f

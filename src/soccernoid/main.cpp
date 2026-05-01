@@ -296,10 +296,6 @@ main()
           inputs.bind(SDLK_F10, Press, Action::ToggleFullscreen);
           game.hold(inputs.bind(Action::ToggleFullscreen, [&]
           {
-              auto size = game.window.size();
-
-              std::println("Toggling fullscreen mode. Current size: {} x {}", size[0], size[1]);
-
               game.window.toggle_fullscreen();
           }));
 

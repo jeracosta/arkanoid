@@ -88,6 +88,9 @@ class Game : public EventConnectionHolder
     void
     on_projection_update_(const ProjectionUpdated &projection);
 
+    void
+    on_window_resize_(const WindowResized &projection);
+
   public:
     Window window;
 

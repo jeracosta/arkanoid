@@ -16,6 +16,14 @@ struct WindowResized
 
 class Window : EventBus<WindowResized>, public ome::sdl::EventHandler
 {
+  public:
+    struct Configuration
+    {
+        const char *title;
+        Vec2u       size;
+        bool        resizeable;
+    };
+
   private:
     SDL_Window   *window_;
     SDL_GLContext gl_context_;
@@ -34,20 +42,21 @@ class Window : EventBus<WindowResized>, public ome::sdl::EventHandler
         emit(WindowResized{ new_size });
     }
 
-  public:
-    struct Configuration
+    Uint32
+    window_flags_for_(const Configuration &config)
     {
-        const char *title;
-        Vec2u       size;
-    };
+        return SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN
+               | (config.resizeable ? SDL_WINDOW_RESIZABLE : 0);
+    }
 
+  public:
     Window(Configuration config)
         : window_(SDL_CreateWindow(config.title,
                                    SDL_WINDOWPOS_CENTERED,
                                    SDL_WINDOWPOS_CENTERED,
                                    config.size[0],
                                    config.size[1],
-                                   SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN)),
+                                   window_flags_for_(config))),
           gl_context_(SDL_GL_CreateContext(window_))
     {
         if (!window_)

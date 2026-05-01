@@ -277,6 +277,7 @@ main()
       .window = {
             .title = "Soccernoid",
             .size  = {640, 480},
+            .resizeable = true,
       },
 
       .camera = {

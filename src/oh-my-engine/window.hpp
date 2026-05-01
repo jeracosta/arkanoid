@@ -4,6 +4,7 @@
 #include <SDL2/SDL.h>
 
 #include "oh-my-engine/events.hpp"
+#include "oh-my-engine/input.hpp"
 #include "oh-my-engine/math/vector.hpp"
 
 namespace ome {
@@ -13,7 +14,7 @@ struct WindowResized
     Vec2u new_size;
 };
 
-class Window : EventBus<WindowResized>
+class Window : EventBus<WindowResized>, public ome::sdl::EventHandler
 {
   private:
     SDL_Window   *window_;
@@ -24,6 +25,13 @@ class Window : EventBus<WindowResized>
     {
         auto &[width, height] = new_size;
         glViewport(0, 0, width, height);
+    }
+
+    void
+    on_resize_(Vec2u new_size)
+    {
+        resize_viewport_(new_size);
+        emit(WindowResized{ new_size });
     }
 
   public:
@@ -103,10 +111,6 @@ class Window : EventBus<WindowResized>
     {
         auto flag = is_fullscreen() ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
         SDL_SetWindowFullscreen(window_, flag);
-
-        resize_viewport_(size());
-
-        emit(WindowResized{ size() });
     }
 
     friend void
@@ -114,6 +118,25 @@ class Window : EventBus<WindowResized>
     {
         return SDL_GL_SwapWindow(window.window_);
     };
+
+    std::optional<SDL_Event>
+    handle(const SDL_Event &event) override
+    {
+        if (event.type != SDL_WINDOWEVENT || event.window.event != SDL_WINDOWEVENT_RESIZED)
+        {
+            return event;
+        }
+
+        [[unlikely]]
+        if (event.window.windowID != SDL_GetWindowID(window_))
+        {
+            return event;
+        }
+
+        on_resize_({ event.window.data1, event.window.data2 });
+
+        return std::nullopt;
+    }
 
     using EventBus::bind;
 };

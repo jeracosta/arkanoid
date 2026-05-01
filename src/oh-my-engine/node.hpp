@@ -320,8 +320,8 @@ class Node : public std::enable_shared_from_this<Node>,
     // #region Lifecycle hooks
     // clang-format off
 
-    virtual void  on_mount_   (){}
-    virtual void  on_ready_   (){}
+    virtual void  on_mount_   (){} // Can safely modify tree structure. Changes will be scheduled.
+    virtual void  on_ready_   (){} // WARN: Do NOT modify tree structure in this hook (SIGSEV risk).
     virtual void  on_tick_    (){}
     virtual void  on_unmount_ (){}
 

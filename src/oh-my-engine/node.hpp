@@ -10,10 +10,12 @@
 //   3. Its parent is mounted, recursively mounting all descendants.
 // Unmounting a node unmounts all of its children as well.
 // When recursively mounting a tree (node), nodes became "ready" when no children are left to mount.
-// Nodes call virtual lifecycle hooks on mount (up-down), ready (down-up), and unmount (down-up).
-// Each lifecycle phase also emits a corresponding event, which users can subscribe to.
+// Nodes call virtual lifecycle hooks on: mount (top-down), ready (bot-up), and unmount (bot-up).
+// Each lifecycle phase also emits a corresponding event, which users can bind callbacks to.
 
 #pragma once
+
+// #region Includes
 
 #include <boost/callable_traits.hpp>
 #include <boost/type_index.hpp>
@@ -28,6 +30,8 @@
 #include <type_traits>
 
 #include "game.hpp"
+
+// #endregion
 
 namespace ome {
 
@@ -329,6 +333,8 @@ class Node : public std::enable_shared_from_this<Node>,
     // clang-format on
 
   private:
+    // #region Member variables
+
     using ChildrenMap_ = std::flat_map<std::string, std::shared_ptr<Node>, std::less<>>;
 
     std::string    name_     = ""; // If left empty, it will be defaulted on mount
@@ -337,11 +343,15 @@ class Node : public std::enable_shared_from_this<Node>,
     Node          *parent_   = nullptr;
     ChildrenMap_   children_ = {};
 
+    // #endregion
+
     bool
     is_in_transition_() const
     {
         return phase_ == Mounting || phase_ == Unmounting;
     }
+
+    // #region Mount/Unmount logic
 
     void
     mount_to_(Game *game)
@@ -392,8 +402,12 @@ class Node : public std::enable_shared_from_this<Node>,
         phase_ = Unmounted;
     }
 
+    // #endregion
+
     friend class Game; // allows Game to mount and unmount nodes.
 };
+
+// #region Builder utilities
 
 // Stateful fluent interface for building a node tree.
 class Node::CompositionCursor
@@ -457,6 +471,8 @@ extending(Node &root)
 {
     return Node::CompositionCursor(root);
 }
+
+// #endregion
 
 // #region Tree traversal utilities
 
@@ -566,6 +582,8 @@ visit_bfs(Node &root, auto &&visit)
 
 // #endregion
 
+// #region Debug utilities
+
 inline std::string
 tree_string(Node &root)
 {
@@ -601,5 +619,7 @@ tree_string(Node &root)
 
     return out;
 }
+
+// #endregion
 
 } // namespace ome

@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <format>
 #include <functional>
 
 #include "oh-my-engine/math/vector.hpp"
@@ -16,27 +15,26 @@ template <std::size_t Dimension = 1, float DomainMin = 0.0f, float DomainMax = 1
 class ParametricCurve
 {
   private:
-    using Vector = math::Vector<Dimension>;
+    using Vector_ = math::Vector<Dimension>;
 
-    std::function<Vector(float)> function_;
+    std::function<Vector_(float)> function_;
 
   public:
-    // function should map [0, 1] to [0, 1]^Dimension
-    ParametricCurve(std::function<float(float)> function)
+    ParametricCurve(std::function<Vector_(float)> function)
         : function_(std::move(function))
     {
     }
 
-    Vector
+    Vector_
     operator()(float t) const
     {
         return function_(std::clamp(t, DomainMin, DomainMax));
     }
 
-    static constexpr ParametricCurve
+    static ParametricCurve
     linear()
     {
-        return { [](float t) { return t; } };
+        return { [](float t) { return (t - DomainMin) / (DomainMax - DomainMin); } };
     }
 
     static constexpr ParametricCurve

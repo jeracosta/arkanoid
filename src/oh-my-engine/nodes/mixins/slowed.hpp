@@ -30,7 +30,7 @@ class Slowed : public TBase
 
         if (cooldown_ <= 0)
         {
-            TBase::tick_();
+            TBase::on_tick_();
             cooldown_ = TPeriod;
         }
     }

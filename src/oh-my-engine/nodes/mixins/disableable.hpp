@@ -14,7 +14,7 @@ class Disableable : public TBase
 
   public:
     void
-    tick_() override
+    on_tick_() override
     {
         [[likely]]
         if (enabled_)

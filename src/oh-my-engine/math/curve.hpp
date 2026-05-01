@@ -10,34 +10,32 @@ namespace ome {
 
 namespace math {
 
-template <std::size_t Dimension = 1, float DomainMin = 0.0f, float DomainMax = 1.0f>
-    requires(DomainMin < DomainMax)
-class ParametricCurve
+template <class TOutput = float, float TDomainMin = 0.0f, float TDomainMax = 1.0f>
+    requires(TDomainMin < TDomainMax)
+class EasingCurve
 {
   private:
-    using Vector_ = math::Vector<Dimension>;
-
-    std::function<Vector_(float)> function_;
+    std::function<TOutput(float)> function_;
 
   public:
-    ParametricCurve(std::function<Vector_(float)> function)
+    EasingCurve(std::function<TOutput(float)> function)
         : function_(std::move(function))
     {
     }
 
-    Vector_
+    TOutput
     operator()(float t) const
     {
-        return function_(std::clamp(t, DomainMin, DomainMax));
+        return function_(std::clamp(t, TDomainMin, TDomainMax));
     }
 
-    static ParametricCurve
+    static EasingCurve
     linear()
     {
-        return { [](float t) { return (t - DomainMin) / (DomainMax - DomainMin); } };
+        return { [](float t) { return (t - TDomainMin) / (TDomainMax - TDomainMin); } };
     }
 
-    static constexpr ParametricCurve
+    static constexpr EasingCurve
     smoothstep(float steepness = 1.0f)
     {
         return { [steepness](float t)
@@ -56,7 +54,4 @@ class ParametricCurve
 
 }; // namespace math
 
-using Curve      = math::ParametricCurve<1>;
-using PlaneCurve = math::ParametricCurve<2>;
-using SpaceCurve = math::ParametricCurve<3>;
 } // namespace ome

@@ -11,9 +11,9 @@
 
 namespace ome {
 
-struct ProjectionUpdatedEvent;
+struct ProjectionUpdated;
 
-struct Camera : private EventBus<ProjectionUpdatedEvent>
+struct Camera : private EventBus<ProjectionUpdated>
 {
   public:
     struct Settings
@@ -128,7 +128,7 @@ struct Camera : private EventBus<ProjectionUpdatedEvent>
         return Vec3f(world);
     }
 
-    using EventBus<ProjectionUpdatedEvent>::bind;
+    using EventBus<ProjectionUpdated>::bind;
 
     float
     fov_degrees() const
@@ -167,7 +167,7 @@ struct Camera : private EventBus<ProjectionUpdatedEvent>
     far(float new_value);
 };
 
-struct ProjectionUpdatedEvent
+struct ProjectionUpdated
 {
     Camera::Settings::Projection new_projection;
 };
@@ -176,28 +176,28 @@ inline void
 Camera::fov_degrees(float new_value)
 {
     projection_.fov_degrees = new_value;
-    emit(ProjectionUpdatedEvent{ projection_ });
+    emit(ProjectionUpdated{ projection_ });
 }
 
 inline void
 Camera::aspect_ratio(float new_value)
 {
     projection_.aspect_ratio = new_value;
-    emit(ProjectionUpdatedEvent{ projection_ });
+    emit(ProjectionUpdated{ projection_ });
 }
 
 inline void
 Camera::near(float new_value)
 {
     projection_.near = new_value;
-    emit(ProjectionUpdatedEvent{ projection_ });
+    emit(ProjectionUpdated{ projection_ });
 }
 
 inline void
 Camera::far(float new_value)
 {
     projection_.far = new_value;
-    emit(ProjectionUpdatedEvent{ projection_ });
+    emit(ProjectionUpdated{ projection_ });
 }
 
 namespace open_gl {

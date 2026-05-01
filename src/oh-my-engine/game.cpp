@@ -157,7 +157,7 @@ Game::unmount_tree()
 }
 
 void
-Game::on_projection_update_(const ProjectionUpdatedEvent &event)
+Game::on_projection_update_(const ProjectionUpdated &event)
 {
     auto &projection = event.new_projection;
 

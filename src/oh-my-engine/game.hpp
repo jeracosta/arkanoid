@@ -9,7 +9,6 @@
 #include "logger.hpp"
 #include "oh-my-engine/entity-component-system/entity_store.hpp"
 #include "oh-my-engine/entity-component-system/system_store.hpp"
-#include "pause.hpp"
 #include "time.hpp"
 #include "window.hpp"
 
@@ -98,8 +97,6 @@ class Game : public EventConnectionHolder
 
     Time time;
 
-    Pause pause{ time };
-
     ecs::EntityStore entities;
 
     ecs::SystemStore systems;
@@ -128,6 +125,12 @@ class Game : public EventConnectionHolder
     instant_frame_rate() const
     {
         return 1.0f / time.delta();
+    }
+
+    bool
+    is_paused() const
+    {
+        return time.scale() == 0.0f;
     }
 
     Node *

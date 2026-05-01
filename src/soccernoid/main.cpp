@@ -16,8 +16,6 @@
 
 #include "oh-my-engine/game.hpp"
 #include "oh-my-engine/input.hpp"
-#include "oh-my-engine/interpolation.hpp"
-#include "oh-my-engine/math/curve.hpp"
 #include "oh-my-engine/math/vector.hpp"
 #include "oh-my-engine/node.hpp"
 #include "oh-my-engine/nodes/gravity_node.hpp"
@@ -165,7 +163,7 @@ class PauseColorSystem : public System
     struct Configuration
     {
         float speed;
-        Curve curve;
+        // Curve curve;
     } config;
 
     PauseColorSystem(Configuration config)
@@ -176,11 +174,13 @@ class PauseColorSystem : public System
     Color
     filter(Color color, Game &game) const
     {
-        auto intensity     = game.time.unscaled.since(game.pause.paused_at()) * config.speed;
-        auto interpolation = ome::Interpolation(color.rgb(), grayscale(color).rgb(), config.curve);
-        auto faded         = Color::rgb(interpolation(intensity));
+        // auto intensity     = game.time.unscaled.since(game.pause.paused_at()) * config.speed;
+        // auto interpolation = ome::Interpolation(color.rgb(), grayscale(color).rgb(),
+        // config.curve); auto faded         = Color::rgb(interpolation(intensity));
+        //
+        // return game.pause.is_paused() ? faded : color;
 
-        return game.pause.is_paused() ? faded : color;
+        return color;
     }
 
     void
@@ -263,8 +263,6 @@ main()
 {
     std::function<void(Color)> color_filter;
 
-    auto pause_curve = ome::Curve::smoothstep(5.0f);
-
     struct
     {
         Vec3f from = { -3.0f, 3.0f, -3.0f };
@@ -300,13 +298,7 @@ main()
               game.window.toggle_fullscreen();
           }));
 
-          inputs.bind(SDLK_p, Press, Action::Pause);
-          game.hold(inputs.bind(Action::Pause, [&]
-          {
-              game.pause.toggle();
-              std::println("{}", game.pause.is_paused() ? "Paused" : "Resumed");
-          }));
-
+          inputs.bind(SDLK_p, Press, Action::TogglePause);
 
           inputs.bind(SDLK_TAB, Press, Action::ChangeView);
 
@@ -396,15 +388,9 @@ main()
               .elasticity = 0.7f,
               .floor_height = 0.0f,
           }));
-          auto &pause_system = systems.push(PauseColorSystem({ .speed = 3.0f, .curve = pause_curve }));
           systems.push(SphereRenderSystem{});
           systems.push(DespawnSystem({.despawn_distance = 5.0f}));
           // systems.push(DebugSystem{});
-
-          color_filter = [&](Color color)
-          {
-              return pause_system.filter(color, game);
-          };
 
           gravity = &fall_system.config.gravity;
 

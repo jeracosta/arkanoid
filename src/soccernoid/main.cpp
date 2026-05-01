@@ -21,14 +21,10 @@
 #include "oh-my-engine/math/vector.hpp"
 #include "oh-my-engine/node.hpp"
 #include "oh-my-engine/nodes/gravity_node.hpp"
-#include "oh-my-engine/nodes/mixins/slowed.hpp"
-#include "oh-my-engine/nodes/particle_emitter_node.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
 #include "oh-my-engine/shared_from.hpp"
 #include "soccernoid/actions.hpp"
-#include "soccernoid/nodes/camera_control.hpp"
-#include "soccernoid/nodes/frame_rate.hpp"
-#include "soccernoid/nodes/time_speed.hpp"
+#include "soccernoid/nodes/root.hpp"
 
 using namespace ome;
 using namespace ome::ecs;
@@ -250,8 +246,6 @@ class DespawningNode : public Node
     on_unmount_() override
     {
         log("Bye, bye!");
-        std::println("Updated tree:");
-        print_tree(find_root(this));
     }
 };
 
@@ -421,49 +415,7 @@ main()
 
       .make_root_node = [&] (Game &)
       {
-          auto root = std::make_shared<Node>("Root");
-
-          root->hold(root->bind<NodeGotReady>([&root = *root]{
-              root.log("¡Si capitán, estamos listos!");
-              print_tree(root);
-          }));
-
-          ParticleBlueprint particle_blueprint = {
-              .color = {
-                  .origin = {1.0, 0.0, 0.0, 1.0},
-                  .target = {0.0, 1.0, 0.5, 0.9},
-                  .curve  = Curve::linear(),
-              },
-              .scale = {
-                  .origin = 1.2f,
-                  .target = 1.3f,
-                  .curve  = Curve::linear(),
-              },
-              .velocity = {
-                  .origin = Vec3f(0.0, -0.2, 0.0),
-                  .target = Vec3f(0.0, -0.2, 0.2),
-                  .curve  = Curve::linear(),
-              },
-              .origin = Vec3f(0.0, 0.2, 0.0),
-              .angular_speed = {
-                  .origin = 0,
-                  .target = 0,
-                  .curve  = Curve::linear(),
-              },
-              .time_to_live = 1.5,
-          };
-
-          auto particle_node = std::make_shared<ParticleEmitterNode>(ParticleEmitterNode::Configuration{
-              .particle_blueprint = particle_blueprint,
-              .emission_rate = 0.001f
-          });
-
-          extending(*root)
-              .add<CameraControlNode>().named("Camera").up()
-              .add<Slowed<FrameRateNode, 1.0f>>().named("FPS").up()
-              .add<TimeSpeedNode>().named("TimeSpeed").up();
-
-          return root;
+          return std::make_shared<RootNode>();
       },
 
     .on_init = [](Game &)

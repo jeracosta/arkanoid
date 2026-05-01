@@ -21,7 +21,6 @@
 #include <flat_map>
 #include <functional>
 #include <memory>
-#include <print>
 #include <queue>
 #include <ranges>
 #include <string>
@@ -569,21 +568,28 @@ visit_bfs(Node &root, auto &&visit)
 
 // #endregion
 
-inline void
-print_tree(Node &root)
+inline std::string
+tree_string(Node &root)
 {
-    std::println("{}", root.name());
+    std::string out;
 
-    auto recursive_step = [](auto &&self, Node &node, std::string prefix, bool is_last) -> void
+    auto append_line = [&](std::string_view prefix, std::string_view name)
     {
-        std::print("{}{}", prefix, is_last ? "└─ " : "├─ ");
-        std::println("{}", node.name());
+        out += prefix;
+        out += name;
+        out += '\n';
+    };
+
+    append_line("", root.name());
+
+    auto recursive_step = [&](auto &&self, Node &node, std::string prefix, bool is_last) -> void
+    {
+        append_line(prefix, std::string{ is_last ? "└─ " : "├─ " } + node.name());
 
         auto children = node.children();
         for (auto it = children.begin(); it != children.end(); ++it)
         {
             bool last = std::next(it) == children.end();
-
             self(self, **it, prefix + (is_last ? "   " : "│  "), last);
         }
     };
@@ -594,6 +600,8 @@ print_tree(Node &root)
         bool last = std::next(it) == children.end();
         recursive_step(recursive_step, **it, "", last);
     }
+
+    return out;
 }
 
 } // namespace ome

@@ -2,6 +2,7 @@
 #include "oh-my-engine/nodes/mixins/slowed.hpp"
 #include "soccernoid/nodes/camera_control.hpp"
 #include "soccernoid/nodes/frame_rate.hpp"
+#include "soccernoid/nodes/level.hpp"
 #include "soccernoid/nodes/time_speed.hpp"
 
 namespace soccernoid {
@@ -15,8 +16,9 @@ class RootNode : public ome::Node
         // clang-format off
         extending(*this)
             .add<CameraControlNode>().named("Camera").up()
-            .add<ome::Slowed<FrameRateNode, 1.0f>>().named("FPS").up()
-            .add<TimeSpeedNode>().named("TimeSpeed").up();
+            .add<ome::Slowed<FrameRateNode, 1.0f>>().named("FrameRate").up()
+            .add<TimeSpeedNode>().named("TimeSpeed").up()
+            .add<LevelNode>().named("Level").up();
         // clang-format on
     }
 
@@ -24,7 +26,9 @@ class RootNode : public ome::Node
     on_ready_() override
     {
         log("¡Si capitán, estamos listos!");
-        log("Node tree: \n" + tree_string(*this));
+
+        // tree modifications during mounting get scheduled, so we shedule this print too.
+        game()->schedule([this] { log("Node tree: \n" + tree_string(*this)); });
     }
 };
 

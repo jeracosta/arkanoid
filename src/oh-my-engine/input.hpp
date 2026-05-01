@@ -11,6 +11,7 @@
 
 #include "oh-my-engine/events.hpp"
 #include "oh-my-engine/math/vector.hpp"
+#include "oh-my-engine/sdl/event_handler.hpp"
 
 namespace ome::input {
 
@@ -42,7 +43,7 @@ struct KeyboardInput
     }
 };
 
-class KeyboardInputMapper
+class KeyboardInputMapper : public ome::sdl::EventHandler
 {
   private:
     struct ActionSlot_
@@ -125,12 +126,12 @@ class KeyboardInputMapper
         return index < action_slots_.size() && action_slots_[index].pressed_count != 0;
     }
 
-    void
-    handle(const SDL_Event &event)
+    std::optional<SDL_Event>
+    handle(const SDL_Event &event) override
     {
         if (event.type != SDL_KEYDOWN && event.type != SDL_KEYUP)
         {
-            return;
+            return event; // didn't consume the event
         }
 
         auto input = KeyboardInput{
@@ -157,6 +158,8 @@ class KeyboardInputMapper
 
             slot.bus.emit(input);
         }
+
+        return std::nullopt; // consumed the event
     }
 };
 
@@ -166,18 +169,18 @@ struct MouseMotionInput
     Vec2u position;
 };
 
-class MouseMotionInputMapper : private EventBus<MouseMotionInput>
+class MouseMotionInputMapper : private EventBus<MouseMotionInput>, public ome::sdl::EventHandler
 {
 
   public:
     using EventBus::bind;
 
-    void
+    std::optional<SDL_Event>
     handle(const SDL_Event &event)
     {
         if (event.type != SDL_MOUSEMOTION)
         {
-            return;
+            return event; // didn't consume the event
         }
 
         auto input = MouseMotionInput{
@@ -186,16 +189,27 @@ class MouseMotionInputMapper : private EventBus<MouseMotionInput>
         };
 
         EventBus::emit(input);
+
+        return std::nullopt; // consumed the event
     }
 };
 
 struct InputMapper : public KeyboardInputMapper, public MouseMotionInputMapper
 {
-    void
-    handle(const SDL_Event &event)
+    std::optional<SDL_Event>
+    handle(const SDL_Event &event) override
     {
-        KeyboardInputMapper::handle(event);
-        MouseMotionInputMapper::handle(event);
+        if (!KeyboardInputMapper::handle(event).has_value())
+        {
+            return std::nullopt;
+        }
+
+        if (!MouseMotionInputMapper::handle(event).has_value())
+        {
+            return std::nullopt;
+        }
+
+        return event;
     }
 
     using KeyboardInputMapper::bind;

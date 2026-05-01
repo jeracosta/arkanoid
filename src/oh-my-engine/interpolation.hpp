@@ -6,20 +6,20 @@ namespace ome {
 template <typename T>
 struct Interpolation
 {
-    T     origin;
-    T     target;
+    T     from;
+    T     to;
     Curve curve;
 
     T
     operator()(float progress) const
     {
-        return target * curve(progress) + origin * (1.0f - curve(progress));
+        return to * curve(progress) + from * (1.0f - curve(progress));
     }
 
     void
     flip()
     {
-        std::swap(origin, target);
+        std::swap(from, to);
     }
 };
 

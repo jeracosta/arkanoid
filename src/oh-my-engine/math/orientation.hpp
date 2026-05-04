@@ -1,5 +1,6 @@
 #pragma once
 
+#include <glm/fwd.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -12,10 +13,24 @@ namespace ome {
 class Orientation
 {
   private:
-    glm::quat quat_{ 1, 0, 0, 0 }; // identity
+    glm::quat quat_;
 
   public:
-    Orientation() = default;
+    explicit constexpr Orientation(const glm::quat &quat)
+        : quat_(quat)
+    {
+    }
+
+    static consteval Orientation
+    identity()
+    {
+        return Orientation(glm::quat{ 1, 0, 0, 0 });
+    }
+
+    constexpr Orientation()
+        : Orientation(identity())
+    {
+    }
 
     operator glm::quat() const
     {
@@ -83,6 +98,12 @@ class Orientation
         glm::quat q = glm::angleAxis(angle, glm::vec3(axis));
         quat_       = glm::normalize(q * quat_);
         return *this;
+    }
+
+    inline Orientation
+    operator*(const Orientation &other) const
+    {
+        return Orientation(glm::normalize(quat_ * other.quat_));
     }
 };
 

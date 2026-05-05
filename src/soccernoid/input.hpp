@@ -22,6 +22,8 @@ enum class ome::input::Action
     CameraLeft,
     CameraRight,
     CameraSprint,
+    CameraFovUp,
+    CameraFovDown,
 };
 
 namespace soccernoid {

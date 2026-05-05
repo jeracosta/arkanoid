@@ -26,8 +26,8 @@ class CameraControlNode : public ome::Node
     CameraView   view_ = CameraView::ThirdPerson;
 
     // TODO: Make these configurable
-    static constexpr float sensitivity_ = 0.01f;
-    static constexpr float base_speed_  = 1.0;
+    static constexpr float sensitivity_         = 0.01f;
+    static constexpr float base_movement_speed_ = 1.0;
 
     template <CameraView>
     void
@@ -41,6 +41,13 @@ class CameraControlNode : public ome::Node
 
         camera_->rotate(yaw, camera_->up());
         camera_->rotate(pitch, camera_->right());
+    }
+
+    void
+    on_mouse_wheel_(const ome::input::MouseWheelInput &input)
+    {
+        auto current_fov = camera_->fov_degrees();
+        camera_->fov_degrees(current_fov - input.delta[1]);
     }
 
     template <CameraView TView>
@@ -103,7 +110,7 @@ class CameraControlNode : public ome::Node
         auto is_sprinting = game()->input.is_pressed(Action::CameraSprint);
 
         auto speed_factor = is_sprinting ? 2.0f : 1.0f;
-        auto speed        = base_speed_ * speed_factor;
+        auto speed        = base_movement_speed_ * speed_factor;
 
         auto velocity     = direction * speed;
         auto displacement = velocity * game()->time.unscaled.delta();
@@ -121,6 +128,9 @@ class CameraControlNode : public ome::Node
 
         auto mouse_motion_handler = &CameraControlNode::on_mouse_motion_;
         hold(game()->input.bind(mouse_motion_handler, this));
+
+        auto mouse_wheel_handler = &CameraControlNode::on_mouse_wheel_;
+        hold(game()->input.bind(mouse_wheel_handler, this));
 
         set_view(view_);
     }

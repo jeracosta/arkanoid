@@ -98,7 +98,7 @@ class EventBus
 
     // Adapts bind to support callbacks that take no parameters, by ignoring the event parameter.
     template <class TEvent, class TCallback>
-        requires std::is_invocable_v<TCallback>
+        requires supported_<TEvent> && std::is_invocable_v<TCallback>
     [[nodiscard]] std::shared_ptr<EventConnection>
     bind(TCallback &&callback)
     {

@@ -214,7 +214,38 @@ class MouseMotionInputMapper : private EventBus<MouseMotionInput>, public ome::s
     }
 };
 
-struct InputMapper : public KeyboardInputMapper, public MouseMotionInputMapper
+struct MouseWheelInput
+{
+    Vec2f                   delta;
+    SDL_MouseWheelDirection direction;
+};
+
+class MouseWheelInputMapper : private EventBus<MouseWheelInput>, public ome::sdl::EventHandler
+{
+  public:
+    using EventBus::bind;
+
+    std::optional<SDL_Event>
+    handle(const SDL_Event &event) override
+    {
+        if (event.type != SDL_MOUSEWHEEL)
+        {
+            return event;
+        }
+
+        auto input = MouseWheelInput{
+            .delta     = { static_cast<float>(event.wheel.x), static_cast<float>(event.wheel.y) },
+            .direction = static_cast<SDL_MouseWheelDirection>(event.wheel.direction),
+        };
+
+        EventBus::emit(input);
+        return std::nullopt;
+    }
+};
+
+struct InputMapper : public KeyboardInputMapper,
+                     public MouseMotionInputMapper,
+                     public MouseWheelInputMapper
 {
     std::optional<SDL_Event>
     handle(const SDL_Event &event) override
@@ -229,11 +260,17 @@ struct InputMapper : public KeyboardInputMapper, public MouseMotionInputMapper
             return std::nullopt;
         }
 
+        if (!MouseWheelInputMapper::handle(event).has_value())
+        {
+            return std::nullopt;
+        }
+
         return event;
     }
 
     using KeyboardInputMapper::bind;
     using MouseMotionInputMapper::bind;
+    using MouseWheelInputMapper::bind;
 };
 
 } // namespace ome::input

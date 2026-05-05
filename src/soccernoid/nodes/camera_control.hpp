@@ -27,7 +27,7 @@ class CameraControlNode : public ome::Node
 
     // TODO: Make these configurable
     static constexpr float sensitivity_ = 0.01f;
-    static constexpr float base_speed_  = 0.02f;
+    static constexpr float base_speed_  = 1.0;
 
     template <CameraView>
     void
@@ -50,6 +50,65 @@ class CameraControlNode : public ome::Node
         view_ = TView;
 
         relocate_camera_<TView>();
+    }
+
+    void
+    process_movement_()
+    {
+        if (view_ != CameraView::FirstPerson)
+        {
+            return;
+        }
+
+        struct MoveSpecification
+        {
+            Action     action;
+            ome::Vec3f direction;
+
+            operator const ome::Vec3f &() const
+            {
+                return direction;
+            }
+        };
+
+        // clang-format off
+
+        static auto moves = std::to_array<MoveSpecification>({
+            { Action::CameraForward,  ome::forward },
+            { Action::CameraBackward, ome::backward },
+            { Action::CameraLeft,     ome::left },
+            { Action::CameraRight,    ome::right },
+            { Action::CameraUp,       ome::up },
+            { Action::CameraDown,     ome::down },
+        });
+
+        auto is_active = [this](const MoveSpecification &move)
+        {
+            return game()->input.is_pressed(move.action);
+        };
+
+        // clang-format on
+
+        auto active_moves = moves | std::views::filter(is_active);
+
+        auto raw_direction = std::ranges::fold_left(active_moves, ome::Vec3f{}, std::plus{});
+
+        if (norm(raw_direction) == 0)
+        {
+            return;
+        }
+
+        auto direction = camera_->orientation() * normal(raw_direction);
+
+        auto is_sprinting = game()->input.is_pressed(Action::CameraSprint);
+
+        auto speed_factor = is_sprinting ? 2.0f : 1.0f;
+        auto speed        = base_speed_ * speed_factor;
+
+        auto velocity     = direction * speed;
+        auto displacement = velocity * game()->time.unscaled.delta();
+
+        camera_->move_target(displacement);
     }
 
   public:
@@ -75,30 +134,11 @@ class CameraControlNode : public ome::Node
     void
     set_view(CameraView view);
 
-#define CHECK_AND_MOVE(action, direction)                                                          \
-    if (game()->input.is_pressed(action))                                                          \
-    {                                                                                              \
-        camera_->move_target(camera_->direction() * speed);                                        \
-    }
-
     void
     on_tick_() override
     {
-        if (view_ == CameraView::FirstPerson)
-        {
-            auto speed_factor = game()->input.is_pressed(Action::CameraSprint) ? 2.0f : 1.0f;
-            auto speed        = base_speed_ * speed_factor;
-
-            CHECK_AND_MOVE(Action::CameraForward, forward);
-            CHECK_AND_MOVE(Action::CameraBackward, backward);
-            CHECK_AND_MOVE(Action::CameraLeft, left);
-            CHECK_AND_MOVE(Action::CameraRight, right);
-            CHECK_AND_MOVE(Action::CameraUp, up);
-            CHECK_AND_MOVE(Action::CameraDown, down);
-        }
+        process_movement_();
     }
-
-#undef CHECK_AND_MOVE
 };
 
 inline void

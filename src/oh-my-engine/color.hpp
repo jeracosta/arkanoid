@@ -9,11 +9,11 @@ namespace ome {
 class Color
 {
   private:
-    Vec3f rgb_;
+    Vec4f rgba_;
 
     template <typename... Args>
     Color(Args... args)
-        : rgb_{ args... }
+        : rgba_{ args... }
     {
     }
 
@@ -22,40 +22,53 @@ class Color
 
     template <typename... Args>
     static constexpr Color
-    rgb(Args... args)
+    rgba(Args... args)
     {
         return Color(args...);
     }
 
-    Vec3f
-    rgb() const
+    template <typename... Args>
+    static constexpr Color
+    rgb(Args... args)
     {
-        return rgb_;
+        return rgba(args..., 1.0f);
+    }
+
+    Vec4f
+    rgba() const
+    {
+        return rgba_;
     }
 
     float
     red() const
     {
-        return rgb_[0];
+        return rgba_[0];
     }
 
     float
     green() const
     {
-        return rgb_[1];
+        return rgba_[1];
     }
 
     float
     blue() const
     {
-        return rgb_[2];
+        return rgba_[2];
+    }
+
+    float
+    alpha() const
+    {
+        return rgba_[3];
     }
 };
 
 inline Color
 grayscale(Color color)
 {
-    return Color::rgb(dot(color.rgb(), Vec3f(0.299, 0.587, 0.114)));
+    return Color::rgba(dot(color.rgba(), Vec4f(0.299, 0.587, 0.114, 1)));
 }
 
 } // namespace ome

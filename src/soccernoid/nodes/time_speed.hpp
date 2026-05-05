@@ -1,7 +1,7 @@
 #include "oh-my-engine/game.hpp"
 #include "oh-my-engine/interpolation.hpp"
 #include "oh-my-engine/node.hpp"
-#include "soccernoid/actions.hpp"
+#include "soccernoid/input.hpp"
 
 namespace soccernoid {
 

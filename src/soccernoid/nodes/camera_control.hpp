@@ -1,7 +1,7 @@
 #include "oh-my-engine/camera.hpp"
 #include "oh-my-engine/input.hpp"
 #include "oh-my-engine/node.hpp"
-#include "soccernoid/actions.hpp"
+#include "soccernoid/input.hpp"
 
 namespace soccernoid {
 

@@ -21,7 +21,7 @@
 #include "oh-my-engine/nodes/gravity_node.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
 #include "oh-my-engine/shared_from.hpp"
-#include "soccernoid/actions.hpp"
+#include "soccernoid/input.hpp"
 #include "soccernoid/nodes/root.hpp"
 
 using namespace ome;
@@ -289,20 +289,8 @@ main()
 
           auto inputs = InputMapper();
 
-          inputs.bind(SDLK_ESCAPE, Release, Action::Quit);
-          game.hold(inputs.bind(Action::Quit, [&]{ game.stop(); }));
+          configure_default_controls(&inputs);
 
-          inputs.bind(SDLK_F10, Press, Action::ToggleFullscreen);
-          game.hold(inputs.bind(Action::ToggleFullscreen, [&]
-          {
-              game.window.toggle_fullscreen();
-          }));
-
-          inputs.bind(SDLK_p, Press, Action::TogglePause);
-
-          inputs.bind(SDLK_TAB, Press, Action::ChangeView);
-
-          inputs.bind(SDLK_SPACE, {Press, Repeat}, Action::SummonBalls);
           game.hold(inputs.bind(Action::SummonBalls, [&] 
           {
               auto radius = 0.03f;
@@ -335,7 +323,6 @@ main()
               std::println("Entity count: {}", game.entities.living_count());
           }));
 
-          inputs.bind(SDLK_RETURN, {Press, Repeat}, Action::JiggleBalls);
           game.hold(inputs.bind(Action::JiggleBalls, [&]
           {
             for (auto entity: game.entities.living())
@@ -345,29 +332,16 @@ main()
             }
           }));
 
-          inputs.bind(SDLK_r, Press, Action::Reset);
           game.hold(inputs.bind(Action::Reset , [&]
           {
               game.entities.kill_all();
               std::println("Wiped entities");
           }));
 
-          inputs.bind(SDLK_i, Press, Action::PrintInfo);
           game.hold(inputs.bind(Action::PrintInfo, [&]
           {
               std::println("Entities: {}", game.entities.living());
           }));
-
-          inputs.bind(SDLK_PLUS,  { Press, Repeat}, Action::TimeSpeedUp);
-          inputs.bind(SDLK_MINUS, { Press, Repeat}, Action::TimeSpeedDown);
-
-          inputs.bind(SDLK_w,      Press, Action::CameraForward);
-          inputs.bind(SDLK_s,      Press, Action::CameraBackward);
-          inputs.bind(SDLK_a,      Press, Action::CameraLeft);
-          inputs.bind(SDLK_d,      Press, Action::CameraRight);
-          inputs.bind(SDLK_SPACE,  Press, Action::CameraUp);
-          inputs.bind(SDLK_LCTRL,  Press, Action::CameraDown);
-          inputs.bind(SDLK_LSHIFT, Press, Action::CameraSprint);
 
           game.hold(inputs.bind<MouseMotionInput>([&]
           {

@@ -338,11 +338,6 @@ main()
               std::println("Wiped entities");
           }));
 
-          game.hold(inputs.bind(Action::PrintInfo, [&]
-          {
-              std::println("Entities: {}", game.entities.living());
-          }));
-
           game.hold(inputs.bind<MouseMotionInput>([&]
           {
               auto& camera = game.camera;

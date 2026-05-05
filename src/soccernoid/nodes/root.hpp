@@ -25,12 +25,24 @@ class RootNode : public ome::Node
     }
 
     void
+    log_tree()
+    {
+        log("Node tree: \n" + tree_string(*this));
+    }
+
+    void
+    on_mount_() override
+    {
+        hold(game()->input.bind(Action::PrintTree, [this] { log_tree(); }));
+    }
+
+    void
     on_ready_() override
     {
         log("¡Si capitán, estamos listos!");
 
         // tree modifications during mounting get scheduled, so we shedule this print too.
-        game()->schedule([this] { log("Node tree: \n" + tree_string(*this)); });
+        game()->schedule([this] { log_tree(); });
     }
 };
 

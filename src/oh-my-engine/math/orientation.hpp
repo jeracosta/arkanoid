@@ -107,4 +107,10 @@ class Orientation
     }
 };
 
+inline Orientation
+inverse_of(const Orientation &orientation)
+{
+    return Orientation(glm::inverse(orientation.quat()));
+}
+
 } // namespace ome

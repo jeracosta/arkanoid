@@ -113,4 +113,10 @@ inverse_of(const Orientation &orientation)
     return Orientation(glm::inverse(orientation.quat()));
 }
 
+inline Vec3f
+operator*(const Orientation &orientation, const Vec3f &vector)
+{
+    return orientation.quat() * glm::vec3(vector);
+}
+
 } // namespace ome

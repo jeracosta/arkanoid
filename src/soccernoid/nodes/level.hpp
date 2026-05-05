@@ -1,4 +1,5 @@
 #include "oh-my-engine/node.hpp"
+#include "soccernoid/nodes/terrain.hpp"
 
 namespace soccernoid {
 
@@ -16,7 +17,7 @@ class LevelNode : public ome::Node
     LevelNode()
     {
         levels_.push_back({
-            [](ome::Node::CompositionCursor cursor) { cursor.add<Node>().named("Dummy"); },
+            [](ome::Node::CompositionCursor cursor) { cursor.add<TerrainNode>().named("Terreno"); },
         });
     }
 

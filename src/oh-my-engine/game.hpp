@@ -51,7 +51,7 @@ class Game : public EventConnectionHolder
         std::function<void(Game &)> on_init = {};
 
         // Called once per frame, after processing input and before updating entities.
-        std::function<void(Game &)> on_update;
+        std::function<void(Game &)> on_update = {};
     };
 
     ~Game();

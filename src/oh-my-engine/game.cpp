@@ -84,6 +84,8 @@ Game::Game(const Configuration &config)
     hold(camera.bind(&Game::on_projection_update_, this));
 
     hold(window.bind(&Game::on_window_resize_, this));
+
+    on_projection_update_(ProjectionUpdated{ camera.projection() });
 }
 
 Game::~Game() = default;
@@ -127,7 +129,7 @@ Game::update_()
 
     ome::open_gl::look_at(camera);
 
-    config_.on_update(*this);
+    config_.on_update ? config_.on_update(*this) : void();
 
     for (auto entity : entities.living())
     {

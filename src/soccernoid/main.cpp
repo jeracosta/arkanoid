@@ -407,31 +407,6 @@ main()
         glLoadIdentity();
         gluPerspective(45.0, 640.0 / 480.0, 0.1, 100.0);
     },
-
-    .on_update = [&](auto &)
-    {
-        // cancha
-        glBegin(GL_QUADS);
-        {
-            glColor(Color::rgb(0.1, 0.8, 0.1));
-            glVertex3f(-1.0, 0.0, 1.0);
-            glVertex3f(1.0, 0.0, 1.0);
-            glVertex3f(1.0, 0.0, -1.0);
-            glVertex3f(-1.0, 0.0, -1.0);
-        }
-        glEnd();
-
-        // arco
-        glBegin(GL_QUADS);
-        {
-            glColor(Color::rgb(0.9, 0.95, 0.85));
-            glVertex3f(.25, 0.0, -1.0);
-            glVertex3f(.25, 0.2, -1.0);
-            glVertex3f(-.25, 0.2, -1.0);
-            glVertex3f(-.25, 0.0, -1.0);
-        }
-        glEnd();
-    }
 });
 
     return EXIT_SUCCESS;

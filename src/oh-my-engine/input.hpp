@@ -1,9 +1,11 @@
 #pragma once
 
 #include <SDL2/SDL.h>
+#include <SDL_keycode.h>
 #include <cassert>
 #include <cstdint>
 #include <flat_map>
+#include <flat_set>
 #include <glm/ext/vector_float2.hpp>
 #include <initializer_list>
 #include <ranges>
@@ -48,12 +50,12 @@ class KeyboardInputMapper : public ome::sdl::EventHandler
   private:
     struct ActionSlot_
     {
-        EventBus<KeyboardInput> bus;
-        std::size_t             pressed_count = 0;
+        EventBus<KeyboardInput>     bus;
+        std::flat_set<SDL_Scancode> scancodes;
     };
 
     std::flat_multimap<KeyboardInput, Action> input_actions_;
-    std::vector<ActionSlot_>                  action_slots_;
+    mutable std::vector<ActionSlot_>          action_slots_;
 
     static std::size_t
     index_of_(Action action) noexcept
@@ -70,7 +72,7 @@ class KeyboardInputMapper : public ome::sdl::EventHandler
     }
 
     ActionSlot_ &
-    slot_of_(Action action)
+    slot_of_(Action action) const
     {
         auto index = index_of_(action);
 
@@ -87,6 +89,11 @@ class KeyboardInputMapper : public ome::sdl::EventHandler
     bind(KeyboardInput input, Action action)
     {
         input_actions_.emplace(input, action);
+
+        if (auto scancode = SDL_GetScancodeFromKey(input.key_code))
+        {
+            slot_of_(action).scancodes.insert(scancode);
+        }
     }
 
     void
@@ -105,9 +112,23 @@ class KeyboardInputMapper : public ome::sdl::EventHandler
     }
 
     void
-    unbind(SDL_Keycode key, KeyInput input)
+    unbind(KeyboardInput input)
     {
-        input_actions_.erase(KeyboardInput{ key, input });
+        auto actions = [&]
+        {
+            auto [begin, end] = input_actions_.equal_range(input);
+            return std::ranges::subrange(begin, end) | std::views::values;
+        }();
+
+        for (auto &action : actions)
+        {
+            if (auto scancode = SDL_GetScancodeFromKey(input.key_code))
+            {
+                slot_of_(action).scancodes.erase(scancode);
+            }
+        }
+
+        input_actions_.erase(input);
     }
 
     template <typename... Args>
@@ -128,17 +149,24 @@ class KeyboardInputMapper : public ome::sdl::EventHandler
     [[nodiscard]] bool
     is_pressed(Action action) const noexcept
     {
-        auto index = index_of_(action);
-        return index < action_slots_.size() && action_slots_[index].pressed_count != 0;
+        const auto *state = SDL_GetKeyboardState(nullptr);
+
+        for (auto scancode : slot_of_(action).scancodes)
+        {
+            if (state[scancode])
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     std::optional<SDL_Event>
     handle(const SDL_Event &event) override
     {
         if (event.type != SDL_KEYDOWN && event.type != SDL_KEYUP)
-        {
-            return event; // didn't consume the event
-        }
+            return event;
 
         auto input = KeyboardInput{
             .key_code  = event.key.keysym.sym,
@@ -147,27 +175,13 @@ class KeyboardInputMapper : public ome::sdl::EventHandler
                              : (event.type == SDL_KEYDOWN ? KeyInput::Press : KeyInput::Release),
         };
 
-        const bool is_down = input.key_input != KeyInput::Release;
-
         for (auto action : actions_for_(input))
-        {
-            auto &slot = slot_of_(action);
+            slot_of_(action).bus.emit(input);
 
-            if (is_down)
-            {
-                ++slot.pressed_count;
-            }
-            else if (slot.pressed_count != 0)
-            {
-                --slot.pressed_count;
-            }
-
-            slot.bus.emit(input);
-        }
-
-        return std::nullopt; // consumed the event
+        return std::nullopt;
     }
 };
+;
 
 struct MouseMotionInput
 {

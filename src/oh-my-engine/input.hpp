@@ -84,9 +84,15 @@ class KeyboardInputMapper : public ome::sdl::EventHandler
 
   public:
     void
+    bind(KeyboardInput input, Action action)
+    {
+        input_actions_.emplace(input, action);
+    }
+
+    void
     bind(SDL_Keycode key, KeyInput input, Action action)
     {
-        input_actions_.emplace(KeyboardInput{ key, input }, action);
+        bind(KeyboardInput{ key, input }, action);
     }
 
     void

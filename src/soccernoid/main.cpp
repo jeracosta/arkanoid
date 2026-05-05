@@ -400,13 +400,6 @@ main()
       {
           return std::make_shared<RootNode>();
       },
-
-    .on_init = [](Game &)
-    {
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        gluPerspective(45.0, 640.0 / 480.0, 0.1, 100.0);
-    },
 });
 
     return EXIT_SUCCESS;

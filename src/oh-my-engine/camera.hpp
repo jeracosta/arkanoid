@@ -16,15 +16,16 @@ struct ProjectionUpdated;
 struct Camera : private EventBus<ProjectionUpdated>
 {
   public:
+    struct Projection
+    {
+        float fov_degrees  = 45.0f;
+        float aspect_ratio = 4.0f / 3.0f;
+        float near         = 0.1f;
+        float far          = 100.0f;
+    };
+
     struct Settings
     {
-        struct Projection
-        {
-            float fov_degrees  = 45.0f;
-            float aspect_ratio = 4.0f / 3.0f;
-            float near         = 0.1f;
-            float far          = 100.0f;
-        };
 
         Vec3f       target      = { 0, 0, 0 };
         float       distance    = { 1.0f };
@@ -40,10 +41,10 @@ struct Camera : private EventBus<ProjectionUpdated>
   private:
     Settings settings_;
 
-    Vec3f                &target_      = settings_.target;
-    float                &distance_    = settings_.distance;
-    Settings::Projection &projection_  = settings_.projection;
-    Orientation          &orientation_ = settings_.orientation;
+    Vec3f       &target_      = settings_.target;
+    float       &distance_    = settings_.distance;
+    Projection  &projection_  = settings_.projection;
+    Orientation &orientation_ = settings_.orientation;
 
   public:
     Camera(Settings initial_settings)
@@ -130,6 +131,12 @@ struct Camera : private EventBus<ProjectionUpdated>
 
     using EventBus<ProjectionUpdated>::bind;
 
+    const Projection &
+    projection() const
+    {
+        return projection_;
+    }
+
     float
     fov_degrees() const
     {
@@ -169,7 +176,7 @@ struct Camera : private EventBus<ProjectionUpdated>
 
 struct ProjectionUpdated
 {
-    Camera::Settings::Projection new_projection;
+    Camera::Projection new_projection;
 };
 
 inline void

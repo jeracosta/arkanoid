@@ -1,7 +1,5 @@
 #pragma once
 
-#include <optional>
-
 #include "oh-my-engine/math/orientation.hpp"
 #include "oh-my-engine/math/vector.hpp"
 #include "oh-my-engine/node.hpp"
@@ -34,13 +32,11 @@ struct TransformComponent
 inline TransformComponent
 operator*(const TransformComponent &lhs, const TransformComponent &rhs)
 {
-    TransformComponent result;
-
-    result.orientation = lhs.orientation * rhs.orientation;
-    result.scale       = transform(std::multiplies<>(), lhs.scale, rhs.scale);
-    result.position    = lhs.to_world(rhs.position);
-
-    return result;
+    return {
+        .position    = lhs.to_world(rhs.position),
+        .orientation = lhs.orientation * rhs.orientation,
+        .scale       = transform(std::multiplies<>(), lhs.scale, rhs.scale),
+    };
 }
 
 class TransformNode : public Node
@@ -49,6 +45,7 @@ class TransformNode : public Node
     using Component = TransformComponent;
 
     TransformNode() = default;
+
     explicit TransformNode(const Component &local)
         : local_transform_(local)
     {
@@ -61,33 +58,24 @@ class TransformNode : public Node
     }
 
     void
-    set_local_transform(const Component &new_transform) noexcept
+    set_local_transform(const Component &t) noexcept
     {
-        local_transform_       = new_transform;
-        world_transform_cache_ = std::nullopt; // invalidates cache
+        local_transform_ = t;
     }
 
-    const Component &
+    // OPTIMIZE: This is O(depth). A caching mechanism could be neccesary.
+    const Component
     world_transform() const noexcept
     {
-        if (!world_transform_cache_)
+        if (auto *ancestor = find_ancestor<TransformNode>(this))
         {
-            if (auto *ancestor = find_ancestor<TransformNode>(this))
-            {
-                world_transform_cache_ = ancestor->world_transform() * local_transform_;
-            }
-            else
-            {
-                world_transform_cache_ = local_transform_;
-            }
+            return ancestor->world_transform() * local_transform_;
         }
-
-        return *world_transform_cache_;
+        return local_transform_;
     }
 
   private:
-    Component                        local_transform_{};
-    mutable std::optional<Component> world_transform_cache_{};
+    Component local_transform_{};
 };
 
 } // namespace ome

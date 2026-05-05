@@ -16,10 +16,51 @@ endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+include(FetchContent)
+
 find_package(OpenGL REQUIRED)
-find_package(SDL2 REQUIRED)
-find_package(glm REQUIRED)
-find_package(Boost CONFIG REQUIRED COMPONENTS container)
+
+find_package(SDL2 QUIET)
+if(NOT SDL2_FOUND)
+
+  FetchContent_Declare(
+    sdl2
+    GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+    GIT_TAG 3.4.8
+  )
+
+  set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+  set(SDL_STATIC ON CACHE BOOL "" FORCE)
+
+  FetchContent_MakeAvailable(sdl2)
+endif()
+
+find_package(glm QUIET)
+if(NOT glm_FOUND)
+
+  FetchContent_Declare(
+    glm
+    GIT_REPOSITORY https://github.com/g-truc/glm.git
+    GIT_TAG 1.0.3
+  )
+
+  FetchContent_MakeAvailable(glm)
+endif()
+
+find_package(Boost CONFIG QUIET)
+if(NOT TARGET Boost::mp11)
+
+  FetchContent_Declare(
+    boost_mp11
+    GIT_REPOSITORY https://github.com/boostorg/mp11.git
+    GIT_TAG boost-1.91.0
+  )
+
+  set(BOOST_INCLUDE_LIBRARIES container CACHE STRING "" FORCE)
+  set(BOOST_ENABLE_CMAKE ON CACHE BOOL "" FORCE)
+
+  FetchContent_MakeAvailable(boost_mp11)
+endif()
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
   "${PROJECT_SOURCE_DIR}/src/**.cpp"
@@ -43,7 +84,7 @@ target_link_libraries(deps INTERFACE
   OpenGL::GLU
   SDL2::SDL2
   glm::glm
-  Boost::container
+  Boost::mp11
 )
 
 function(apply_common_options target)

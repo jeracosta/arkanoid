@@ -29,6 +29,12 @@ enum class CoordinateSystem
 #undef X
 };
 
+template <class>
+inline constexpr bool is_vector_v = false;
+
+template <class T>
+concept is_vector = is_vector_v<std::remove_cvref_t<T>>;
+
 template <std::size_t TDimension,
           typename TComponent     = float,
           CoordinateSystem TBasis = CoordinateSystem::Cartesian>
@@ -37,6 +43,42 @@ class Vector
 {
   private:
     std::array<TComponent, TDimension> components_;
+
+    template <class T>
+    static consteval std::size_t
+    arg_arity_()
+    {
+        using A = std::remove_cvref_t<T>;
+        if constexpr (is_vector_v<A>)
+            return A::dimension();
+        else
+            return 1;
+    }
+
+    template <class... Args>
+    static consteval std::size_t
+    packed_args_arity_()
+    {
+        return (arg_arity_<Args>() + ... + 0);
+    }
+
+    template <class T>
+    constexpr void
+    append_one_(std::size_t &i, T &&x)
+    {
+        using A = std::remove_cvref_t<T>;
+        if constexpr (is_vector_v<A>)
+        {
+            for (auto &&c : x)
+            {
+                components_[i++] = static_cast<TComponent>(c);
+            }
+        }
+        else
+        {
+            components_[i++] = static_cast<TComponent>(x);
+        }
+    }
 
   public:
     using Component = TComponent;
@@ -61,11 +103,17 @@ class Vector
 
     constexpr Vector() = default;
 
-    template <typename... T>
-        requires(sizeof...(T) == TDimension && (std::convertible_to<T, TComponent> && ...))
-    constexpr Vector(T &&...args)
-        : components_{ static_cast<TComponent>(args)... }
+    template <typename... Args>
+        requires(sizeof...(Args) > 0
+                 && ((is_vector_v<std::remove_cvref_t<Args>>
+                      || std::convertible_to<Args, TComponent>)
+                     && ...)
+                 && (packed_args_arity_<Args...>() == TDimension)
+                 && (sizeof...(Args) != 1 || (is_vector_v<std::remove_cvref_t<Args>> || ...)))
+    constexpr Vector(Args &&...args)
     {
+        std::size_t i = 0;
+        (append_one_(i, std::forward<Args>(args)), ...);
     }
 
     template <typename T>
@@ -230,14 +278,8 @@ template <std::size_t Dimension, typename Component>
 Vector(const glm::vec<Dimension, Component> &) -> Vector<Dimension, Component>;
 #endif
 
-template <class>
-inline constexpr bool is_vector_v = false;
-
 template <std::size_t D, typename C, CoordinateSystem S>
 inline constexpr bool is_vector_v<Vector<D, C, S>> = true;
-
-template <class T>
-concept is_vector = is_vector_v<std::remove_cvref_t<T>>;
 
 constexpr auto
 operator-(const is_vector auto &vector)

@@ -29,6 +29,7 @@
 #include <string_view>
 #include <type_traits>
 
+#include "copy_const.hpp"
 #include "game.hpp"
 
 // #endregion
@@ -81,16 +82,16 @@ class Node : public std::enable_shared_from_this<Node>,
         return name_;
     }
 
-    Game *
-    game()
+    auto *
+    game(this auto &&self)
     {
-        return game_;
+        return self.game_;
     }
 
-    Node *
-    parent()
+    auto *
+    parent(this auto &&self)
     {
-        return parent_;
+        return self.parent_;
     }
 
     LifecyclePhase
@@ -477,43 +478,52 @@ extending(Node &root)
 // #region Tree traversal utilities
 
 // Follows parent pointers up a game node tree until it finds the root node, which is returned.
-inline Node &
-find_root(Node *node)
+template <class TNode>
+inline auto &
+find_root(TNode *node)
 {
     return node->parent() ? find_root(node->parent()) : *node;
 }
 
-template <class T>
-    requires std::derived_from<T, Node>
-inline T *
-find_ancestor(Node *node)
+template <class TAncestor, class TFrom>
+    requires std::derived_from<TAncestor, Node>
+inline copy_const_t<TFrom, TAncestor> *
+find_ancestor(TFrom *node)
 {
-    for (Node *parent = node->parent(); parent != nullptr; parent = parent->parent())
+    assert(node);
+
+    for (auto *it = node ? node->parent() : nullptr; it; it = it->parent())
     {
-        if (T *casted = dynamic_cast<T *>(parent))
+        if (auto *casted = dynamic_cast<copy_const_t<TFrom, TAncestor> *>(it))
         {
             return casted;
         }
     }
+
     return nullptr;
 }
 
-template <class T>
-    requires std::derived_from<T, Node>
-inline T *
-find_descendant(Node *from)
+template <class TDescendant, class TFrom>
+    requires std::derived_from<TDescendant, Node> && std::derived_from<TFrom, Node>
+inline copy_const_t<TFrom, TDescendant> *
+find_descendant(TFrom *from)
 {
-    std::queue<Node *> queue;
+    if (!from)
+    {
+        return nullptr;
+    }
+
+    std::queue<copy_const_t<TFrom, Node> *> queue;
     queue.push(from);
 
     while (!queue.empty())
     {
-        Node *current = queue.front();
+        auto *current = queue.front();
         queue.pop();
 
-        for (auto child : current->children())
+        for (auto *child : current->children())
         {
-            if (auto *casted = dynamic_cast<T *>(child))
+            if (auto *casted = dynamic_cast<copy_const_t<TFrom, TDescendant> *>(child))
             {
                 return casted;
             }
@@ -526,19 +536,19 @@ find_descendant(Node *from)
 }
 
 #define DEFINE_FIND_NAMED_RELATIVE(relation)                                                       \
-    template <class T>                                                                             \
-        requires std::derived_from<T, Node>                                                        \
-    inline T *find_##relation(std::string_view name, Node *from)                                   \
+    template <class TRelative, class TFrom>                                                        \
+        requires std::derived_from<TRelative, Node> && std::derived_from<TFrom, Node>              \
+    inline copy_const_t<TFrom, TRelative> *find_##relation(std::string_view name, TFrom *from)     \
     {                                                                                              \
-        for (Node *it = from; it != nullptr; it = find_##relation<T>(it))                          \
+        for (auto *it = find_##relation<TRelative>(from); it != nullptr;                           \
+             it       = find_##relation<TRelative>(it))                                            \
         {                                                                                          \
             if (it->name() == name)                                                                \
-            {                                                                                      \
-                return it;                                                                         \
-            }                                                                                      \
+                return static_cast<copy_const_t<TFrom, TRelative> *>(it);                          \
         }                                                                                          \
-        return nullptr;                                                                            \
+        return static_cast<copy_const_t<TFrom, TRelative> *>(nullptr);                             \
     }
+
 DEFINE_FIND_NAMED_RELATIVE(ancestor)
 DEFINE_FIND_NAMED_RELATIVE(descendant)
 #undef DEFINE_FIND_NAMED_RELATIVE

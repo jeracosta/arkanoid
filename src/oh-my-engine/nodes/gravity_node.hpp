@@ -28,7 +28,11 @@ class GravityNode : public Node
     void
     on_tick_() override
     {
-        target_->position += force * game()->time.delta();
+        auto transform = target_->local_transform();
+
+        transform.position += force * game()->time.delta();
+
+        target_->set_local_transform(transform);
     }
 };
 } // namespace ome

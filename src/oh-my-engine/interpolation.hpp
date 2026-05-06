@@ -102,7 +102,7 @@ class Interpolation
     EasingCurve curve_;
 
   public:
-    Interpolation(T from, T to, EasingCurve curve)
+    constexpr Interpolation(T from, T to, EasingCurve curve = EasingCurve::linear())
         : from_(std::move(from)),
           to_(std::move(to)),
           curve_(std::move(curve))
@@ -216,5 +216,11 @@ class Interpolation<T>::Process : private Interpolation<T>
         return (*this)(progress_);
     }
 };
+
+constexpr auto
+lerp(const auto &from, const auto &to, float t)
+{
+    return Interpolation{ from, to, EasingCurve::linear() }(t);
+}
 
 } // namespace ome

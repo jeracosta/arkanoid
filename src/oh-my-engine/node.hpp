@@ -17,7 +17,6 @@
 
 // #region Includes
 
-#include <boost/callable_traits.hpp>
 #include <boost/type_index.hpp>
 #include <cassert>
 #include <flat_map>

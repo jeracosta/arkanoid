@@ -186,6 +186,8 @@ CameraControlNode::relocate_camera_<CameraView::ThirdPerson>()
     camera_->target({ 0, 0, 0 });
     camera_->distance(5);
     camera_->orientate({});
+
+    camera_->steer_pitch(-1.0f);
 }
 
 } // namespace soccernoid

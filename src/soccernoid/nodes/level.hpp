@@ -1,4 +1,5 @@
 #include "oh-my-engine/node.hpp"
+#include "soccernoid/nodes/comet.hpp"
 #include "soccernoid/nodes/terrain.hpp"
 
 namespace soccernoid {
@@ -16,9 +17,11 @@ class LevelNode : public ome::Node
   public:
     LevelNode()
     {
-        levels_.push_back({
-            [](ome::Node::CompositionCursor cursor) { cursor.add<TerrainNode>().named("Terreno"); },
-        });
+        levels_.push_back({ [](ome::Node::CompositionCursor cursor)
+        {
+            cursor.add<CometNode>().named("Comet").up();
+            cursor.add<TerrainNode>().named("Terreno").up();
+        } });
     }
 
     void

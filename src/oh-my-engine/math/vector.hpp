@@ -309,6 +309,22 @@ BINARY_OPERATOR(*)
 BINARY_OPERATOR(/)
 #undef BINARY_OPERATOR
 
+constexpr bool
+component_wise(auto comparator, is_vector auto &&lhs, auto &&rhs)
+{
+    static_assert(lhs.dimension() == rhs.dimension());
+
+    auto compare = [&comparator](auto pair)
+    {
+        auto &&[a, b] = pair;
+        return comparator(a, b);
+    };
+
+    auto zipped = std::views::zip(lhs, rhs);
+
+    return std::ranges::all_of(zipped, compare);
+}
+
 template <class Vector>
 constexpr auto
 dot(const Vector &lhs, const Vector &rhs)

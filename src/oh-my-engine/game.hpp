@@ -7,8 +7,6 @@
 #include "camera.hpp"
 #include "input.hpp"
 #include "logger.hpp"
-#include "oh-my-engine/entity-component-system/entity_store.hpp"
-#include "oh-my-engine/entity-component-system/system_store.hpp"
 #include "time.hpp"
 #include "window.hpp"
 
@@ -41,8 +39,6 @@ class Game : public EventConnectionHolder
         Camera::Settings camera;
 
         std::function<input::InputMapper(Game &)> make_input_mapper = {};
-
-        std::function<void(ecs::SystemStore &, Game &)> configure_systems = {};
 
         std::function<std::shared_ptr<Node>(Game &)> make_root_node = {};
 
@@ -96,10 +92,6 @@ class Game : public EventConnectionHolder
     Camera camera;
 
     Time time;
-
-    ecs::EntityStore entities;
-
-    ecs::SystemStore systems;
 
     input::InputMapper input;
 

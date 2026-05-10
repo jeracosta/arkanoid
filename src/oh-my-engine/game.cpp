@@ -6,7 +6,6 @@
 
 #include "input.hpp"
 #include "node.hpp"
-#include "oh-my-engine/entity-component-system/system_store.hpp"
 #include "oh-my-engine/open_gl/matrix_mode_guard.hpp"
 #include "time.hpp"
 #include "window.hpp"
@@ -64,11 +63,6 @@ Game::Game(const Configuration &config)
     if (config_.make_input_mapper)
     {
         input = config_.make_input_mapper(*this);
-    }
-
-    if (config_.configure_systems)
-    {
-        config_.configure_systems(systems, *this);
     }
 
     if (config_.make_root_node)
@@ -130,11 +124,6 @@ Game::update_()
     ome::open_gl::look_at(camera);
 
     config_.on_update ? config_.on_update(*this) : void();
-
-    for (auto entity : entities.living())
-    {
-        systems.update(entity, *this);
-    }
 
     [[likely]]
     if (root_node_)

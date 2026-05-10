@@ -119,44 +119,12 @@ function(apply_common_options target)
   target_include_directories(${target} PRIVATE "${PROJECT_SOURCE_DIR}/src")
 endfunction()
 
-set(ECS_COMPONENTS_DIR
-    "${PROJECT_SOURCE_DIR}/src/oh-my-engine/entity-component-system/components"
-)
-set(ECS_GENERATED_COMPONENTS_DIR
-    "${CMAKE_BINARY_DIR}/generated/oh-my-engine/entity-component-system/components"
-)
-
-file(GLOB_RECURSE COMPONENT_HEADERS CONFIGURE_DEPENDS
-    "${ECS_COMPONENTS_DIR}/*.hpp"
-)
-
-add_custom_command(
-    OUTPUT
-        "${ECS_GENERATED_COMPONENTS_DIR}/components.def"
-        "${ECS_GENERATED_COMPONENTS_DIR}/index.hpp"
-    COMMAND "${PROJECT_SOURCE_DIR}/scripts/build-step/components-index.sh"
-            "${ECS_COMPONENTS_DIR}"
-            "${ECS_GENERATED_COMPONENTS_DIR}"
-    DEPENDS
-        ${COMPONENT_HEADERS}
-        "${PROJECT_SOURCE_DIR}/scripts/build-step/components-index.sh"
-    VERBATIM
-)
-
-add_custom_target(ecs_codegen
-    DEPENDS
-        "${ECS_GENERATED_COMPONENTS_DIR}/components.def"
-        "${ECS_GENERATED_COMPONENTS_DIR}/index.hpp"
-)
-
 if(LIB_SOURCES)
   add_library(core STATIC ${LIB_SOURCES})
   target_link_libraries(core PUBLIC deps)
   target_include_directories(core PUBLIC
       "${PROJECT_SOURCE_DIR}/src"
-      "${CMAKE_BINARY_DIR}/generated"
   )
-  add_dependencies(core ecs_codegen)
 
   if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     apply_common_options(core)
@@ -170,9 +138,7 @@ foreach(source_file IN LISTS MAIN_SOURCES)
   target_link_libraries(${name} PRIVATE deps)
   target_include_directories(${name} PRIVATE
       "${PROJECT_SOURCE_DIR}/src"
-      "${CMAKE_BINARY_DIR}/generated"
   )
-  add_dependencies(${name} ecs_codegen)
 
   if(TARGET core)
     target_link_libraries(${name} PRIVATE core)

@@ -4,6 +4,7 @@
 #include "oh-my-engine/input.hpp"
 #include "oh-my-engine/interpolation.hpp"
 #include "oh-my-engine/node.hpp"
+#include "soccernoid/constants.hpp"
 #include "soccernoid/input.hpp"
 
 namespace soccernoid {
@@ -67,7 +68,7 @@ class CameraControlNode : public ome::Node
             return;
         }
 
-        auto [yaw, pitch] = -input.delta * camera.mouse_sensitivity;
+        auto [yaw, pitch] = -input.delta * soccernoid::camera.mouse_sensitivity;
 
         camera_->rotate(yaw, camera_->up());
         camera_->rotate(pitch, camera_->right());
@@ -90,16 +91,13 @@ class CameraControlNode : public ome::Node
     {
         switch (view)
         {
-        case CameraView::FirstPerson: {
-            // At eye level in front of the goalkeeper (z=-5), looking at field center
-            // Camera position: (0, 1.7, -4), target: (0, 0, 0)
-            ome::Orientation orientation;
-            orientation.steer_yaw(ome::pi);
-            orientation.steer_pitch(-0.402f);
-
-            return { { 0.0f, 0.0f, 0.0f }, 4.346f, orientation };
+        case CameraView::FirstPerson:
+        {
+            // Camera at field center eye level, looking horizontally at the goalkeeper
+            return { { 0.0f, 1.7f, 0.0f }, 0.1f, {} };
         }
-        case CameraView::ThirdPerson: {
+        case CameraView::ThirdPerson:
+        {
             ome::Orientation orientation;
             orientation.steer_pitch(-1.0f);
 
@@ -130,7 +128,7 @@ class CameraControlNode : public ome::Node
         transition_.emplace(from,
                             to,
                             ome::EasingCurve::smoothstep(),
-                            1.0f / camera.transition_duration);
+                            1.0f / soccernoid::camera.transition_duration);
     }
 
     void
@@ -183,8 +181,8 @@ class CameraControlNode : public ome::Node
 
         auto is_sprinting = game()->input.is_pressed(Action::CameraSprint);
 
-        auto speed_factor = is_sprinting ? camera.sprint_multiplier : 1.0f;
-        auto speed        = camera.movement_speed * speed_factor;
+        auto speed_factor = is_sprinting ? soccernoid::camera.sprint_multiplier : 1.0f;
+        auto speed        = soccernoid::camera.movement_speed * speed_factor;
 
         auto velocity     = direction * speed;
         auto displacement = velocity * game()->time.unscaled.delta();
@@ -239,9 +237,8 @@ class CameraControlNode : public ome::Node
 
         transition_->update(game()->time.unscaled.delta());
 
-        auto shot = transition_->value();
-        shot.orientation =
-            ome::Orientation(glm::normalize(glm::quat(shot.orientation)));
+        auto shot        = transition_->value();
+        shot.orientation = ome::Orientation(glm::normalize(glm::quat(shot.orientation)));
 
         camera_->target(shot.target);
         camera_->distance(shot.distance);

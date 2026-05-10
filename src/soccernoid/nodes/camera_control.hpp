@@ -1,5 +1,8 @@
+#include <optional>
+
 #include "oh-my-engine/camera.hpp"
 #include "oh-my-engine/input.hpp"
+#include "oh-my-engine/interpolation.hpp"
 #include "oh-my-engine/node.hpp"
 #include "soccernoid/input.hpp"
 
@@ -19,23 +22,56 @@ succesor(CameraView view)
                                    % static_cast<int>(CameraView::Count_));
 }
 
+struct CameraShot
+{
+    ome::Vec3f       target;
+    float            distance;
+    ome::Orientation orientation;
+
+    CameraShot
+    operator*(float s) const
+    {
+        return { target * s, distance * s, orientation * s };
+    }
+
+    CameraShot
+    operator+(const CameraShot &other) const
+    {
+        return { target + other.target,
+                 distance + other.distance,
+                 orientation + other.orientation };
+    }
+};
+
+using CameraTransition = ome::Interpolation<CameraShot>::Process;
+
 class CameraControlNode : public ome::Node
 {
   private:
-    ome::Camera *camera_;
-    CameraView   view_ = CameraView::ThirdPerson;
+    static constexpr float transition_duration_ = 0.25f;
 
     // TODO: Make these configurable
     static constexpr float sensitivity_         = 0.01f;
-    static constexpr float base_movement_speed_ = 5.0f; // brisk walking pace in m/s
+    static constexpr float base_movement_speed_ = 5.0f;
 
-    template <CameraView>
-    void
-    relocate_camera_();
+    ome::Camera *camera_;
+    CameraView   view_ = CameraView::ThirdPerson;
+
+    std::optional<CameraTransition> transition_;
+
+    bool
+    is_transitioning_() const
+    {
+        return transition_.has_value();
+    }
 
     void
     on_mouse_motion_(const ome::input::MouseMotionInput &input)
     {
+        if (is_transitioning_())
+        {
+            return;
+        }
 
         auto [yaw, pitch] = -input.delta * sensitivity_;
 
@@ -46,23 +82,66 @@ class CameraControlNode : public ome::Node
     void
     on_mouse_wheel_(const ome::input::MouseWheelInput &input)
     {
+        if (is_transitioning_())
+        {
+            return;
+        }
+
         auto current_fov = camera_->fov_degrees();
         camera_->fov_degrees(current_fov - input.delta[1]);
     }
 
-    template <CameraView TView>
-    inline void
-    set_view_()
+    CameraShot
+    shot_for_view_(CameraView view) const
     {
-        view_ = TView;
+        switch (view)
+        {
+        case CameraView::FirstPerson: {
+            constexpr float fp_distance = 1.7f;
+            auto            delta       = camera_->distance() - fp_distance;
 
-        relocate_camera_<TView>();
+            return { camera_->target() + camera_->backward() * delta,
+                     fp_distance,
+                     camera_->orientation() };
+        }
+        case CameraView::ThirdPerson: {
+            ome::Orientation orientation;
+            orientation.steer_pitch(-1.0f);
+
+            return { { 0, 0, 0 }, 18.0f, orientation };
+        }
+        default:
+            throw std::runtime_error("Unsupported camera view");
+        }
+    }
+
+    void
+    snap_to_view_(CameraView view)
+    {
+        view_ = view;
+
+        auto shot = shot_for_view_(view);
+        camera_->target(shot.target);
+        camera_->distance(shot.distance);
+        camera_->orientate(shot.orientation);
+    }
+
+    void
+    start_transition_()
+    {
+        CameraShot from{ camera_->target(), camera_->distance(), camera_->orientation() };
+        CameraShot to = shot_for_view_(view_);
+
+        transition_.emplace(from,
+                            to,
+                            ome::EasingCurve::smoothstep(),
+                            1.0f / transition_duration_);
     }
 
     void
     process_movement_()
     {
-        if (view_ != CameraView::FirstPerson)
+        if (is_transitioning_() || view_ != CameraView::FirstPerson)
         {
             return;
         }
@@ -132,7 +211,7 @@ class CameraControlNode : public ome::Node
         auto mouse_wheel_handler = &CameraControlNode::on_mouse_wheel_;
         hold(game()->input.bind(mouse_wheel_handler, this));
 
-        set_view(view_);
+        snap_to_view_(view_);
     }
 
     CameraView
@@ -142,52 +221,42 @@ class CameraControlNode : public ome::Node
     }
 
     void
-    set_view(CameraView view);
+    set_view(CameraView view)
+    {
+        if (view == view_)
+        {
+            return;
+        }
+
+        view_ = view;
+        start_transition_();
+    }
 
     void
     on_tick_() override
     {
         process_movement_();
+
+        if (!transition_)
+        {
+            return;
+        }
+
+        transition_->update(game()->time.unscaled.delta());
+
+        auto shot = transition_->value();
+        shot.orientation =
+            ome::Orientation(glm::normalize(glm::quat(shot.orientation)));
+
+        camera_->target(shot.target);
+        camera_->distance(shot.distance);
+        camera_->orientate(shot.orientation);
+
+        if (transition_->is_completed())
+        {
+            transition_.reset();
+        }
     }
 };
-
-inline void
-CameraControlNode::set_view(CameraView view)
-{
-    switch (view)
-    {
-    case CameraView::FirstPerson:
-        set_view_<CameraView::FirstPerson>();
-        break;
-    case CameraView::ThirdPerson:
-        set_view_<CameraView::ThirdPerson>();
-        break;
-    default:
-        throw std::runtime_error("Unsuported camera view");
-    }
-}
-
-template <>
-inline void
-CameraControlNode::relocate_camera_<CameraView::FirstPerson>()
-{
-    auto distance      = 1.7f; // eye height of a standing person (~1.7m)
-    auto delta_distace = camera_->distance() - distance;
-    auto delta_target  = camera_->backward() * delta_distace;
-
-    camera_->move_target(delta_target);
-    camera_->distance(distance);
-}
-
-template <>
-inline void
-CameraControlNode::relocate_camera_<CameraView::ThirdPerson>()
-{
-    camera_->target({ 0, 0, 0 });
-    camera_->distance(18);
-    camera_->orientate({});
-
-    camera_->steer_pitch(-1.0f);
-}
 
 } // namespace soccernoid

@@ -70,7 +70,10 @@ class CameraControlNode : public ome::Node
 
         auto [yaw, pitch] = -input.delta * soccernoid::camera.mouse_sensitivity;
 
-        camera_->rotate(yaw, camera_->up());
+        // In first-person, yaw around the world Y axis so the horizon stays flat
+        // regardless of how much the user looks up or down.
+        auto yaw_axis = view_ == CameraView::FirstPerson ? ome::up : camera_->up();
+        camera_->rotate(yaw, yaw_axis);
         camera_->rotate(pitch, camera_->right());
     }
 

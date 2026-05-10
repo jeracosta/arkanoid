@@ -27,7 +27,7 @@ class CameraControlNode : public ome::Node
 
     // TODO: Make these configurable
     static constexpr float sensitivity_         = 0.01f;
-    static constexpr float base_movement_speed_ = 1.0;
+    static constexpr float base_movement_speed_ = 5.0f; // brisk walking pace in m/s
 
     template <CameraView>
     void
@@ -171,7 +171,7 @@ template <>
 inline void
 CameraControlNode::relocate_camera_<CameraView::FirstPerson>()
 {
-    auto distance      = 0.1f;
+    auto distance      = 1.7f; // eye height of a standing person (~1.7m)
     auto delta_distace = camera_->distance() - distance;
     auto delta_target  = camera_->backward() * delta_distace;
 
@@ -184,7 +184,7 @@ inline void
 CameraControlNode::relocate_camera_<CameraView::ThirdPerson>()
 {
     camera_->target({ 0, 0, 0 });
-    camera_->distance(5);
+    camera_->distance(18);
     camera_->orientate({});
 
     camera_->steer_pitch(-1.0f);

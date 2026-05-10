@@ -11,8 +11,8 @@ class CometNode : public ome::TransformNode
     struct
     {
         ome::Vec3f       center      = { 0.0f };
-        float            radius      = 5.0f;
-        float            speed       = 0.1f;
+        float            radius      = 25.0f;
+        float            speed       = 0.05f;
         ome::Orientation orientation = ome::Orientation{}.steer_pitch(0.5f);
 
     } movement_;
@@ -24,10 +24,10 @@ class CometNode : public ome::TransformNode
             .color            = { { 1.0, 1.0, 1.0, 1.0 }, { 0.0, 0.0, 1.0, 0.0 } },
             .scale            = { 20.0f, 0.0f },
             .origin           = { .mean = { 0.0, 0.2, 0.0 } },
-            .initial_velocity = { .mean = { 0.0, 0.0, 0.0 }, .max_deviation = { 0.1, 0.1, 0.1 } },
+            .initial_velocity = { .mean = { 0, 0, 0 }, .max_deviation = { 0.5, 0.5, 0.5 } },
             .acceleration     = {},
             .angular_speed    = { 0, 0 },
-            .time_to_live     = 0.7,
+            .time_to_live     = 1.0,
         };
 
         static inline const ome::ParticleEmitterNode::Configuration config_ = {
@@ -64,7 +64,7 @@ class CometNode : public ome::TransformNode
 
         auto &acceleration = particles_->blueprint()->acceleration.mean;
 
-        acceleration = movement_.orientation * -tangent;
+        acceleration = movement_.orientation * -tangent * 1.5f;
     }
 };
 

@@ -5,8 +5,9 @@ namespace soccernoid {
 class TerrainNode : public ome::HitboxNode
 {
   public:
+    // Futsal: penalty point (origin) to goal line (-6m), full court width (20m centered at origin)
     TerrainNode()
-        : HitboxNode({ .min = { -1.0f, 0.0f, -1.0f }, .max = { 1.0f, 0.0f, 1.0f } })
+        : HitboxNode({ .min = { -10.0f, 0.0f, -6.0f }, .max = { 10.0f, 0.0f, 0.0f } })
     {
     }
 
@@ -37,21 +38,22 @@ class TerrainNode : public ome::HitboxNode
     {
         const auto corners = hitbox_world().corners();
 
-        constexpr auto height = 0.2f;
+        // FIFA futsal goal: 3m wide × 2m tall
+        constexpr float goal_height     = 2.0f;
+        constexpr float goal_half_width = 1.5f;
 
-        const float z = corners[0][2]; // near edge of the field
+        const float z = corners[0][2]; // near edge of the field (goal line)
         const float y = corners[0][1];
 
-        const float center_x   = (corners[0][0] + corners[1][0]) * 0.5f;
-        const float half_width = (corners[1][0] - corners[0][0]) * 0.125f; // 1/4 of field width
+        const float center_x = (corners[0][0] + corners[1][0]) * 0.5f;
 
         glBegin(GL_QUADS);
         {
             glColor(ome::Color::rgb(0.9, 0.95, 0.85));
-            glVertex3f(center_x + half_width, y, z);
-            glVertex3f(center_x + half_width, y + height, z);
-            glVertex3f(center_x - half_width, y + height, z);
-            glVertex3f(center_x - half_width, y, z);
+            glVertex3f(center_x + goal_half_width, y, z);
+            glVertex3f(center_x + goal_half_width, y + goal_height, z);
+            glVertex3f(center_x - goal_half_width, y + goal_height, z);
+            glVertex3f(center_x - goal_half_width, y, z);
         }
         glEnd();
     }

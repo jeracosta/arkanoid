@@ -30,7 +30,7 @@ main()
       },
 
       .camera = {
-          .distance = 3,
+          .distance = 15,
       },
 
       .make_input_mapper = [&](auto &)

@@ -66,6 +66,15 @@ class Color
         return rgba(r, g, b, 255);
     }
 
+    static Color
+    hex(uint32_t hex_value)
+    {
+        return Color(((hex_value >> 16) & 0xFF) / 255.0f,
+                     ((hex_value >> 8) & 0xFF) / 255.0f,
+                     ((hex_value) & 0xFF) / 255.0f,
+                     1.0f);
+    }
+
     // #endregion
 
     // #region Accessors

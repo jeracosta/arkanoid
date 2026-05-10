@@ -14,7 +14,7 @@ class BallNode : public DistanceCulled<Falling<ome::KinematicNode>>
   private:
     using Base_ = DistanceCulled<Falling<ome::KinematicNode>>;
 
-    ome::Color color_           = ome::Color::rgb(255, 0, 0);
+    ome::Color color_           = ome::Color::rgb(55, 135, 235);
     float      radius_          = 0.10f; // futsal size 4 ball: circumference 62-64cm, radius ~0.10m
     float      elasticity_      = 0.8f;
     float      speed_threshold_ = 0.1f;
@@ -22,8 +22,7 @@ class BallNode : public DistanceCulled<Falling<ome::KinematicNode>>
     ome::HitboxNode *terrain_;
     ome::HitboxNode *goalkeeper_ = nullptr;
 
-    // spawn at the futsal penalty point, ball clearing the ground
-    static constexpr ome::Vec3f spawn_position = { 0.0f, 2.0f, 0.0f };
+    static constexpr ome::Vec3f spawn_position = { 0.0f, 0.5f, -3.0f };
 
     ome::HitboxComponent hitbox_{
         .min = { -0.10f, -0.10f, -0.10f },

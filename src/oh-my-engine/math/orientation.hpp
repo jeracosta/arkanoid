@@ -100,6 +100,18 @@ class Orientation
         return *this;
     }
 
+    Orientation
+    operator*(float s) const
+    {
+        return Orientation(quat_ * s);
+    }
+
+    Orientation
+    operator+(const Orientation &other) const
+    {
+        return Orientation(quat_ + other.quat_);
+    }
+
     inline Orientation
     operator*(const Orientation &other) const
     {

@@ -193,6 +193,14 @@ class Vector
         return self.components_[index];
     }
 
+    template <std::size_t... Indices>
+        requires(sizeof...(Indices) > 0 && ((Indices < TDimension) && ...))
+    constexpr Vector<sizeof...(Indices), TComponent, TBasis>
+    swizzled() const
+    {
+        return { components_[Indices]... };
+    }
+
     decltype(auto) constexpr begin(this auto &&self) noexcept
     {
         return self.components_.begin();

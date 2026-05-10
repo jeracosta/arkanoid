@@ -97,12 +97,13 @@ class CameraControlNode : public ome::Node
         switch (view)
         {
         case CameraView::FirstPerson: {
-            constexpr float fp_distance = 1.7f;
-            auto            delta       = camera_->distance() - fp_distance;
+            // At eye level in front of the goalkeeper (z=-5), looking at field center
+            // Camera position: (0, 1.7, -4), target: (0, 0, 0)
+            ome::Orientation orientation;
+            orientation.steer_yaw(ome::pi);
+            orientation.steer_pitch(-0.402f);
 
-            return { camera_->target() + camera_->backward() * delta,
-                     fp_distance,
-                     camera_->orientation() };
+            return { { 0.0f, 0.0f, 0.0f }, 4.346f, orientation };
         }
         case CameraView::ThirdPerson: {
             ome::Orientation orientation;

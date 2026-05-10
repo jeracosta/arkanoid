@@ -1,5 +1,8 @@
+#include <GL/gl.h>
+
 #include "oh-my-engine/node.hpp"
 #include "oh-my-engine/nodes/mixins/slowed.hpp"
+#include "soccernoid/constants.hpp"
 #include "soccernoid/nodes/camera_control.hpp"
 #include "soccernoid/nodes/frame_rate.hpp"
 #include "soccernoid/nodes/level.hpp"
@@ -34,6 +37,17 @@ class RootNode : public ome::Node
     on_mount_() override
     {
         hold(game()->input.bind(Action::PrintTree, [this] { log_tree(); }));
+
+        // Fog — linear distance fog, pitch black
+        float fog_col[4] = { fog_color.red(), fog_color.green(), fog_color.blue(), fog_color.alpha() };
+
+        glClearColor(fog_col[0], fog_col[1], fog_col[2], fog_col[3]);
+
+        glEnable(GL_FOG);
+        glFogi(GL_FOG_MODE, GL_LINEAR);
+        glFogf(GL_FOG_START, fog_start);
+        glFogf(GL_FOG_END, fog_end);
+        glFogfv(GL_FOG_COLOR, fog_col);
     }
 
     void

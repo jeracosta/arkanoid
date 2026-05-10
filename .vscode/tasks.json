@@ -1,0 +1,24 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build Soccernoid",
+			"type": "shell",
+			"command": "${workspaceFolder}/scripts/build.sh main",
+			"group": "build",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"detail": "cmake --build build --target main -j"
+		},
+		{
+			"label": "Build and Run Soccernoid",
+			"type": "shell",
+			"command": "${workspaceFolder}/scripts/build.sh main && ${workspaceFolder}/build/main",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"detail": "Build then run soccernoid"
+		}
+	]
+}

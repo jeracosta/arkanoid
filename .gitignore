@@ -36,4 +36,11 @@ build/
 .cache
 bin/
 
+# Study-related files
 practicos/
+
+# Console recordings
+**.rec
+
+# Open-code files
+.sisyphus/

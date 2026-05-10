@@ -45,8 +45,8 @@ class RootNode : public ome::Node
 
         glEnable(GL_FOG);
         glFogi(GL_FOG_MODE, GL_LINEAR);
-        glFogf(GL_FOG_START, fog_start);
-        glFogf(GL_FOG_END, fog_end);
+        glFogf(GL_FOG_START, fog.start);
+        glFogf(GL_FOG_END, fog.end);
         glFogfv(GL_FOG_COLOR, fog_col);
     }
 

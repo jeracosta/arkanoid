@@ -31,7 +31,7 @@ class TerrainNode : public ome::HitboxNode
         // corners[2] = ( 10, 0,  0)  front-right
         // corners[3] = (-10, 0,  0)  front-left
 
-        float depth = -terrain_box_depth; // 40m downward
+        float depth = -terrain_box_depth;
 
         glColor(palette.grass);
         glBegin(GL_QUADS);

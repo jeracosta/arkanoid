@@ -8,12 +8,13 @@ static constexpr float gravity_strength = 9.81f;
 
 static constexpr float despawn_distance = 60.0f;
 
-// Fog
-static constexpr float fog_start = 25.0f;
-static constexpr float fog_end   = 50.0f;
+static constexpr struct
+{
+    float start = 25.0f;
+    float end   = 50.0f;
+} fog;
 
-// Terrain box depth below the field plane (at y=0)
-static constexpr float terrain_box_depth = 40.0f;
+static constexpr float terrain_box_depth = fog.end;
 
 struct Palette
 {

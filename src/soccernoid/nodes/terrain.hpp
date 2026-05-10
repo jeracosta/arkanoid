@@ -21,9 +21,6 @@ class TerrainNode : public ome::HitboxNode
     }
 
   private:
-    ome::Color grass_color_ = ome::Color::rgb(60, 175, 45);
-    ome::Color dirt_color_  = ome::Color::rgb(105, 65, 35);
-
     void
     render_box_()
     {
@@ -36,8 +33,7 @@ class TerrainNode : public ome::HitboxNode
 
         float depth = -terrain_box_depth; // 40m downward
 
-        // Top face — grass green
-        glColor(grass_color_);
+        glColor(palette.grass);
         glBegin(GL_QUADS);
         {
             for (const auto &corner : corners)
@@ -47,8 +43,7 @@ class TerrainNode : public ome::HitboxNode
         }
         glEnd();
 
-        // Side faces — dirt brown
-        glColor(dirt_color_);
+        glColor(palette.dirt);
         glBegin(GL_QUADS);
         {
             // Front (z = 0)
@@ -94,7 +89,7 @@ class TerrainNode : public ome::HitboxNode
 
         glBegin(GL_QUADS);
         {
-            glColor(ome::Color::rgb(0.9f, 0.95f, 0.85f));
+            glColor(palette.goal);
             glVertex3f(center_x + goal_half_width, y, z);
             glVertex3f(center_x + goal_half_width, y + goal_height, z);
             glVertex3f(center_x - goal_half_width, y + goal_height, z);

@@ -5,6 +5,7 @@
 
 #include "oh-my-engine/color.hpp"
 #include "oh-my-engine/math/vector.hpp"
+#include "soccernoid/constants.hpp"
 #include "oh-my-engine/nodes/hitbox_node.hpp"
 
 namespace soccernoid {
@@ -17,8 +18,8 @@ class HumanNode : public ome::HitboxNode
   public:
     struct Configuration
     {
-        ome::Color jersey_color = ome::Color::rgb(200, 30, 30);   // red kit
-        ome::Color head_color   = ome::Color::rgb(230, 190, 150); // skin tone
+        ome::Color jersey_color = palette.red_kit;
+        ome::Color head_color   = palette.skin;
         ome::Vec3f position     = { 0.0f, 0.0f, 0.0f };
     };
 
@@ -39,8 +40,8 @@ class HumanNode : public ome::HitboxNode
               .min = { -body_radius_, 0.0f, -body_radius_ },
               .max = { body_radius_, total_height_, body_radius_ },
           }),
-          jersey_color_(ome::Color::rgb(200, 30, 30)),
-          head_color_(ome::Color::rgb(230, 190, 150))
+          jersey_color_(palette.red_kit),
+          head_color_(palette.skin)
     {
     }
 

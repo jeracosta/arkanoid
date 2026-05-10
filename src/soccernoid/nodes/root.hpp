@@ -38,8 +38,8 @@ class RootNode : public ome::Node
     {
         hold(game()->input.bind(Action::PrintTree, [this] { log_tree(); }));
 
-        // Fog — linear distance fog, pitch black
-        float fog_col[4] = { fog_color.red(), fog_color.green(), fog_color.blue(), fog_color.alpha() };
+        auto [r, g, b, a] = palette.fog.rgba();
+        float fog_col[4] = { r, g, b, a };
 
         glClearColor(fog_col[0], fog_col[1], fog_col[2], fog_col[3]);
 

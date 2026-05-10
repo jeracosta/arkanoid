@@ -1,4 +1,5 @@
 #include "oh-my-engine/node.hpp"
+#include "soccernoid/nodes/ball.hpp"
 #include "soccernoid/nodes/comet.hpp"
 #include "soccernoid/nodes/terrain.hpp"
 
@@ -20,7 +21,11 @@ class LevelNode : public ome::Node
         levels_.push_back({ [](ome::Node::CompositionCursor cursor)
         {
             cursor.add<CometNode>().named("Comet").up();
-            cursor.add<TerrainNode>().named("Terreno").up();
+
+            auto terrain = std::make_shared<TerrainNode>();
+            cursor.add(terrain).named("Terreno").up();
+
+            cursor.add<BallNode>(*terrain).named("Ball").up();
         } });
     }
 

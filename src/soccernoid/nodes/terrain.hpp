@@ -24,7 +24,7 @@ class TerrainNode : public ome::HitboxNode
     {
         glBegin(GL_QUADS);
         {
-            glColor(ome::Color::rgb(0.1, 0.8, 0.1));
+            glColor(ome::Color::rgb(0.1f, 0.8f, 0.1f));
             for (const auto &corner : hitbox_world().corners())
             {
                 glVertex3f(corner[0], corner[1], corner[2]);
@@ -49,7 +49,7 @@ class TerrainNode : public ome::HitboxNode
 
         glBegin(GL_QUADS);
         {
-            glColor(ome::Color::rgb(0.9, 0.95, 0.85));
+            glColor(ome::Color::rgb(0.9f, 0.95f, 0.85f));
             glVertex3f(center_x + goal_half_width, y, z);
             glVertex3f(center_x + goal_half_width, y + goal_height, z);
             glVertex3f(center_x - goal_half_width, y + goal_height, z);

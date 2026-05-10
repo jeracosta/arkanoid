@@ -1,6 +1,10 @@
+#pragma once
+
 #include <GL/gl.h>
 #include <GL/glu.h>
+#include <cstdint>
 #include <glm/ext/vector_float3.hpp>
+#include <stdexcept>
 
 #include "oh-my-engine/math/vector.hpp"
 
@@ -9,30 +13,62 @@ namespace ome {
 class Color
 {
   private:
-    Vec4f rgba_;
+    Vec4f rgba_{};
 
-    template <typename... Args>
-    Color(Args... args)
-        : rgba_{ args... }
+    // Private: values already range-checked by the static factory
+    explicit constexpr Color(float r, float g, float b, float a)
+        : rgba_{ r, g, b, a }
     {
     }
 
   public:
     Color() = default; // black
 
-    template <typename... Args>
-    static constexpr Color
-    rgba(Args... args)
+    // #region Static Factories
+
+    static Color
+    rgba(float r, float g, float b, float a)
     {
-        return Color(args...);
+        if (r < 0.0f || r > 1.0f)
+            throw std::domain_error("Color red   out of range [0, 1]");
+        if (g < 0.0f || g > 1.0f)
+            throw std::domain_error("Color green out of range [0, 1]");
+        if (b < 0.0f || b > 1.0f)
+            throw std::domain_error("Color blue  out of range [0, 1]");
+        if (a < 0.0f || a > 1.0f)
+            throw std::domain_error("Color alpha out of range [0, 1]");
+        return Color(r, g, b, a);
     }
 
-    template <typename... Args>
-    static constexpr Color
-    rgb(Args... args)
+    static Color
+    rgb(float r, float g, float b)
     {
-        return rgba(args..., 1.0f);
+        return rgba(r, g, b, 1.0f);
     }
+
+    static Color
+    rgba(int r, int g, int b, int a)
+    {
+        if (r < 0 || r > 255)
+            throw std::domain_error("Color red   out of range [0, 255]");
+        if (g < 0 || g > 255)
+            throw std::domain_error("Color green out of range [0, 255]");
+        if (b < 0 || b > 255)
+            throw std::domain_error("Color blue  out of range [0, 255]");
+        if (a < 0 || a > 255)
+            throw std::domain_error("Color alpha out of range [0, 255]");
+        return Color(r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f);
+    }
+
+    static Color
+    rgb(int r, int g, int b)
+    {
+        return rgba(r, g, b, 255);
+    }
+
+    // #endregion
+
+    // #region Accessors
 
     Vec4f
     rgba() const
@@ -63,12 +99,16 @@ class Color
     {
         return rgba_[3];
     }
+
+    // #endregion
 };
 
 inline Color
 grayscale(Color color)
 {
-    return Color::rgba(dot(color.rgba(), Vec4f(0.299, 0.587, 0.114, 1)));
+    auto  c    = color.rgba();
+    float luma = 0.299f * c[0] + 0.587f * c[1] + 0.114f * c[2];
+    return Color::rgb(luma, luma, luma);
 }
 
 } // namespace ome

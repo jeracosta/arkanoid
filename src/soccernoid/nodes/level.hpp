@@ -1,6 +1,7 @@
 #include "oh-my-engine/node.hpp"
 #include "soccernoid/nodes/ball.hpp"
 #include "soccernoid/nodes/comet.hpp"
+#include "soccernoid/nodes/human.hpp"
 #include "soccernoid/nodes/terrain.hpp"
 
 namespace soccernoid {
@@ -25,7 +26,12 @@ class LevelNode : public ome::Node
             auto terrain = std::make_shared<TerrainNode>();
             cursor.add(terrain).named("Terreno").up();
 
-            cursor.add<BallNode>(*terrain).named("Ball").up();
+            auto goalkeeper = std::make_shared<HumanNode>(HumanNode::Configuration{
+                .position = { 0.0f, 0.0f, -5.0f },
+            });
+            cursor.add(goalkeeper).named("Goalkeeper").up();
+
+            cursor.add<BallNode>(*terrain, goalkeeper.get()).named("Ball").up();
         } });
     }
 

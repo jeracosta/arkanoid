@@ -15,14 +15,15 @@ class BallNode : public DistanceCulled<Falling<ome::KinematicNode>>
     using Base_ = DistanceCulled<Falling<ome::KinematicNode>>;
 
     ome::Color color_           = ome::Color::rgb(255, 0, 0);
-    float      radius_          = 0.10f; // Futsal size 4 ball: circumference 62-64cm, radius ~0.10m
+    float      radius_          = 0.10f; // futsal size 4 ball: circumference 62-64cm, radius ~0.10m
     float      elasticity_      = 0.8f;
     float      speed_threshold_ = 0.1f;
 
     ome::HitboxNode *terrain_;
+    ome::HitboxNode *goalkeeper_ = nullptr;
 
     // spawn at the futsal penalty point, ball clearing the ground
-    static constexpr ome::Vec3f spawn_position = { 0.0f, 0.5f, 0.0f };
+    static constexpr ome::Vec3f spawn_position = { 0.0f, 2.0f, 0.0f };
 
     ome::HitboxComponent hitbox_{
         .min = { -0.10f, -0.10f, -0.10f },
@@ -37,8 +38,9 @@ class BallNode : public DistanceCulled<Falling<ome::KinematicNode>>
     }
 
   public:
-    explicit BallNode(ome::HitboxNode &terrain)
-        : terrain_(&terrain)
+    explicit BallNode(ome::HitboxNode &terrain, ome::HitboxNode *goalkeeper = nullptr)
+        : terrain_(&terrain),
+          goalkeeper_(goalkeeper)
     {
         auto transform     = local_transform();
         transform.position = spawn_position;
@@ -58,28 +60,36 @@ class BallNode : public DistanceCulled<Falling<ome::KinematicNode>>
     void
     bounce_()
     {
-        if (!ome::are_colliding(hitbox_world_(), terrain_->hitbox_world()))
+        // Bounce off terrain (vertical reflection)
+        if (ome::are_colliding(hitbox_world_(), terrain_->hitbox_world()))
         {
+            auto transform        = local_transform();
+            transform.position[1] = radius_;
+            set_local_transform(transform);
+
+            float fall_speed = dot(velocity(), ome::up);
+            if (fall_speed >= 0.0f)
+            {
+                return;
+            }
+
+            if (std::abs(fall_speed) < speed_threshold_)
+            {
+                set_velocity({ velocity()[0], 0.0f, velocity()[2] });
+                return;
+            }
+
+            set_velocity({ velocity()[0], -fall_speed * elasticity_, velocity()[2] });
             return;
         }
 
-        auto transform        = local_transform();
-        transform.position[1] = radius_;
-        set_local_transform(transform);
-
-        float fall_speed = dot(velocity(), ome::up);
-        if (fall_speed >= 0.0f)
+        // Bounce off goalkeeper (horizontal reflection)
+        if (goalkeeper_ && ome::are_colliding(hitbox_world_(), goalkeeper_->hitbox_world()))
         {
-            return;
+            // Reflect velocity to simulate bouncing off a solid body
+            auto vel = velocity();
+            set_velocity(-vel * elasticity_);
         }
-
-        if (std::abs(fall_speed) < speed_threshold_)
-        {
-            set_velocity({ velocity()[0], 0.0f, velocity()[2] });
-            return;
-        }
-
-        set_velocity({ velocity()[0], -fall_speed * elasticity_, velocity()[2] });
     }
 
     void

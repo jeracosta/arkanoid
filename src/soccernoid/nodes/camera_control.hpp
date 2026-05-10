@@ -48,12 +48,6 @@ using CameraTransition = ome::Interpolation<CameraShot>::Process;
 class CameraControlNode : public ome::Node
 {
   private:
-    static constexpr float transition_duration_ = 0.25f;
-
-    // TODO: Make these configurable
-    static constexpr float sensitivity_         = 0.01f;
-    static constexpr float base_movement_speed_ = 5.0f;
-
     ome::Camera *camera_;
     CameraView   view_ = CameraView::ThirdPerson;
 
@@ -73,7 +67,7 @@ class CameraControlNode : public ome::Node
             return;
         }
 
-        auto [yaw, pitch] = -input.delta * sensitivity_;
+        auto [yaw, pitch] = -input.delta * camera.mouse_sensitivity;
 
         camera_->rotate(yaw, camera_->up());
         camera_->rotate(pitch, camera_->right());
@@ -136,7 +130,7 @@ class CameraControlNode : public ome::Node
         transition_.emplace(from,
                             to,
                             ome::EasingCurve::smoothstep(),
-                            1.0f / transition_duration_);
+                            1.0f / camera.transition_duration);
     }
 
     void
@@ -189,8 +183,8 @@ class CameraControlNode : public ome::Node
 
         auto is_sprinting = game()->input.is_pressed(Action::CameraSprint);
 
-        auto speed_factor = is_sprinting ? 2.0f : 1.0f;
-        auto speed        = base_movement_speed_ * speed_factor;
+        auto speed_factor = is_sprinting ? camera.sprint_multiplier : 1.0f;
+        auto speed        = camera.movement_speed * speed_factor;
 
         auto velocity     = direction * speed;
         auto displacement = velocity * game()->time.unscaled.delta();

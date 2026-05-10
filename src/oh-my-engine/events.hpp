@@ -11,6 +11,8 @@ namespace ome {
 template <class... TEvents>
 class EventBus; // forward declaration
 
+// #region Event connection
+
 // Represents a subscription to an event.
 // The registered callback will be invoked for the event as long as the connection is alive.
 // Handle-like class, tighly coupled to the event bus instance that produced it.
@@ -47,6 +49,10 @@ class EventConnectionHolder
         connections_.clear();
     }
 };
+
+// #endregion
+
+// #region Event bus
 
 template <class... TEvents>
 class EventBus
@@ -143,5 +149,7 @@ class EventBus
         }
     }
 };
+
+// #endregion
 
 } // namespace ome

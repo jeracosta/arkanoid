@@ -8,6 +8,8 @@
 
 namespace ome {
 
+// #region Easing curves
+
 // Maps [0, 1] to [0, 1] to describe the form of an interpolation graph.
 class EasingCurve
 {
@@ -92,6 +94,10 @@ class EasingCurve
         return value;
     }
 };
+
+// #endregion
+
+// #region Interpolation
 
 template <typename T>
 class Interpolation
@@ -217,10 +223,14 @@ class Interpolation<T>::Process : private Interpolation<T>
     }
 };
 
+// #region Utilities
+
 constexpr auto
 lerp(const auto &from, const auto &to, float t)
 {
     return Interpolation{ from, to, EasingCurve::linear() }(t);
 }
+
+// #endregion
 
 } // namespace ome

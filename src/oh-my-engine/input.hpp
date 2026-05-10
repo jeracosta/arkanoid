@@ -23,6 +23,8 @@ namespace ome::input {
 // WARN: For performance reasons, values should be 0-indexed and contiguous.
 enum class Action;
 
+// #region Keyboard input
+
 enum class KeyInput : uint8_t
 {
     Press,   // The key was pressed down.
@@ -181,7 +183,10 @@ class KeyboardInputMapper : public ome::sdl::EventHandler
         return std::nullopt;
     }
 };
-;
+
+// #endregion
+
+// #region Mouse input
 
 struct MouseMotionInput
 {
@@ -243,6 +248,10 @@ class MouseWheelInputMapper : private EventBus<MouseWheelInput>, public ome::sdl
     }
 };
 
+// #endregion
+
+// #region Input mapper
+
 struct InputMapper : public KeyboardInputMapper,
                      public MouseMotionInputMapper,
                      public MouseWheelInputMapper
@@ -272,5 +281,7 @@ struct InputMapper : public KeyboardInputMapper,
     using MouseMotionInputMapper::bind;
     using MouseWheelInputMapper::bind;
 };
+
+// #endregion
 
 } // namespace ome::input

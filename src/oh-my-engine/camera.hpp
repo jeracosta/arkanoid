@@ -11,6 +11,8 @@
 
 namespace ome {
 
+// #region Camera settings
+
 struct ProjectionUpdated;
 
 struct Camera : private EventBus<ProjectionUpdated>
@@ -38,6 +40,8 @@ struct Camera : private EventBus<ProjectionUpdated>
     // In this case, those are the same: the configuration is the initial settings.
     using Configuration = Settings;
 
+    // #endregion
+
   private:
     Settings settings_;
 
@@ -47,6 +51,8 @@ struct Camera : private EventBus<ProjectionUpdated>
     Orientation &orientation_ = settings_.orientation;
 
   public:
+    // #region Camera interface
+
     Camera(Settings initial_settings)
         : settings_(std::move(initial_settings))
     {
@@ -174,6 +180,10 @@ struct Camera : private EventBus<ProjectionUpdated>
     far(float new_value);
 };
 
+// #endregion
+
+// #region Projection updates
+
 struct ProjectionUpdated
 {
     Camera::Projection new_projection;
@@ -207,6 +217,10 @@ Camera::far(float new_value)
     emit(ProjectionUpdated{ projection_ });
 }
 
+// #endregion
+
+// #region OpenGL utilities
+
 namespace open_gl {
 
 inline void
@@ -228,5 +242,7 @@ look_at(const ome::Camera &camera)
 }
 
 } // namespace open_gl
+
+// #endregion
 
 } // namespace ome

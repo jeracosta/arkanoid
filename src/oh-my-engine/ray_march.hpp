@@ -10,6 +10,8 @@
 
 namespace ome::ray_march {
 
+// #region SDF primitives
+
 class Cube
 {
   private:
@@ -45,6 +47,10 @@ class Sphere
         return length(p) - radius_;
     }
 };
+
+// #endregion
+
+// #region SDF utilities
 
 // Consider the space as a tesselation of cubes of `cell_size` side length, this function maps any
 // point `p` to the corresponding point in the cube centered at the origin.
@@ -101,6 +107,10 @@ twist_y(const glm::vec3 &p, float angle, float plane_y = 0.0f)
     return glm::vec3(c * p.x + s * p.z, p.y, -s * p.x + c * p.z);
 }
 
+// #endregion
+
+// #region Ray marching
+
 struct RayMarchResult
 {
     struct Hit
@@ -147,6 +157,10 @@ ray_march(glm::vec3 origin,
 
     return { std::nullopt, min_distance };
 }
+
+// #endregion
+
+// #region Complex SDFs
 
 class Pyramid
 {
@@ -213,5 +227,7 @@ class Pyramid
         return sdPyramid(p, h_) * base_side_;
     }
 };
+
+// #endregion
 
 } // namespace ome::ray_march

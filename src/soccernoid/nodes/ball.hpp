@@ -17,7 +17,7 @@ class BallNode : public DistanceCulled<Falling<ome::KinematicNode>>
     ome::Color color_           = ome::Color::rgb(255, 0, 0);
     float      radius_          = 0.03f;
     float      elasticity_      = 0.8f;
-    float      speed_threshold_ = 0.4f;
+    float      speed_threshold_ = 0.1f;
 
     ome::HitboxNode *terrain_;
 

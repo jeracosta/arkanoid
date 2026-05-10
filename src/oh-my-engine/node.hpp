@@ -260,6 +260,8 @@ class Node : public std::enable_shared_from_this<Node>,
 
     // #endregion
 
+    // #region Tick and lifecycle management
+
     void
     tick()
     {
@@ -320,6 +322,8 @@ class Node : public std::enable_shared_from_this<Node>,
 
     class CompositionCursor;
 
+    // #endregion
+
   protected:
     // #region Lifecycle hooks
     // clang-format off
@@ -345,13 +349,13 @@ class Node : public std::enable_shared_from_this<Node>,
 
     // #endregion
 
+    // #region Mount/Unmount logic
+
     bool
     is_in_transition_() const
     {
         return phase_ == Mounting || phase_ == Unmounting;
     }
-
-    // #region Mount/Unmount logic
 
     void
     mount_to_(Game *game)

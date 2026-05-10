@@ -14,6 +14,8 @@ namespace ome {
 
 class Node; // forward declaration
 
+// #region Enviroment and configuration
+
 class Game : public EventConnectionHolder
 {
   public:
@@ -52,6 +54,10 @@ class Game : public EventConnectionHolder
 
     ~Game();
 
+    // #endregion
+
+    // #region Lifecycle management
+
   private:
     Configuration                      config_;
     bool                               running_     = false;
@@ -85,6 +91,10 @@ class Game : public EventConnectionHolder
 
     void
     on_window_resize_(const WindowResized &projection);
+
+    // #endregion
+
+    // #region Game interface
 
   public:
     Window window;
@@ -147,5 +157,7 @@ class Game : public EventConnectionHolder
     {
         tasks_.emplace_back(std::move(task));
     }
+
+    // #endregion
 };
 } // namespace ome

@@ -17,6 +17,8 @@ namespace ome {
 
 namespace math {
 
+// #region Coordinate system
+
 #define OME_COORDINATE_SYSTEMS(X)                                                                  \
     X(Cartesian)                                                                                   \
     X(Polar)                                                                                       \
@@ -101,6 +103,10 @@ class Vector
         return TBasis;
     }
 
+    // #endregion
+
+    // #region Constructors
+
     constexpr Vector() = default;
 
     template <typename... Args>
@@ -183,6 +189,10 @@ class Vector
     ~Vector() noexcept = default;
 
     inline decltype(auto) constexpr
+    // #endregion
+
+    // #region Element access
+
     operator[](this auto &&self, size_t index)
     {
         if (index >= self.dimension())
@@ -279,6 +289,7 @@ class Vector
 #define X(name) using name = Vector<TDimension, Component, CoordinateSystem::name>;
     OME_COORDINATE_SYSTEMS(X)
 #undef X
+    // #endregion
 };
 
 #ifdef GLM_VERSION
@@ -288,6 +299,8 @@ Vector(const glm::vec<Dimension, Component> &) -> Vector<Dimension, Component>;
 
 template <std::size_t D, typename C, CoordinateSystem S>
 inline constexpr bool is_vector_v<Vector<D, C, S>> = true;
+
+// #region Free operators
 
 constexpr auto
 operator-(const is_vector auto &vector)
@@ -316,6 +329,10 @@ BINARY_OPERATOR(-)
 BINARY_OPERATOR(*)
 BINARY_OPERATOR(/)
 #undef BINARY_OPERATOR
+
+// #endregion
+
+// #region Utility functions
 
 constexpr bool
 component_wise(auto comparator, is_vector auto &&lhs, auto &&rhs)
@@ -410,7 +427,11 @@ clamp(const Vector &value, const Vector &min, const Vector &max)
         [](auto x, auto lo, auto hi) { return std::clamp(x, lo, hi); }, value, min, max));
 }
 
+// #endregion
+
 } // namespace math
+
+// #region Type aliases
 
 #define DEFINE_VEC_N(N)                                                                            \
     template <typename Component                = float,                                           \
@@ -433,7 +454,11 @@ DEFINE_VEC_ALIAS(u, unsigned)
 DEFINE_VEC_ALIAS(b, bool)
 #undef DEFINE_VEC_ALIAS
 
+// #endregion
+
 } // namespace ome
+
+// #region Structured bindings
 
 namespace std {
 
@@ -485,5 +510,7 @@ get(const Vector<D, C, S> &&v) noexcept
     static_assert(I < D);
     return std::move(v[I]);
 }
+
+// #endregion
 
 } // namespace ome::math

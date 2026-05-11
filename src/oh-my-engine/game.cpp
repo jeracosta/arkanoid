@@ -80,6 +80,24 @@ Game::Game(const Configuration &config)
     hold(window.bind(&Game::on_window_resize_, this));
 
     on_projection_update_(ProjectionUpdated{ camera.projection() });
+
+    if (config_.fog.enabled)
+    {
+        glEnable(GL_FOG);
+        glFogi(GL_FOG_MODE, GL_LINEAR);
+        glFogf(GL_FOG_START, config_.fog.start);
+        glFogf(GL_FOG_END, config_.fog.end);
+
+        auto [r, g, b, a] = config_.fog.color.rgba();
+        float fog_col[4]  = { r, g, b, a };
+
+        glFogfv(GL_FOG_COLOR, fog_col);
+        glClearColor(r, g, b, a);
+    }
+    else
+    {
+        glDisable(GL_FOG);
+    }
 }
 
 Game::~Game() = default;

@@ -12,6 +12,7 @@
 #include "oh-my-engine/game.hpp"
 #include "oh-my-engine/input.hpp"
 #include "oh-my-engine/shared_from.hpp"
+#include "soccernoid/constants.hpp"
 #include "soccernoid/input.hpp"
 #include "soccernoid/nodes/root.hpp"
 
@@ -31,6 +32,13 @@ main()
 
       .camera = {
           .distance = 15,
+      },
+
+      .fog = {
+          .color   = palette.fog,
+          .start   = fog.start,
+          .end     = fog.end,
+          .enabled = true,
       },
 
       .make_input_mapper = [&](auto &)

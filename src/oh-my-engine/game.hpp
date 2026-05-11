@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "camera.hpp"
+#include "color.hpp"
 #include "input.hpp"
 #include "logger.hpp"
 #include "time.hpp"
@@ -33,12 +34,22 @@ class Game : public EventConnectionHolder
 
     struct Configuration
     {
+        struct Fog
+        {
+            ome::Color color   = {};
+            float      start   = 25.0f;
+            float      end     = 50.0f;
+            bool       enabled = true;
+        };
+
         std::function<std::unique_ptr<Logger>()> make_logger
             = [] { return std::make_unique<ConsoleLogger>(); };
 
         Window::Configuration window;
 
         Camera::Settings camera;
+
+        Fog fog;
 
         std::function<input::InputMapper(Game &)> make_input_mapper = {};
 

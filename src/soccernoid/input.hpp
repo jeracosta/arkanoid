@@ -1,5 +1,7 @@
 #pragma once
 
+#include <SDL_keycode.h>
+
 #include "oh-my-engine/input.hpp"
 
 // Definition of the Action enum for the soccernoid game.
@@ -22,6 +24,9 @@ enum class ome::input::Action
     CameraSprint,
     CameraFovUp,
     CameraFovDown,
+    PlayerLeft,
+    PlayerRight,
+    PlayerJump,
 };
 
 namespace soccernoid {
@@ -60,6 +65,9 @@ configure_default_controls(ome::input::InputMapper *input_mapper)
         { CameraUp,         SDLK_SPACE,   { Press }         },
         { CameraDown,       SDLK_LCTRL,   { Press }         },
         { CameraSprint,     SDLK_LSHIFT,  { Press }         },
+        { PlayerLeft,       SDLK_LEFT,    { Press }         },
+        { PlayerRight,      SDLK_RIGHT,   { Press }         },
+        { PlayerJump,       SDLK_UP,      { Press }         },
     });
 
     // clang-format on

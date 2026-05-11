@@ -11,13 +11,11 @@
 
 #include "oh-my-engine/game.hpp"
 #include "oh-my-engine/input.hpp"
-#include "oh-my-engine/shared_from.hpp"
 #include "soccernoid/constants.hpp"
 #include "soccernoid/input.hpp"
 #include "soccernoid/nodes/root.hpp"
 
 using namespace ome;
-using namespace ome::ecs;
 using namespace soccernoid;
 
 int

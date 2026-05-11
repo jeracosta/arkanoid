@@ -22,7 +22,7 @@ struct TextureBindingGuard
     ~TextureBindingGuard()
     {
         glActiveTexture(prev_unit_);
-        glBindTexture(TTarget, static_cast<GLuint>(prev_tex_));
+        ::glBindTexture(TTarget, static_cast<GLuint>(prev_tex_));
     }
 
     static constexpr GLenum

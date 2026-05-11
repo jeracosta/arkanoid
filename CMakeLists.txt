@@ -18,6 +18,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(FetchContent)
 
+find_package(PkgConfig REQUIRED)
+
 find_package(OpenGL REQUIRED)
 
 find_package(SDL2 QUIET)
@@ -34,6 +36,8 @@ if(NOT SDL2_FOUND)
 
   FetchContent_MakeAvailable(sdl2)
 endif()
+
+pkg_check_modules(SDL2_image REQUIRED IMPORTED_TARGET SDL2_image)
 
 find_package(glm QUIET)
 if(NOT glm_FOUND)
@@ -105,6 +109,7 @@ target_link_libraries(deps INTERFACE
   OpenGL::GL
   OpenGL::GLU
   SDL2::SDL2
+  PkgConfig::SDL2_image
   glm::glm
   Boost::mp11
   assimp::assimp

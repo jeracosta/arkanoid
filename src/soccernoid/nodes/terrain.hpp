@@ -1,3 +1,5 @@
+#pragma once
+
 #include "oh-my-engine/color.hpp"
 #include "oh-my-engine/nodes/hitbox_node.hpp"
 #include "soccernoid/constants.hpp"

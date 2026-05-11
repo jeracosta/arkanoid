@@ -14,7 +14,7 @@ class BallNode : public DistanceCulled<Falling<ome::KinematicNode>>
   private:
     using Base_ = DistanceCulled<Falling<ome::KinematicNode>>;
 
-    ome::Color color_           = palette.ball;
+    ome::Color color_           = colors.ball;
     float      radius_          = 0.10f; // futsal size 4 ball: circumference 62-64cm, radius ~0.10m
     float      elasticity_      = 0.8f;
     float      speed_threshold_ = 0.1f;

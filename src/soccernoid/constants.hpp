@@ -24,7 +24,7 @@ static constexpr struct
     float transition_duration = 0.25f;
 } camera;
 
-struct Palette
+struct ColorPalette
 {
     ome::Color fog;
     ome::Color ball;
@@ -35,7 +35,7 @@ struct Palette
     ome::Color skin;
 };
 
-static const inline Palette palette = {
+static const inline ColorPalette colors = {
     .fog     = ome::Color::rgb(0, 0, 0),
     .ball    = ome::Color::rgb(210, 50, 255),
     .grass   = ome::Color::rgb(60, 175, 45),

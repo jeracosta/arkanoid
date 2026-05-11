@@ -33,7 +33,7 @@ class TerrainNode : public ome::HitboxNode
 
         float depth = -terrain_box_depth;
 
-        glColor(palette.grass);
+        glColor(colors.grass);
         glBegin(GL_QUADS);
         {
             for (const auto &corner : corners)
@@ -43,7 +43,7 @@ class TerrainNode : public ome::HitboxNode
         }
         glEnd();
 
-        glColor(palette.dirt);
+        glColor(colors.dirt);
         glBegin(GL_QUADS);
         {
             // Front (z = 0)
@@ -89,7 +89,7 @@ class TerrainNode : public ome::HitboxNode
 
         glBegin(GL_QUADS);
         {
-            glColor(palette.goal);
+            glColor(colors.goal);
             glVertex3f(center_x + goal_half_width, y, z);
             glVertex3f(center_x + goal_half_width, y + goal_height, z);
             glVertex3f(center_x - goal_half_width, y + goal_height, z);

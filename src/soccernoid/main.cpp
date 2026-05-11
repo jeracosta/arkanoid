@@ -33,7 +33,7 @@ main()
       },
 
       .fog = {
-          .color   = palette.fog,
+          .color   = colors.fog,
           .start   = fog.start,
           .end     = fog.end,
           .enabled = true,

@@ -31,6 +31,8 @@ enum class CoordinateSystem
 #undef X
 };
 
+// #endregion
+
 template <class>
 inline constexpr bool is_vector_v = false;
 
@@ -45,6 +47,8 @@ class Vector
 {
   private:
     std::array<TComponent, TDimension> components_;
+
+    // #region Constructor helpers
 
     template <class T>
     static consteval std::size_t
@@ -82,6 +86,14 @@ class Vector
         }
     }
 
+    template <typename Tuple, std::size_t... Is>
+    constexpr Vector(Tuple &&tuple, std::index_sequence<Is...>)
+        : components_{ static_cast<TComponent>(std::get<Is>(std::forward<Tuple>(tuple)))... }
+    {
+    }
+
+    // #endregion
+
   public:
     using Component = TComponent;
 
@@ -102,8 +114,6 @@ class Vector
     {
         return TBasis;
     }
-
-    // #endregion
 
     // #region Constructors
 
@@ -180,6 +190,13 @@ class Vector
                 return { x, y, z };
             }
         }
+    }
+
+    template <typename... Ts>
+        requires(sizeof...(Ts) == TDimension && (std::convertible_to<Ts, TComponent> && ...))
+    constexpr Vector(const std::tuple<Ts...> &tuple)
+        : Vector(tuple, std::index_sequence_for<Ts...>{})
+    {
     }
 
     constexpr Vector(const Vector &other) noexcept = default;

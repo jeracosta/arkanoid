@@ -93,8 +93,12 @@ struct TexturePalette
             return *texture_;
         }
     };
+
+    Item dirt;
 };
 
-static const inline TexturePalette textures = {};
+static const inline TexturePalette textures = {
+    .dirt = { "dirt.png" },
+};
 
 } // namespace soccernoid

@@ -41,35 +41,60 @@ class TerrainNode : public ome::HitboxNode
         }
         glEnd();
 
-        glBegin(GL_QUADS);
+        glEnable(GL_TEXTURE_2D);
+        ome::open_gl::glBindTexture(textures.dirt);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
         {
-            glColor(colors.dirt);
+            const float side_height    = -depth;
+            const float left_rgt_width = corners[3][2] - corners[0][2];
+            const float frnt_back_wdth = corners[1][0] - corners[0][0];
 
-            // Left
-            glVertex3f(corners[0][0], corners[0][1], corners[0][2]);
-            glVertex3f(corners[3][0], corners[3][1], corners[3][2]);
-            glVertex3f(corners[3][0], depth, corners[3][2]);
-            glVertex3f(corners[0][0], depth, corners[0][2]);
+            glBegin(GL_QUADS);
+            {
+                // Left
+                glTexCoord2f(0.0f, 0.0f);
+                glVertex3f(corners[0][0], corners[0][1], corners[0][2]);
+                glTexCoord2f(left_rgt_width, 0.0f);
+                glVertex3f(corners[3][0], corners[3][1], corners[3][2]);
+                glTexCoord2f(left_rgt_width, side_height);
+                glVertex3f(corners[3][0], depth, corners[3][2]);
+                glTexCoord2f(0.0f, side_height);
+                glVertex3f(corners[0][0], depth, corners[0][2]);
 
-            // Right
-            glVertex3f(corners[2][0], corners[2][1], corners[2][2]);
-            glVertex3f(corners[1][0], corners[1][1], corners[1][2]);
-            glVertex3f(corners[1][0], depth, corners[1][2]);
-            glVertex3f(corners[2][0], depth, corners[2][2]);
+                // Right
+                glTexCoord2f(0.0f, 0.0f);
+                glVertex3f(corners[2][0], corners[2][1], corners[2][2]);
+                glTexCoord2f(left_rgt_width, 0.0f);
+                glVertex3f(corners[1][0], corners[1][1], corners[1][2]);
+                glTexCoord2f(left_rgt_width, side_height);
+                glVertex3f(corners[1][0], depth, corners[1][2]);
+                glTexCoord2f(0.0f, side_height);
+                glVertex3f(corners[2][0], depth, corners[2][2]);
 
-            // Front
-            glVertex3f(corners[3][0], corners[3][1], corners[3][2]);
-            glVertex3f(corners[2][0], corners[2][1], corners[2][2]);
-            glVertex3f(corners[2][0], depth, corners[2][2]);
-            glVertex3f(corners[3][0], depth, corners[3][2]);
+                // Front
+                glTexCoord2f(0.0f, 0.0f);
+                glVertex3f(corners[3][0], corners[3][1], corners[3][2]);
+                glTexCoord2f(frnt_back_wdth, 0.0f);
+                glVertex3f(corners[2][0], corners[2][1], corners[2][2]);
+                glTexCoord2f(frnt_back_wdth, side_height);
+                glVertex3f(corners[2][0], depth, corners[2][2]);
+                glTexCoord2f(0.0f, side_height);
+                glVertex3f(corners[3][0], depth, corners[3][2]);
 
-            // Back
-            glVertex3f(corners[1][0], corners[1][1], corners[1][2]);
-            glVertex3f(corners[0][0], corners[0][1], corners[0][2]);
-            glVertex3f(corners[0][0], depth, corners[0][2]);
-            glVertex3f(corners[1][0], depth, corners[1][2]);
+                // Back
+                glTexCoord2f(0.0f, 0.0f);
+                glVertex3f(corners[1][0], corners[1][1], corners[1][2]);
+                glTexCoord2f(frnt_back_wdth, 0.0f);
+                glVertex3f(corners[0][0], corners[0][1], corners[0][2]);
+                glTexCoord2f(frnt_back_wdth, side_height);
+                glVertex3f(corners[0][0], depth, corners[0][2]);
+                glTexCoord2f(0.0f, side_height);
+                glVertex3f(corners[1][0], depth, corners[1][2]);
+            }
+            glEnd();
         }
-        glEnd();
+        glDisable(GL_TEXTURE_2D);
 
         glEnable(GL_TEXTURE_2D);
         ome::open_gl::glBindTexture(*ome::Texture::placeholder());

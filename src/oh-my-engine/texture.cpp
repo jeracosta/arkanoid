@@ -2,124 +2,122 @@
 
 #include <GL/glu.h>
 #include <SDL2/SDL_image.h>
+#include <cstring>
 #include <ranges>
 #include <stdexcept>
-#include <vector>
 
 #include "oh-my-engine/math/vector.hpp"
 #include "oh-my-engine/open_gl/texture_binding_guard.hpp"
 
 namespace ome {
 
-Texture::Texture(GLuint id, Vec2u size)
-    : id_(id),
-      size_(size)
+Texture::Texture(ImageBuffer image)
 {
+    auto guard = open_gl::TextureBindingGuard<GL_TEXTURE_2D>();
+
+    glGenTextures(1, &id_);
+
+    glBindTexture(GL_TEXTURE_2D, id_);
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    auto &[width, height] = image.size();
+
+    gluBuild2DMipmaps(
+        GL_TEXTURE_2D, GL_RGBA, width, height, GL_RGBA, GL_UNSIGNED_BYTE, image.raw());
 }
 
 Texture::~Texture()
 {
-    if (id_ != 0)
-    {
-        glDeleteTextures(1, &id_);
-    }
+    glDeleteTextures(1, &id_);
 }
 
 std::shared_ptr<Texture>
-Texture::load(const std::filesystem::path &path, Vec2<GLenum> wrap)
+Texture::load(const std::filesystem::path &path)
 {
-    SDL_Surface *surface = IMG_Load(path.string().c_str());
-    if (!surface)
+    SDL_Surface *raw_surface = IMG_Load(path.string().c_str());
+    if (!raw_surface)
     {
         throw std::runtime_error(
             std::format("Failed to load texture `{}`: {}", path.string(), IMG_GetError()));
     }
 
-    SDL_Surface *rgba = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA32, 0);
+    SDL_Surface *surface = SDL_ConvertSurfaceFormat(raw_surface, SDL_PIXELFORMAT_RGBA32, 0);
 
-    SDL_FreeSurface(surface);
+    SDL_FreeSurface(raw_surface);
 
-    if (!rgba)
+    if (!surface)
     {
         throw std::runtime_error(
             std::format("Failed to convert texture `{}`: {}", path.string(), SDL_GetError()));
     }
 
-    GLuint id = 0;
-    glGenTextures(1, &id);
+    auto size  = Vec2u{ surface->w, surface->h };
+    auto image = ImageBuffer(size);
 
-    {
-        auto guard = open_gl::TextureBindingGuard<GL_TEXTURE_2D>();
+    std::memcpy(image.raw(), surface->pixels, surface->w * surface->h * sizeof(ImageBuffer::Pixel));
 
-        glBindTexture(GL_TEXTURE_2D, id);
+    SDL_FreeSurface(surface);
 
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap[0]);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap[1]);
-
-        gluBuild2DMipmaps(
-            GL_TEXTURE_2D, GL_RGBA, rgba->w, rgba->h, GL_RGBA, GL_UNSIGNED_BYTE, rgba->pixels);
-    }
-
-    auto texture = std::shared_ptr<Texture>(new Texture(id, { rgba->w, rgba->h }));
-
-    SDL_FreeSurface(rgba);
-
-    return texture;
+    return std::make_shared<Texture>(std::move(image));
 }
 
-std::shared_ptr<Texture>
-Texture::dummy(Vec2u size)
+ImageBuffer
+ImageBuffer::checkerboard(Vec2u size, float cell_size, Color odd_color, Color even_color)
 {
-    struct Pixel
-    {
-        uint8_t red, green, blue, alpha;
-    };
-    static_assert(std::is_trivially_copyable_v<Pixel>);
-    static_assert(sizeof(Pixel) == 4);
+    auto image = ImageBuffer(size);
 
     auto &[width, height] = size;
 
-    auto pixels = std::vector<Pixel>(width * height);
-
     using namespace std::ranges::views;
-    auto coords = zip(iota(0u, height), iota(0u, width))
-                  | transform([](auto &&pair) { return Vec2u{ pair }; });
+    auto coords = zip(iota(0u, height), iota(0u, width));
 
-    for (auto &&[pixel, coord] : zip(pixels, coords))
+    for (auto &&[x, y] : coords)
     {
-        constexpr int checker_size = 8;
-
-        auto cell = coord / checker_size;
+        auto cell = Vec2u{ x, y } / cell_size;
 
         bool is_even = (cell[0] + cell[1]) % 2 == 0;
 
-        pixel = is_even ? Pixel{ 255, 0, 255, 255 } : Pixel{ 0, 0, 0, 255 };
+        image[{ x, y }] = is_even ? even_color : odd_color;
     }
 
-    GLuint id;
-    glGenTextures(1, &id);
+    return image;
+}
 
-    {
-        auto guard = open_gl::TextureBindingGuard<GL_TEXTURE_2D>();
+std::shared_ptr<Texture>
+Texture::placeholder()
+{
+    static constexpr float cell_size = 16;
+    static constexpr auto  size      = Vec2u{ 2 } * cell_size;
 
-        glBindTexture(GL_TEXTURE_2D, id);
+    static constexpr auto odd_color  = Color::magenta();
+    static constexpr auto even_color = Color::black();
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    static auto singleton = std::make_shared<Texture>(
+        ImageBuffer::checkerboard(size, cell_size, odd_color, even_color));
 
-        glTexImage2D(
-            GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
-    }
+    return singleton;
+}
 
-    return std::shared_ptr<Texture>(new Texture(id, size));
+void
+Texture::wrap(Vec2<GLenum> wrap)
+{
+    auto guard = open_gl::TextureBindingGuard<GL_TEXTURE_2D>();
+
+    glBindTexture(GL_TEXTURE_2D, id_);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap[0]);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap[1]);
+}
+
+inline void
+open_gl::glBindTexture(const ome::Texture &texture)
+{
+    ::glBindTexture(GL_TEXTURE_2D, texture.id_);
 }
 
 } // namespace ome

@@ -4,9 +4,67 @@
 #include <filesystem>
 #include <memory>
 
+#include "oh-my-engine/color.hpp"
 #include "oh-my-engine/math/vector.hpp"
 
 namespace ome {
+
+// #region Forward declarations
+// clang-format off
+
+class Texture;
+namespace open_gl { void glBindTexture(const Texture &); }
+
+// #endregion
+// clang-format on
+
+// #region Image buffer
+
+class ImageBuffer
+{
+  public:
+    using Pixel = Color;
+    static_assert(std::is_trivially_copyable_v<Pixel>);
+    static_assert(sizeof(Pixel) == 4);
+
+    ImageBuffer(Vec2u size)
+        : size_(size),
+          pixels_(size[0] * size[1])
+    {
+    }
+
+    const Vec2u
+    size()
+    {
+        return size_;
+    }
+
+    Pixel &
+    operator[](Vec2u coord)
+    {
+        return pixels_[coord[1] * size_[0] + coord[0]];
+    }
+
+    static ImageBuffer
+    load(std::filesystem::path path, Vec2u size);
+
+    static ImageBuffer
+    checkerboard(Vec2u size, float cell_size, Color odd_color, Color even_color);
+
+    std::byte *
+    raw()
+    {
+        return reinterpret_cast<std::byte *>(pixels_.data());
+    }
+
+  private:
+    Vec2u              size_;
+    std::vector<Pixel> pixels_; // row-major order
+};
+
+// #endregion
+
+// #region Texture
 
 class Texture
 {
@@ -26,37 +84,24 @@ class Texture
     operator=(Texture &&other) noexcept
         = delete;
 
-    static std::shared_ptr<Texture>
-    load(const std::filesystem::path &path, Vec2<GLenum> wrap = { GL_REPEAT, GL_REPEAT });
+    Texture(ImageBuffer image);
 
     static std::shared_ptr<Texture>
-    dummy(Vec2u size);
+    load(const std::filesystem::path &path);
 
-    GLuint
-    id() const
-    {
-        return id_;
-    }
+    void
+    wrap(Vec2<GLenum> wrap = { GL_REPEAT, GL_REPEAT });
 
-    const Vec2u &
-    size() const
-    {
-        return size_;
-    }
+    static std::shared_ptr<Texture>
+    placeholder();
 
-  protected:
-    GLuint id_   = 0;
-    Vec2u  size_ = 0;
+    friend void
+    open_gl::glBindTexture(const Texture &texture);
 
-    Texture(GLuint id, Vec2u size);
+  public:
+    GLuint id_ = 0;
 };
 
-namespace open_gl {
-inline void
-glBindTexture(const ome::Texture &texture)
-{
-    ::glBindTexture(GL_TEXTURE_2D, texture.id());
-}
-} // namespace open_gl
+// #endregion
 
 } // namespace ome

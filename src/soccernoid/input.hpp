@@ -50,10 +50,10 @@ configure_default_controls(ome::input::InputMapper *input_mapper)
     // clang-format off
 
     auto specs = std::to_array<BindingSpec>({
-        { Quit,             SDLK_ESCAPE,  { Release }       },
+        { Quit,             SDLK_q,       { Release }       },
         { ToggleFullscreen, SDLK_F11,     { Press }         },
         { TogglePause,      SDLK_p,       { Press }         },
-        { ChangeView,       SDLK_TAB,     { Press }         },
+        { ChangeView,       SDLK_v,       { Press }         },
         { Reset,            SDLK_r,       { Press }         },
         { PrintTree,        SDLK_i,       { Press }         },
         { TimeSpeedUp,      SDLK_PLUS,    { Press, Repeat } },

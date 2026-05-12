@@ -10,9 +10,6 @@ namespace game {
 class Session; // forward declaration
 }
 
-// forward declarations
-class Pause;
-
 class Time
 {
   public:
@@ -21,27 +18,7 @@ class Time
   private:
     Chronometer<Unit>          chronometer_;
     Chronometer<Unit>::Reading current_time_;
-    float                      unfrozen_time_scale_ = 1;
-
-    bool
-    frozen_() const
-    {
-        return chronometer_.scale() == 0;
-    }
-
-    void
-    freeze_()
-    {
-        chronometer_.scale(0);
-    }
-
-    void
-    unfreeze_()
-    {
-        chronometer_.scale(unfrozen_time_scale_);
-    }
-
-    friend class Pause;
+    float                      time_scale_ = 1;
 
   public:
     float
@@ -59,14 +36,14 @@ class Time
     float
     scale() const
     {
-        return unfrozen_time_scale_;
+        return time_scale_;
     }
 
     void
     scale(float new_value)
     {
         chronometer_.scale(new_value);
-        unfrozen_time_scale_ = new_value;
+        time_scale_ = new_value;
     }
 
     class

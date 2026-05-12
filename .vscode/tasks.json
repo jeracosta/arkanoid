@@ -14,7 +14,7 @@
 		{
 			"label": "Build and Run Soccernoid",
 			"type": "shell",
-			"command": "${workspaceFolder}/scripts/build.sh main && ${workspaceFolder}/build/main",
+			"command": "${workspaceFolder}/scripts/build.sh game && ${workspaceFolder}/build/soccernoid/bin/game",
 			"problemMatcher": [
 				"$gcc"
 			],

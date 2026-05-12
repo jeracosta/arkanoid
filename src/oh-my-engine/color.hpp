@@ -33,19 +33,19 @@ class Color
 
     // #region Static Factories
 
-    static Color
+    static constexpr Color
     rgba(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha)
     {
         return Color(red, green, blue, alpha);
     }
 
-    static Color
+    static constexpr Color
     rgb(uint8_t red, uint8_t green, uint8_t blue)
     {
         return rgba(red, green, blue, 255);
     }
 
-    static Color
+    static constexpr Color
     hex(uint32_t hex_value)
     {
         uint8_t red   = ((hex_value >> 16) & 0xFF);
@@ -86,6 +86,64 @@ class Color
     // #endregion
 
     static constexpr uint max_channel_value = std::numeric_limits<decltype(alpha_)>::max();
+
+    // #region Predefined pure colors
+
+    static constexpr Color
+    white()
+    {
+        return rgb(255, 255, 255);
+    }
+
+    static constexpr Color
+    black()
+    {
+        return rgb(0, 0, 0);
+    }
+
+    static constexpr Color
+    red()
+    {
+        return rgb(255, 0, 0);
+    }
+
+    static constexpr Color
+    green()
+    {
+        return rgb(0, 255, 0);
+    }
+
+    static constexpr Color
+    blue()
+    {
+        return rgb(0, 0, 255);
+    }
+
+    static constexpr Color
+    magenta()
+    {
+        return rgb(255, 0, 255);
+    }
+
+    static constexpr Color
+    cyan()
+    {
+        return rgb(0, 255, 255);
+    }
+
+    static constexpr Color
+    yellow()
+    {
+        return rgb(255, 255, 0);
+    }
+
+    static constexpr Color
+    transparent()
+    {
+        return rgba(0, 0, 0, 0);
+    }
+
+    // #endregion
 };
 
 inline Color

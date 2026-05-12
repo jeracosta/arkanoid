@@ -4,7 +4,6 @@
 #include "oh-my-engine/input.hpp"
 #include "oh-my-engine/interpolation.hpp"
 #include "oh-my-engine/node.hpp"
-#include "soccernoid/constants.hpp"
 #include "soccernoid/input.hpp"
 
 namespace soccernoid {
@@ -48,8 +47,18 @@ using CameraTransition = ome::Interpolation<CameraShot>::Process;
 
 class CameraControlNode : public ome::Node
 {
+  public:
+    struct Settings
+    {
+        float mouse_sensitivity   = 0.01f;
+        float movement_speed      = 5.0f;
+        float sprint_multiplier   = 2.0f;
+        float transition_duration = 0.5f;
+    };
+
   private:
     ome::Camera *camera_;
+    Settings     settings_;
     CameraView   view_ = CameraView::ThirdPerson;
 
     std::optional<CameraTransition> transition_;
@@ -68,7 +77,7 @@ class CameraControlNode : public ome::Node
             return;
         }
 
-        auto [yaw, pitch] = -input.delta * soccernoid::camera.mouse_sensitivity;
+        auto [yaw, pitch] = -input.delta * settings_.mouse_sensitivity;
 
         auto yaw_axis = view_ == CameraView::FirstPerson ? ome::up : camera_->up();
         camera_->rotate(yaw, yaw_axis);
@@ -126,10 +135,8 @@ class CameraControlNode : public ome::Node
         CameraShot from{ camera_->target(), camera_->distance(), camera_->orientation() };
         CameraShot to = shot_for_view_(view_);
 
-        transition_.emplace(from,
-                            to,
-                            ome::EasingCurve::smoothstep(),
-                            1.0f / soccernoid::camera.transition_duration);
+        transition_.emplace(
+            from, to, ome::EasingCurve::smoothstep(), 1.0f / settings_.transition_duration);
     }
 
     void
@@ -182,8 +189,8 @@ class CameraControlNode : public ome::Node
 
         auto is_sprinting = game()->input.is_pressed(Action::CameraSprint);
 
-        auto speed_factor = is_sprinting ? soccernoid::camera.sprint_multiplier : 1.0f;
-        auto speed        = soccernoid::camera.movement_speed * speed_factor;
+        auto speed_factor = is_sprinting ? settings_.sprint_multiplier : 1.0f;
+        auto speed        = settings_.movement_speed * speed_factor;
 
         auto velocity     = direction * speed;
         auto displacement = velocity * game()->time.unscaled.delta();
@@ -192,6 +199,11 @@ class CameraControlNode : public ome::Node
     }
 
   public:
+    CameraControlNode(const Settings &settings)
+        : settings_(settings)
+    {
+    }
+
     void
     on_mount_() override
     {

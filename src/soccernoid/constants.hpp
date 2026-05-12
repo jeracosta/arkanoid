@@ -14,16 +14,6 @@ static constexpr struct
     float end   = 50.0f;
 } fog;
 
-static constexpr float terrain_box_depth = fog.end;
-
-static constexpr struct
-{
-    float mouse_sensitivity   = 0.01f;
-    float movement_speed      = 5.0f;
-    float sprint_multiplier   = 2.0f;
-    float transition_duration = 0.25f;
-} camera;
-
 struct ColorPalette
 {
     ome::Color fog;

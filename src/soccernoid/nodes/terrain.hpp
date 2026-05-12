@@ -2,6 +2,7 @@
 
 #include "oh-my-engine/color.hpp"
 #include "oh-my-engine/nodes/hitbox_node.hpp"
+#include "oh-my-engine/texture.hpp"
 #include "soccernoid/constants.hpp"
 
 namespace soccernoid {
@@ -28,11 +29,6 @@ class TerrainNode : public ome::HitboxNode
     {
         const auto corners = hitbox_world().corners();
 
-        // corners[0] = (-10, 0, -6)  back-left
-        // corners[1] = ( 10, 0, -6)  back-right
-        // corners[2] = ( 10, 0,  0)  front-right
-        // corners[3] = (-10, 0,  0)  front-left
-
         constexpr float depth = -fog.end;
 
         glColor(colors.grass);
@@ -45,34 +41,60 @@ class TerrainNode : public ome::HitboxNode
         }
         glEnd();
 
-        glColor(colors.dirt);
         glBegin(GL_QUADS);
         {
-            // Front (z = 0)
-            glVertex3f(corners[3][0], corners[3][1], corners[3][2]);
-            glVertex3f(corners[2][0], corners[2][1], corners[2][2]);
-            glVertex3f(corners[2][0], depth, corners[2][2]);
-            glVertex3f(corners[3][0], depth, corners[3][2]);
+            glColor(colors.dirt);
 
-            // Back (z = -6)
-            glVertex3f(corners[1][0], corners[1][1], corners[1][2]);
-            glVertex3f(corners[0][0], corners[0][1], corners[0][2]);
-            glVertex3f(corners[0][0], depth, corners[0][2]);
-            glVertex3f(corners[1][0], depth, corners[1][2]);
-
-            // Left (x = -10)
+            // Left
             glVertex3f(corners[0][0], corners[0][1], corners[0][2]);
             glVertex3f(corners[3][0], corners[3][1], corners[3][2]);
             glVertex3f(corners[3][0], depth, corners[3][2]);
             glVertex3f(corners[0][0], depth, corners[0][2]);
 
-            // Right (x = 10)
+            // Right
             glVertex3f(corners[2][0], corners[2][1], corners[2][2]);
             glVertex3f(corners[1][0], corners[1][1], corners[1][2]);
             glVertex3f(corners[1][0], depth, corners[1][2]);
             glVertex3f(corners[2][0], depth, corners[2][2]);
+
+            // Front
+            glVertex3f(corners[3][0], corners[3][1], corners[3][2]);
+            glVertex3f(corners[2][0], corners[2][1], corners[2][2]);
+            glVertex3f(corners[2][0], depth, corners[2][2]);
+            glVertex3f(corners[3][0], depth, corners[3][2]);
+
+            // Back
+            glVertex3f(corners[1][0], corners[1][1], corners[1][2]);
+            glVertex3f(corners[0][0], corners[0][1], corners[0][2]);
+            glVertex3f(corners[0][0], depth, corners[0][2]);
+            glVertex3f(corners[1][0], depth, corners[1][2]);
         }
         glEnd();
+
+        glEnable(GL_TEXTURE_2D);
+        ome::open_gl::glBindTexture(*ome::Texture::placeholder());
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+        {
+            const float floor_width = corners[1][0] - corners[0][0];
+            const float floor_depth = corners[2][2] - corners[0][2];
+
+            glBegin(GL_QUADS);
+            glTexCoord2f(0.0f, 0.0f);
+            glVertex3f(corners[0][0], depth, corners[0][2]);
+
+            glTexCoord2f(floor_width, 0.0f);
+            glVertex3f(corners[1][0], depth, corners[1][2]);
+
+            glTexCoord2f(floor_width, floor_depth);
+            glVertex3f(corners[2][0], depth, corners[2][2]);
+
+            glTexCoord2f(0.0f, floor_depth);
+            glVertex3f(corners[3][0], depth, corners[3][2]);
+            glEnd();
+        }
+
+        glDisable(GL_TEXTURE_2D);
     }
 
     void

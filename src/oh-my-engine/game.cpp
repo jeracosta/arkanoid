@@ -88,7 +88,7 @@ Game::Game(const Configuration &config)
         glFogf(GL_FOG_START, config_.fog.start);
         glFogf(GL_FOG_END, config_.fog.end);
 
-        auto [r, g, b, a] = config_.fog.color.rgba();
+        auto [r, g, b, a] = config_.fog.color.rgba_f();
         float fog_col[4]  = { r, g, b, a };
 
         glFogfv(GL_FOG_COLOR, fog_col);

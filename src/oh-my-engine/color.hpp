@@ -4,7 +4,7 @@
 #include <GL/glu.h>
 #include <cstdint>
 #include <glm/ext/vector_float3.hpp>
-#include <stdexcept>
+#include <limits>
 
 #include "oh-my-engine/math/vector.hpp"
 
@@ -13,11 +13,18 @@ namespace ome {
 class Color
 {
   private:
-    Vec4f rgba_{};
+    // WARN: RGBA memory layout is expected. Do not modify.
+    //       It is required to cast color values to OpenGL-compatible pixel values.
+    uint8_t red_;
+    uint8_t green_;
+    uint8_t blue_;
+    uint8_t alpha_;
 
-    // Private: values already range-checked by the static factory
-    explicit constexpr Color(float r, float g, float b, float a)
-        : rgba_{ r, g, b, a }
+    explicit constexpr Color(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha)
+        : red_(red),
+          green_(green),
+          blue_(blue),
+          alpha_(alpha)
     {
     }
 
@@ -27,97 +34,67 @@ class Color
     // #region Static Factories
 
     static Color
-    rgba(float r, float g, float b, float a)
+    rgba(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha)
     {
-        if (r < 0.0f || r > 1.0f)
-            throw std::domain_error("Color red   out of range [0, 1]");
-        if (g < 0.0f || g > 1.0f)
-            throw std::domain_error("Color green out of range [0, 1]");
-        if (b < 0.0f || b > 1.0f)
-            throw std::domain_error("Color blue  out of range [0, 1]");
-        if (a < 0.0f || a > 1.0f)
-            throw std::domain_error("Color alpha out of range [0, 1]");
-        return Color(r, g, b, a);
+        return Color(red, green, blue, alpha);
     }
 
     static Color
-    rgb(float r, float g, float b)
+    rgb(uint8_t red, uint8_t green, uint8_t blue)
     {
-        return rgba(r, g, b, 1.0f);
-    }
-
-    static Color
-    rgba(int r, int g, int b, int a)
-    {
-        if (r < 0 || r > 255)
-            throw std::domain_error("Color red   out of range [0, 255]");
-        if (g < 0 || g > 255)
-            throw std::domain_error("Color green out of range [0, 255]");
-        if (b < 0 || b > 255)
-            throw std::domain_error("Color blue  out of range [0, 255]");
-        if (a < 0 || a > 255)
-            throw std::domain_error("Color alpha out of range [0, 255]");
-        return Color(r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f);
-    }
-
-    static Color
-    rgb(int r, int g, int b)
-    {
-        return rgba(r, g, b, 255);
+        return rgba(red, green, blue, 255);
     }
 
     static Color
     hex(uint32_t hex_value)
     {
-        return Color(((hex_value >> 16) & 0xFF) / 255.0f,
-                     ((hex_value >> 8) & 0xFF) / 255.0f,
-                     ((hex_value) & 0xFF) / 255.0f,
-                     1.0f);
+        uint8_t red   = ((hex_value >> 16) & 0xFF);
+        uint8_t green = ((hex_value >> 8) & 0xFF);
+        uint8_t blue  = ((hex_value) & 0xFF);
+
+        return rgb(red, green, blue);
     }
 
     // #endregion
 
     // #region Accessors
 
-    Vec4f
+    Vec4<uint8_t>
     rgba() const
     {
-        return rgba_;
+        return { red_, green_, blue_, alpha_ };
     }
 
-    float
-    red() const
+    Vec4f
+    rgba_f() const
     {
-        return rgba_[0];
+        return Vec4f(rgba()) / max_channel_value;
     }
 
-    float
-    green() const
+    Vec3<uint8_t>
+    rgb() const
     {
-        return rgba_[1];
+        return { red_, green_, blue_ };
     }
 
-    float
-    blue() const
+    Vec3f
+    rgb_f() const
     {
-        return rgba_[2];
-    }
-
-    float
-    alpha() const
-    {
-        return rgba_[3];
+        return Vec3f(rgb()) / max_channel_value;
     }
 
     // #endregion
+
+    static constexpr uint max_channel_value = std::numeric_limits<decltype(alpha_)>::max();
 };
 
 inline Color
 grayscale(Color color)
 {
-    auto  c    = color.rgba();
-    float luma = 0.299f * c[0] + 0.587f * c[1] + 0.114f * c[2];
-    return Color::rgb(luma, luma, luma);
+    auto           rgb     = Vec3f(color.rgb());
+    constexpr auto weights = Vec3f(0.299f, 0.587f, 0.114f);
+    float          luma    = dot(rgb, weights);
+    return Color::rgba(luma, luma, luma, color.rgba()[3]);
 }
 
 } // namespace ome
@@ -125,5 +102,6 @@ grayscale(Color color)
 inline void
 glColor(ome::Color color)
 {
-    glColor3f(color.red(), color.green(), color.blue());
+    auto [red, green, blue, alpha] = color.rgba_f();
+    glColor4f(red, green, blue, alpha);
 }

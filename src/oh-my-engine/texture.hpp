@@ -98,7 +98,7 @@ class Texture
     friend void
     open_gl::glBindTexture(const Texture &texture);
 
-  public:
+  private:
     GLuint id_ = 0;
 };
 

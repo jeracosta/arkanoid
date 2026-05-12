@@ -74,7 +74,7 @@ ImageBuffer::checkerboard(Vec2u size, float cell_size, Color odd_color, Color ev
     auto &[width, height] = size;
 
     using namespace std::ranges::views;
-    auto coords = zip(iota(0u, height), iota(0u, width));
+    auto coords = cartesian_product(iota(0u, height), iota(0u, width));
 
     for (auto &&[x, y] : coords)
     {
@@ -91,16 +91,18 @@ ImageBuffer::checkerboard(Vec2u size, float cell_size, Color odd_color, Color ev
 std::shared_ptr<Texture>
 Texture::placeholder()
 {
-    static constexpr float cell_size = 16;
+    // We use a magenta checkerboard pattern, inspired by Source engine.
+
+    static constexpr float cell_size = 8;
     static constexpr auto  size      = Vec2u{ 2 } * cell_size;
 
     static constexpr auto odd_color  = Color::magenta();
     static constexpr auto even_color = Color::black();
 
-    static auto singleton = std::make_shared<Texture>(
-        ImageBuffer::checkerboard(size, cell_size, odd_color, even_color));
+    auto        image   = ImageBuffer::checkerboard(size, cell_size, odd_color, even_color);
+    static auto texture = std::make_shared<Texture>(image);
 
-    return singleton;
+    return texture;
 }
 
 void
@@ -114,10 +116,14 @@ Texture::wrap(Vec2<GLenum> wrap)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap[1]);
 }
 
-inline void
-open_gl::glBindTexture(const ome::Texture &texture)
+} // namespace ome
+
+namespace ome::open_gl {
+
+void
+glBindTexture(const Texture &texture)
 {
     ::glBindTexture(GL_TEXTURE_2D, texture.id_);
 }
 
-} // namespace ome
+} // namespace ome::open_gl

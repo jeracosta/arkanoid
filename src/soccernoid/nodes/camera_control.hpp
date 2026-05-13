@@ -1,6 +1,7 @@
 #include <optional>
 
 #include "oh-my-engine/camera.hpp"
+#include "oh-my-engine/curve.hpp"
 #include "oh-my-engine/input.hpp"
 #include "oh-my-engine/interpolation.hpp"
 #include "oh-my-engine/node.hpp"
@@ -135,8 +136,9 @@ class CameraControlNode : public ome::Node
         CameraShot from{ camera_->target(), camera_->distance(), camera_->orientation() };
         CameraShot to = shot_for_view_(view_);
 
-        transition_.emplace(
-            from, to, ome::EasingCurve::smoothstep(), 1.0f / settings_.transition_duration);
+        auto curve = std::make_shared<ome::InterpolationCurve<CameraShot>>(
+            from, to, ome::EasingCurve::smoothstep());
+        transition_.emplace(curve, 1.0f / settings_.transition_duration);
     }
 
     void

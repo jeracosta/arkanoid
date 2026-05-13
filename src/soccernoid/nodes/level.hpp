@@ -3,6 +3,7 @@
 #include "soccernoid/nodes/comet.hpp"
 #include "soccernoid/nodes/human.hpp"
 #include "soccernoid/nodes/player.hpp"
+#include "soccernoid/nodes/fire_node.hpp"
 #include "soccernoid/nodes/terrain.hpp"
 
 namespace soccernoid {
@@ -23,6 +24,8 @@ class LevelNode : public ome::Node
         levels_.push_back({ [](ome::Node::CompositionCursor cursor)
         {
             cursor.add<CometNode>().named("Comet").up();
+
+            cursor.add<FireNode>(ome::Vec3f{ 3.0f, 0.0f, -3.0f }).named("Fire").up();
 
             auto terrain = std::make_shared<TerrainNode>();
             cursor.add(terrain).named("Terreno").up();

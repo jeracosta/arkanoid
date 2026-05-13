@@ -1,3 +1,4 @@
+#include "oh-my-engine/curve.hpp"
 #include "oh-my-engine/game.hpp"
 #include "oh-my-engine/interpolation.hpp"
 #include "oh-my-engine/node.hpp"
@@ -10,14 +11,18 @@ class TimeSpeedNode : public ome::Node
   private:
     float scaling_factor_ = 1.1f;
 
-    ome::CurveProcess<float> speed_interpolation_{ 0.0f, 1.0f, ome::EasingCurve::smoothstep(1), 2.5 };
+    std::shared_ptr<ome::InterpolationCurve<float>> speed_curve_
+        = std::make_shared<ome::InterpolationCurve<float>>(
+            0.0f, 1.0f, ome::EasingCurve::smoothstep(1));
+
+    ome::CurveProcess<float> speed_interpolation_{ speed_curve_, 2.5f };
 
     void
     speed_by_(float factor_)
     {
-        auto speed = speed_interpolation_.to() * factor_;
+        auto speed = speed_curve_->to() * factor_;
 
-        speed_interpolation_.to(speed);
+        speed_curve_->to(speed);
 
         log(std::format("Time speed: {}", speed));
     }

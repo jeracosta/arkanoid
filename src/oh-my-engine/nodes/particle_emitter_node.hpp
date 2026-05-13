@@ -36,7 +36,7 @@ struct ParticleBlueprint
     RandomVec3f acceleration;
 
     std::function<float(float)> angular_speed;
-    float                time_to_live;
+    float                       time_to_live;
 };
 
 template <std::size_t TCapacity>
@@ -244,7 +244,8 @@ class ParticleEmitterNode : public TransformNode
 
         auto &camera = Node::game()->camera;
 
-        game()->schedule([this, up = camera.up(), right = camera.right()] { particles_.render(up, right); });
+        game()->schedule([this, up = camera.up(), right = camera.right()]
+        { particles_.render(up, right); });
 
         blueprint()->origin.mean = current_position;
         emission_accumulator_ -= static_cast<float>(emission_count) * emission_period_;

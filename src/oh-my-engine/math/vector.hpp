@@ -424,14 +424,13 @@ transform(auto transformation, const Vector &lhs, const Vector &rhs)
 
 template <is_vector Vector, class RandomNumberGenerator>
 static Vector
-make_random_vector(Vector from, Vector to, RandomNumberGenerator &&rng)
+random_vector(Vector from, Vector to, RandomNumberGenerator &&rng)
 {
     Vector result;
 
     for (auto [r, f, t] : std::views::zip(result, from, to))
     {
-        std::uniform_real_distribution dist(f, t);
-        r = dist(rng);
+        r = std::uniform_real_distribution{ f, t }(rng);
     }
 
     return result;

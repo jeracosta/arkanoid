@@ -114,6 +114,11 @@ struct TexturePalette
         {
             return get();
         }
+
+        operator std::shared_ptr<ome::Texture>() const
+        {
+            return load_();
+        }
     };
 
     // #endregion

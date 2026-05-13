@@ -38,10 +38,22 @@ class Box
         return min_;
     }
 
+    void
+    min(const Vector &new_min)
+    {
+        min_ = new_min;
+    }
+
     const Vector &
     max() const
     {
         return max_;
+    }
+
+    void
+    max(const Vector &new_max)
+    {
+        max_ = new_max;
     }
 
     Vector
@@ -155,5 +167,23 @@ class Box
     Vector min_{};
     Vector max_{};
 };
+
+inline float
+width(const Box<3> &box)
+{
+    return box.max()[0] - box.min()[0];
+}
+
+inline float
+length(const Box<3> &box)
+{
+    return box.max()[2] - box.min()[2];
+}
+
+inline float
+height(const Box<3> &box)
+{
+    return box.max()[1] - box.min()[1];
+}
 
 } // namespace ome::math

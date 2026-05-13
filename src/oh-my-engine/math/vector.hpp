@@ -437,6 +437,32 @@ make_random_vector(Vector from, Vector to, RandomNumberGenerator &&rng)
     return result;
 }
 
+// Perpendicular component of vector relative to dir.
+// dir must be a unit vector.
+template <is_vector Vector>
+Vector
+reject(const Vector &vector, const Vector &dir)
+{
+    assert(norm(dir) == 1 && "Direction must be normalized for rejection");
+    return vector - math::dot(vector, dir) * dir;
+}
+
+// Orthonormal projection onto the orthogonal complement of dir.
+// Assumes dir is a unit vector.
+template <is_vector Vector>
+Vector
+orthonormalize(const Vector &vector, const Vector &dir)
+{
+    Vector orthogonal = reject(vector, dir);
+
+    if (norm(orthogonal) == 0)
+    {
+        return orthogonal;
+    }
+
+    return normal(orthogonal);
+}
+
 template <is_vector Vector>
 constexpr Vector
 clamp(const Vector &value, const Vector &min, const Vector &max)

@@ -1,9 +1,9 @@
 #include "oh-my-engine/node.hpp"
 #include "soccernoid/nodes/ball.hpp"
 #include "soccernoid/nodes/comet.hpp"
+#include "soccernoid/nodes/fire.hpp"
 #include "soccernoid/nodes/human.hpp"
 #include "soccernoid/nodes/player.hpp"
-#include "soccernoid/nodes/fire_node.hpp"
 #include "soccernoid/nodes/terrain.hpp"
 
 namespace soccernoid {

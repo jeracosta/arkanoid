@@ -10,8 +10,7 @@ class TimeSpeedNode : public ome::Node
   private:
     float scaling_factor_ = 1.1f;
 
-    ome::Interpolation<float>::Process speed_interpolation_
-        = { 0.0f, 1.0f, ome::EasingCurve::smoothstep(1), 2.5 };
+    ome::CurveProcess<float> speed_interpolation_{ 0.0f, 1.0f, ome::EasingCurve::smoothstep(1), 2.5 };
 
     void
     speed_by_(float factor_)

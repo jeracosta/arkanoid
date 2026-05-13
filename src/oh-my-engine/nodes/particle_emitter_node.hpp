@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 #include "oh-my-engine/interpolation.hpp"
 #include "oh-my-engine/math/vector.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
@@ -25,15 +27,15 @@ struct ParticleBlueprint
         }
     };
 
-    Interpolation<Vec4f> color;
+    std::function<Vec4f(float)> color;
 
-    Interpolation<float> scale;
+    std::function<float(float)> scale;
 
     RandomVec3f origin;
     RandomVec3f initial_velocity;
     RandomVec3f acceleration;
 
-    Interpolation<float> angular_speed;
+    std::function<float(float)> angular_speed;
     float                time_to_live;
 };
 

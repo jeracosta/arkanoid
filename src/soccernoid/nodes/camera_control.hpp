@@ -43,7 +43,7 @@ struct CameraShot
     }
 };
 
-using CameraTransition = ome::Interpolation<CameraShot>::Process;
+using CameraTransition = ome::CurveProcess<CameraShot>;
 
 class CameraControlNode : public ome::Node
 {

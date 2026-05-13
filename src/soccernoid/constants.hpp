@@ -70,6 +70,8 @@ struct FilesystemPaths
 
 struct TexturePalette
 {
+    // #region Texture palette item class
+
     class Item
     {
       private:
@@ -93,6 +95,8 @@ struct TexturePalette
             return *texture_;
         }
     };
+
+    // #endregion
 
     Item dirt;
 };

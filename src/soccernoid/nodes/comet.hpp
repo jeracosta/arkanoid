@@ -21,12 +21,13 @@ class CometNode : public ome::TransformNode
     {
       private:
         static inline const ome::ParticleBlueprint blueprint_ = {
-            .color            = { { 1.0, 1.0, 1.0, 1.0 }, { 0.0, 0.0, 1.0, 0.0 } },
-            .scale            = { 20.0f, 0.0f },
+            .color
+            = ome::InterpolationCurve<ome::Vec4f>{ { 1.0, 1.0, 1.0, 1.0 }, { 0.0, 0.0, 1.0, 0.0 } },
+            .scale            = ome::InterpolationCurve<float>{ 20.0f, 0.0f },
             .origin           = { .mean = { 0.0, 0.2, 0.0 } },
             .initial_velocity = { .mean = { 0, 0, 0 }, .max_deviation = { 0.5, 0.5, 0.5 } },
             .acceleration     = {},
-            .angular_speed    = { 0, 0 },
+            .angular_speed    = ome::InterpolationCurve<float>{ 0, 0 },
             .time_to_live     = 1.0,
         };
 

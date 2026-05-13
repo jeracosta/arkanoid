@@ -79,30 +79,94 @@ struct TexturePalette
 
         mutable std::shared_ptr<ome::Texture> texture_;
 
-      public:
-        Item(std::filesystem::path file_name)
-            : file_name_(std::move(file_name))
-        {
-        }
-
-        operator const ome::Texture &() const
+        std::shared_ptr<ome::Texture>
+        load_() const
         {
             if (!texture_)
             {
                 texture_ = ome::Texture::load(FilesystemPaths::textures / file_name_);
             }
 
-            return *texture_;
+            return texture_;
+        }
+
+      public:
+        Item(std::filesystem::path file_name)
+            : file_name_(std::move(file_name))
+        {
+        }
+
+        ome::Texture &
+        get() const
+        {
+            return *load_();
+        }
+
+        void
+        wrap(ome::Vec2<GLenum> wrap) const
+        {
+            get().wrap(wrap);
+        }
+
+        operator const ome::Texture &() const
+        {
+            return get();
         }
     };
 
     // #endregion
 
+    struct SkyboxFaces
+    {
+        Item front;
+        Item back;
+        Item left;
+        Item right;
+        Item top;
+        Item bottom;
+
+        static SkyboxFaces
+        from_directory(const std::filesystem::path &directory)
+        {
+            return {
+                .front  = { directory / "front.png" },
+                .back   = { directory / "back.png" },
+                .left   = { directory / "left.png" },
+                .right  = { directory / "right.png" },
+                .top    = { directory / "top.png" },
+                .bottom = { directory / "bottom.png" },
+            };
+        }
+    };
+
+    struct SkyboxPalette
+    {
+        SkyboxFaces ablaze;
+        SkyboxFaces blink;
+        SkyboxFaces blood;
+        SkyboxFaces dawn;
+        SkyboxFaces earth;
+        SkyboxFaces night;
+        SkyboxFaces space;
+        SkyboxFaces space2;
+    };
+
     Item dirt;
+    SkyboxPalette skybox;
 };
 
 static const inline TexturePalette textures = {
     .dirt = { "dirt.png" },
+    .skybox = { //TODO: Generate faces from cubemap
+        .ablaze = TexturePalette::SkyboxFaces::from_directory("skybox/ablaze"),
+        .blink  = TexturePalette::SkyboxFaces::from_directory("skybox/blink"),
+        .blood  = TexturePalette::SkyboxFaces::from_directory("skybox/blood"),
+        .dawn   = TexturePalette::SkyboxFaces::from_directory("skybox/dawn"),
+        .earth  = TexturePalette::SkyboxFaces::from_directory("skybox/earth"),
+        .night  = TexturePalette::SkyboxFaces::from_directory("skybox/night"),
+        .space  = TexturePalette::SkyboxFaces::from_directory("skybox/space"),
+        .space2 = TexturePalette::SkyboxFaces::from_directory("skybox/space2"),
+    },
 };
 
 } // namespace soccernoid

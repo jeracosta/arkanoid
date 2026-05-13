@@ -1,9 +1,11 @@
 #pragma once
 
+#include <array>
+
 #include <GL/gl.h>
 
 #include "oh-my-engine/node.hpp"
-#include "oh-my-engine/texture.hpp"
+#include "soccernoid/constants.hpp"
 
 namespace soccernoid {
 
@@ -39,85 +41,98 @@ class SkyboxNode : public ome::Node
     }
 
   private:
-    static constexpr float side_ = 80.0f;
+    struct Vertex
+    {
+        float x;
+        float y;
+        float z;
+        float u;
+        float v;
+    };
+
+    struct Face
+    {
+        const TexturePalette::Item *texture;
+        std::array<Vertex, 4>       vertices;
+    };
+
+    static constexpr float side_ = 2 * fog.end;
+
+    static const TexturePalette::SkyboxFaces &
+    active_skybox_()
+    {
+        return textures.skybox.blink;
+    }
+
+    static void
+    draw_face_(const Face &face)
+    {
+        face.texture->wrap({ GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE });
+        ome::open_gl::glBindTexture(face.texture->get());
+
+        glBegin(GL_QUADS);
+        for (const auto &vertex : face.vertices)
+        {
+            glTexCoord2f(vertex.u, vertex.v);
+            glVertex3f(vertex.x, vertex.y, vertex.z);
+        }
+        glEnd();
+    }
+
+    static std::array<Face, 6>
+    faces_(float h)
+    {
+        auto &skybox = active_skybox_();
+
+        return { {
+            { .texture = &skybox.front,
+              .vertices = { Vertex{ -h, h, h, 0.0f, 0.0f },
+                            Vertex{ h, h, h, 1.0f, 0.0f },
+                            Vertex{ h, -h, h, 1.0f, 1.0f },
+                            Vertex{ -h, -h, h, 0.0f, 1.0f } } },
+            { .texture = &skybox.back,
+              .vertices = { Vertex{ h, h, -h, 0.0f, 0.0f },
+                            Vertex{ -h, h, -h, 1.0f, 0.0f },
+                            Vertex{ -h, -h, -h, 1.0f, 1.0f },
+                            Vertex{ h, -h, -h, 0.0f, 1.0f } } },
+            { .texture = &skybox.left,
+              .vertices = { Vertex{ -h, h, -h, 0.0f, 0.0f },
+                            Vertex{ -h, h, h, 1.0f, 0.0f },
+                            Vertex{ -h, -h, h, 1.0f, 1.0f },
+                            Vertex{ -h, -h, -h, 0.0f, 1.0f } } },
+            { .texture = &skybox.right,
+              .vertices = { Vertex{ h, h, h, 0.0f, 0.0f },
+                            Vertex{ h, h, -h, 1.0f, 0.0f },
+                            Vertex{ h, -h, -h, 1.0f, 1.0f },
+                            Vertex{ h, -h, h, 0.0f, 1.0f } } },
+            { .texture = &skybox.top,
+              .vertices = { Vertex{ -h, h, -h, 0.0f, 0.0f },
+                            Vertex{ h, h, -h, 1.0f, 0.0f },
+                            Vertex{ h, h, h, 1.0f, 1.0f },
+                            Vertex{ -h, h, h, 0.0f, 1.0f } } },
+            { .texture = &skybox.bottom,
+              .vertices = { Vertex{ -h, -h, h, 0.0f, 0.0f },
+                            Vertex{ h, -h, h, 1.0f, 0.0f },
+                            Vertex{ h, -h, -h, 1.0f, 1.0f },
+                            Vertex{ -h, -h, -h, 0.0f, 1.0f } } },
+        } };
+    }
 
     void
     render_cube_() const
     {
         constexpr float h = (side_ / 2.0f);
-        constexpr float tiles = 8.0f;
-
-        auto texture = ome::Texture::placeholder();
-        texture->wrap({ GL_REPEAT, GL_REPEAT });
+        auto            faces = faces_(h);
 
         glEnable(GL_TEXTURE_2D);
-        ome::open_gl::glBindTexture(*texture);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
-        glBegin(GL_QUADS);
+        for (const auto &face : faces)
         {
-            // Front (+Z)
-            glTexCoord2f(0.0f, 0.0f);
-            glVertex3f(-h, h, h);
-            glTexCoord2f(tiles, 0.0f);
-            glVertex3f(h, h, h);
-            glTexCoord2f(tiles, tiles);
-            glVertex3f(h, -h, h);
-            glTexCoord2f(0.0f, tiles);
-            glVertex3f(-h, -h, h);
-
-            // Back (-Z)
-            glTexCoord2f(0.0f, 0.0f);
-            glVertex3f(h, h, -h);
-            glTexCoord2f(tiles, 0.0f);
-            glVertex3f(-h, h, -h);
-            glTexCoord2f(tiles, tiles);
-            glVertex3f(-h, -h, -h);
-            glTexCoord2f(0.0f, tiles);
-            glVertex3f(h, -h, -h);
-
-            // Left (-X)
-            glTexCoord2f(0.0f, 0.0f);
-            glVertex3f(-h, h, -h);
-            glTexCoord2f(tiles, 0.0f);
-            glVertex3f(-h, h, h);
-            glTexCoord2f(tiles, tiles);
-            glVertex3f(-h, -h, h);
-            glTexCoord2f(0.0f, tiles);
-            glVertex3f(-h, -h, -h);
-
-            // Right (+X)
-            glTexCoord2f(0.0f, 0.0f);
-            glVertex3f(h, h, h);
-            glTexCoord2f(tiles, 0.0f);
-            glVertex3f(h, h, -h);
-            glTexCoord2f(tiles, tiles);
-            glVertex3f(h, -h, -h);
-            glTexCoord2f(0.0f, tiles);
-            glVertex3f(h, -h, h);
-
-            // Top (+Y)
-            glTexCoord2f(0.0f, 0.0f);
-            glVertex3f(-h, h, -h);
-            glTexCoord2f(tiles, 0.0f);
-            glVertex3f(h, h, -h);
-            glTexCoord2f(tiles, tiles);
-            glVertex3f(h, h, h);
-            glTexCoord2f(0.0f, tiles);
-            glVertex3f(-h, h, h);
-
-            // Bottom (-Y)
-            glTexCoord2f(0.0f, 0.0f);
-            glVertex3f(-h, -h, h);
-            glTexCoord2f(tiles, 0.0f);
-            glVertex3f(h, -h, h);
-            glTexCoord2f(tiles, tiles);
-            glVertex3f(h, -h, -h);
-            glTexCoord2f(0.0f, tiles);
-            glVertex3f(-h, -h, -h);
+            draw_face_(face);
         }
-        glEnd();
 
         glDisable(GL_TEXTURE_2D);
     }

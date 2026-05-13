@@ -97,22 +97,25 @@ class Box
 
     // clang-format on
 
-    std::array<Vector, (std::size_t{ 1 } << Dimension)>
+    auto
     corners() const
     {
-        std::array<Vector, (std::size_t{ 1 } << Dimension)> result{};
+        auto count = std::size_t{ 1 } << Dimension;
 
-        for (std::size_t i = 0; i < result.size(); ++i)
+        auto indices = std::views::iota(std::size_t{ 0 }, count);
+
+        auto make_corner = [this](std::size_t indice)
         {
             Vector corner{};
-
             for (std::size_t j = 0; j < Dimension; ++j)
             {
-                corner[j] = (i & (std::size_t{ 1 } << j)) ? max_[j] : min_[j];
+                corner[j] = (indice & (std::size_t{ 1 } << j)) ? max_[j] : min_[j];
             }
+            return corner;
+        };
 
-            result[i] = corner;
-        }
+        return indices | std::views::transform(make_corner);
+    }
 
         return result;
     }

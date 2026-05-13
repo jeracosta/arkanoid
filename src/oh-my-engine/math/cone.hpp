@@ -56,6 +56,18 @@ class Cone
         return height_;
     }
 
+    const Vector &
+    anchor() const
+    {
+        return apex_;
+    }
+
+    void
+    displace(const Vector &delta)
+    {
+        apex_ += delta;
+    }
+
     bool
     contains(const Vector &point) const
     {
@@ -89,7 +101,7 @@ class Cone
             return distribution(rng);
         };
 
-        Vector orthogonal = orthonormalize(random_unit_vector(rng), direction_);
+        Vector orthogonal = orthonormalize(random_unit_vector<Vector>(rng), direction_);
 
         if (!height_)
         {
@@ -118,9 +130,10 @@ class Cone
 
     template <class Rng>
     Component
-    sample_angle_(Component half_angle, Rng &rng)
+    sample_angle_(Component half_angle, Rng &rng) const
     {
-        auto uniform = std::uniform_real_distribution<Component>(rng);
+        auto uniform_dist = std::uniform_real_distribution<Component>{};
+        auto uniform      = uniform_dist(rng);
 
         if constexpr (Dimension == 2)
         {

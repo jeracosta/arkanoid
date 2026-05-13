@@ -26,7 +26,7 @@ class Sphere
     }
 
     const Vector &
-    center() const
+    anchor() const
     {
         return center_;
     }
@@ -35,6 +35,12 @@ class Sphere
     radius() const
     {
         return radius_;
+    }
+
+    void
+    displace(const Vector &delta)
+    {
+        center_ += delta;
     }
 
     bool

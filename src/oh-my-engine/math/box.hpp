@@ -37,6 +37,19 @@ class Box
         return max_;
     }
 
+    Vector
+    anchor() const
+    {
+        return (min_ + max_) / Component(2);
+    }
+
+    void
+    displace(const Vector &delta)
+    {
+        min_ += delta;
+        max_ += delta;
+    }
+
     bool
     contains(const Vector &point) const
     {

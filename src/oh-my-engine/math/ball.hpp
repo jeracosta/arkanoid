@@ -25,7 +25,7 @@ class Ball
     }
 
     const Vector &
-    center() const
+    anchor() const
     {
         return center_;
     }
@@ -34,6 +34,12 @@ class Ball
     radius() const
     {
         return radius_;
+    }
+
+    void
+    displace(const Vector &delta)
+    {
+        center_ += delta;
     }
 
     bool

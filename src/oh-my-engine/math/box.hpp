@@ -10,6 +10,7 @@ class Box
   public:
     using Vector        = Vector<Dimension, Component>;
     using ComponentType = Component;
+    using Face          = Box<Dimension - 1, Component>;
 
     static constexpr std::size_t
     dimension()
@@ -97,6 +98,8 @@ class Box
 
     // clang-format on
 
+    // Lazy range over the corners of the box.
+    // Order: (min, min, ...), (max, min, ...), (min, max, ...), (max, max, ...), ...
     auto
     corners() const
     {
@@ -117,7 +120,35 @@ class Box
         return indices | std::views::transform(make_corner);
     }
 
-        return result;
+    // Lazy range over the faces of the box.
+    // Order: min-x, max-x, min-y, max-y, mix-z, max-z, ...
+    auto
+    faces() const
+    {
+        auto count = Dimension * 2;
+
+        auto indices = std::views::iota(std::size_t{ 0 }, count);
+
+        auto make_face = [this](std::size_t face_index)
+        {
+            const std::size_t axis   = face_index / 2;
+            const bool        is_max = face_index % 2;
+
+            Face face = *this;
+
+            if (is_max)
+            {
+                face.min_[axis] = max_[axis];
+            }
+            else
+            {
+                face.max_[axis] = min_[axis];
+            }
+
+            return face;
+        };
+
+        return indices | std::views::transform(make_face);
     }
 
   private:

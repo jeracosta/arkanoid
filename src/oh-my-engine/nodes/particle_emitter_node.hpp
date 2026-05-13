@@ -1,8 +1,11 @@
 #pragma once
 
 #include <functional>
+#include <random>
+#include <variant>
 
 #include "oh-my-engine/interpolation.hpp"
+#include "oh-my-engine/math/region.hpp"
 #include "oh-my-engine/math/vector.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
 
@@ -10,30 +13,15 @@ namespace ome {
 
 struct ParticleBlueprint
 {
-    struct RandomVec3f
-    {
-        Vec3f mean;
-        Vec3f max_deviation = { 0.0f };
-
-        Vec3f
-        sample() const
-        {
-            static thread_local std::mt19937 rng{ std::random_device{}() };
-
-            auto min = mean - max_deviation;
-            auto max = mean + max_deviation;
-
-            return random_vector(min, max, rng);
-        }
-    };
+    using ValueOrRegion = std::variant<Vec3f, math::AnyRegion<3, float>>;
 
     std::function<Vec4f(float)> color;
 
     std::function<float(float)> scale;
 
-    RandomVec3f origin;
-    RandomVec3f initial_velocity;
-    RandomVec3f acceleration;
+    ValueOrRegion origin           = Vec3f{};
+    ValueOrRegion initial_velocity = Vec3f{};
+    ValueOrRegion acceleration     = Vec3f{};
 
     std::function<float(float)> angular_speed;
     float                       time_to_live;
@@ -61,6 +49,27 @@ class ParticleServer
 
     std::array<Particle, TCapacity> particles_;
     std::size_t                     particle_count_ = 0;
+    std::mt19937                    rng_{ std::random_device{}() };
+
+    static Vec3f
+    sample_(const ParticleBlueprint::ValueOrRegion &vor, std::mt19937 &rng)
+    {
+        auto visitor = [&](const auto &vector) -> Vec3f
+        {
+            using T = std::decay_t<decltype(vector)>;
+
+            if constexpr (std::is_same_v<T, Vec3f>)
+            {
+                return vector;
+            }
+            else
+            {
+                return math::sample_uniform(vector, rng);
+            }
+        };
+
+        return std::visit(visitor, vor);
+    }
 
     void
     kill_(std::size_t i)
@@ -90,9 +99,9 @@ class ParticleServer
 
         float t = 0.0f;
 
-        particles_[i] = Particle{ .position      = blueprint_.origin.sample(),
-                                  .velocity      = blueprint_.initial_velocity.sample(),
-                                  .acceleration  = blueprint_.acceleration.sample(),
+        particles_[i] = Particle{ .position      = sample_(blueprint_.origin, rng_),
+                                  .velocity      = sample_(blueprint_.initial_velocity, rng_),
+                                  .acceleration  = sample_(blueprint_.acceleration, rng_),
                                   .angle         = 0.0f,
                                   .age           = 0.0f,
                                   .time_to_live  = blueprint_.time_to_live,
@@ -193,6 +202,28 @@ class ParticleEmitterNode : public TransformNode
     float                emission_accumulator_ = 0;
     float                emission_period_;
     float                use_unscaled_time_;
+    Vec3f                last_emission_position_{};
+
+    void
+    recenter_origin_(Vec3f pos)
+    {
+        auto &origin = particles_.blueprint()->origin;
+
+        std::visit(
+            [&](auto &v)
+        {
+            using T = std::decay_t<decltype(v)>;
+            if constexpr (std::is_same_v<T, Vec3f>)
+            {
+                v = pos;
+            }
+            else
+            {
+                std::visit([&](auto &region) { region.displace(pos - region.anchor()); }, v);
+            }
+        },
+            origin);
+    }
 
   public:
     struct Configuration
@@ -217,7 +248,7 @@ class ParticleEmitterNode : public TransformNode
         const float delta_time
             = use_unscaled_time_ ? game()->time.unscaled.delta() : game()->time.delta();
 
-        const Vec3f last_position    = blueprint()->origin.mean;
+        const Vec3f last_position    = last_emission_position_;
         const Vec3f current_position = world_transform().position;
 
         emission_accumulator_ += delta_time;
@@ -232,8 +263,9 @@ class ParticleEmitterNode : public TransformNode
         {
             particles_.update(spawn_lag - elapsed);
 
-            float tick_progress      = std::clamp(spawn_lag / delta_time, 0.0f, 1.0f);
-            blueprint()->origin.mean = lerp(last_position, current_position, tick_progress);
+            float tick_progress     = std::clamp(spawn_lag / delta_time, 0.0f, 1.0f);
+            last_emission_position_ = lerp(last_position, current_position, tick_progress);
+            recenter_origin_(last_emission_position_);
             particles_.emit();
 
             elapsed = spawn_lag;
@@ -247,7 +279,8 @@ class ParticleEmitterNode : public TransformNode
         game()->schedule([this, up = camera.up(), right = camera.right()]
         { particles_.render(up, right); });
 
-        blueprint()->origin.mean = current_position;
+        last_emission_position_ = current_position;
+        recenter_origin_(current_position);
         emission_accumulator_ -= static_cast<float>(emission_count) * emission_period_;
     }
 

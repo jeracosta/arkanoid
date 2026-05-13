@@ -24,8 +24,8 @@ class CometNode : public ome::TransformNode
             .color
             = ome::InterpolationCurve<ome::Vec4f>{ { 1.0, 1.0, 1.0, 1.0 }, { 0.0, 0.0, 1.0, 0.0 } },
             .scale            = ome::InterpolationCurve<float>{ 0.3f, 0.05f },
-            .origin           = { .mean = { 0.0, 0.2, 0.0 } },
-            .initial_velocity = { .mean = { 0, 0, 0 }, .max_deviation = { 0.5, 0.5, 0.5 } },
+            .origin           = ome::Vec3f{ 0.0, 0.2, 0.0 },
+            .initial_velocity = ome::math::Box<3, float>({ -0.5, -0.5, -0.5 }, { 0.5, 0.5, 0.5 }),
             .acceleration     = {},
             .angular_speed    = ome::InterpolationCurve<float>{ 0, 0 },
             .time_to_live     = 1.0,
@@ -63,9 +63,7 @@ class CometNode : public ome::TransformNode
 
         set_local_transform({ .position = position });
 
-        auto &acceleration = particles_->blueprint()->acceleration.mean;
-
-        acceleration = movement_.orientation * -tangent * 1.5f;
+        particles_->blueprint()->acceleration = movement_.orientation * -tangent * 1.5f;
     }
 };
 

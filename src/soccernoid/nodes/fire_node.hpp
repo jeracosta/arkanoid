@@ -33,10 +33,9 @@ class FireNode : public ome::TransformNode
                 { 0.70f, 0.20f },
                 { 1.00f, 0.00f },
             })),
-            .origin = { .mean = { 0.0f, 0.0f, 0.0f }, .max_deviation = { 0.3f, 0.0f, 0.3f } },
-            .initial_velocity
-            = { .mean = { 0.0f, 2.0f, 0.0f }, .max_deviation = { 0.5f, 0.8f, 0.5f } },
-            .acceleration  = {},
+            .origin           = ome::math::Box<3, float>({-0.3f, 0.0f, -0.3f}, {0.3f, 0.0f, 0.3f}),
+            .initial_velocity = ome::math::Box<3, float>({-0.5f, 1.2f, -0.5f}, {0.5f, 2.8f, 0.5f}),
+            .acceleration     = {},
             .angular_speed = ome::InterpolationCurve<float>{ 5.0f, 0.0f },
             .time_to_live  = 2.0f,
         };

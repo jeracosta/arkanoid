@@ -192,30 +192,30 @@ class ParticleEmitterNode : public TransformNode
     ParticleServer<1000> particles_;
     float                emission_accumulator_ = 0;
     float                emission_period_;
+    float                use_unscaled_time_;
 
   public:
     struct Configuration
     {
         ParticleBlueprint particle_blueprint;
         float             emissions_per_time_unit_;
+        bool              use_unscaled_time = false;
     };
 
     ParticleEmitterNode(Configuration config)
         : particles_(config.particle_blueprint),
           emission_period_(config.emissions_per_time_unit_ > 0.0f
                                ? 1.0f / config.emissions_per_time_unit_
-                               : std::numeric_limits<float>::infinity())
+                               : std::numeric_limits<float>::infinity()),
+          use_unscaled_time_(config.use_unscaled_time)
     {
     }
 
     void
     on_tick_() override
     {
-        const float delta_time = Node::game()->time.unscaled.delta();
-        if (delta_time <= 0.0f)
-        {
-            return;
-        }
+        const float delta_time
+            = use_unscaled_time_ ? game()->time.unscaled.delta() : game()->time.delta();
 
         const Vec3f last_position    = blueprint()->origin.mean;
         const Vec3f current_position = world_transform().position;

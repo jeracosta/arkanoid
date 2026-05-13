@@ -22,7 +22,9 @@ class CometNode : public ome::TransformNode
       private:
         static inline const ome::ParticleBlueprint blueprint_ = {
             .color
-            = ome::InterpolationCurve<ome::Vec4f>{ { 1.0, 1.0, 1.0, 1.0 }, { 0.0, 0.0, 1.0, 0.0 } },
+            = ome::InterpolationCurve<ome::Color>{
+                ome::Color::rgba(1.0f, 1.0f, 1.0f, 1.0f),
+                ome::Color::rgba(0.0f, 0.0f, 1.0f, 0.0f) },
             .scale            = ome::InterpolationCurve<float>{ 0.3f, 0.05f },
             .origin           = ome::Vec3f{ 0.0, 0.2, 0.0 },
             .initial_velocity = ome::math::Box<3, float>({ -0.5, -0.5, -0.5 }, { 0.5, 0.5, 0.5 }),

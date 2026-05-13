@@ -4,6 +4,7 @@
 #include <random>
 #include <variant>
 
+#include "oh-my-engine/color.hpp"
 #include "oh-my-engine/interpolation.hpp"
 #include "oh-my-engine/math/region.hpp"
 #include "oh-my-engine/math/vector.hpp"
@@ -15,17 +16,18 @@ struct ParticleBlueprint
 {
     using VectorOrRegion        = std::variant<Vec3f, math::AnyRegion<3, float>>;
     using FloatOrVectorOrRegion = std::variant<float, Vec3f, math::AnyRegion<3, float>>;
+    using ColorOrGradient       = std::variant<Color, std::function<Color(float)>>;
 
-    std::function<Vec4f(float)> color;
+    ColorOrGradient color = Color::white();
 
-    std::function<float(float)> scale;
+    std::function<float(float)> scale = [](float) { return 1.0f; };
 
     VectorOrRegion        origin           = Vec3f{};
     VectorOrRegion        initial_velocity = Vec3f{};
     FloatOrVectorOrRegion acceleration     = Vec3f{};
 
-    std::function<float(float)> angular_speed;
-    float                       time_to_live;
+    std::function<float(float)> angular_speed = [](float) { return 0.0f; };
+    float                       time_to_live  = 1.0f;
 };
 
 template <std::size_t TCapacity>
@@ -43,7 +45,7 @@ class ParticleServer
         float age;
         float time_to_live;
 
-        Vec4f color;
+        Color color;
         float scale;
         float angular_speed;
     };
@@ -103,6 +105,26 @@ class ParticleServer
         return std::visit(visitor, accel);
     }
 
+    static Color
+    resolve_color_(const ParticleBlueprint::ColorOrGradient &color, float t)
+    {
+        auto visitor = [&](const auto &vector) -> Color
+        {
+            using T = std::decay_t<decltype(vector)>;
+
+            if constexpr (std::is_same_v<T, Color>)
+            {
+                return vector;
+            }
+            else
+            {
+                return vector(t);
+            }
+        };
+
+        return std::visit(visitor, color);
+    }
+
     void
     kill_(std::size_t i)
     {
@@ -140,7 +162,7 @@ class ParticleServer
                                   .angle         = 0.0f,
                                   .age           = 0.0f,
                                   .time_to_live  = blueprint_.time_to_live,
-                                  .color         = blueprint_.color(t),
+                                  .color         = resolve_color_(blueprint_.color, 0.0f),
                                   .scale         = blueprint_.scale(t),
                                   .angular_speed = blueprint_.angular_speed(t) };
     }
@@ -175,7 +197,7 @@ class ParticleServer
 
             p.angle += blueprint_.angular_speed(t) * dt;
 
-            p.color = blueprint_.color(t);
+            p.color = resolve_color_(blueprint_.color, t);
 
             p.scale = blueprint_.scale(t);
 
@@ -197,7 +219,7 @@ class ParticleServer
             auto        half_u = camera_right * (p.scale * 0.5f);
             auto        half_v = camera_up * (p.scale * 0.5f);
 
-            glColor4f(p.color[0], p.color[1], p.color[2], p.color[3]);
+            glColor(p.color);
 
             auto vertex = p.position - half_u - half_v;
             glVertex3f(vertex[0], vertex[1], vertex[2]);

@@ -26,7 +26,7 @@ class Cone
          Component                half_angle,
          std::optional<Component> height = std::nullopt)
         : apex_(std::move(apex)),
-          direction_(math::normal(std::move(direction))),
+          direction_(math::normalized(std::move(direction))),
           half_angle_(half_angle),
           height_(height)
     {
@@ -80,7 +80,7 @@ class Cone
                 return true;
             }
 
-            return dot(normal(relative), direction_) >= std::cos(half_angle_);
+            return dot(normalized(relative), direction_) >= std::cos(half_angle_);
         }
 
         auto t          = dot(relative, direction_);

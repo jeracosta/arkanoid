@@ -187,7 +187,7 @@ class CameraControlNode : public ome::Node
             return;
         }
 
-        auto direction = camera_->orientation() * normal(raw_direction);
+        auto direction = camera_->orientation() * normalized(raw_direction);
 
         auto is_sprinting = game()->input.is_pressed(Action::CameraSprint);
 

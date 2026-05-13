@@ -79,14 +79,14 @@ class PlayerNode : public ome::KinematicNode
             return;
         }
 
-        auto direction = normal(raw_direction);
+        auto direction = normalized(raw_direction);
 
         auto velocity
             = this->velocity() + direction * config_.movement_force * game()->time.delta();
 
         if (norm(velocity) > config_.max_speed)
         {
-            velocity = normal(velocity) * config_.max_speed;
+            velocity = normalized(velocity) * config_.max_speed;
         }
 
         set_velocity(velocity);

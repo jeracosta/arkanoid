@@ -397,15 +397,23 @@ norm(const is_vector auto &vector)
 // TODO: Consider renaming to "normalize" for consistency with common terminology.
 template <class Vector>
 Vector
-normal(const Vector &vector)
+normalized(const Vector &vector)
 {
     auto length = norm(vector);
+
     if (length == 0)
     {
         throw std::runtime_error("Cannot normalize a zero-length vector");
     }
 
     return vector / length;
+}
+
+template <class Vector>
+Vector
+is_normalized(const Vector &vector)
+{
+    return norm(vector) == 1;
 }
 
 template <typename Range>
@@ -459,7 +467,7 @@ orthonormalize(const Vector &vector, const Vector &dir)
         return orthogonal;
     }
 
-    return normal(orthogonal);
+    return normalized(orthogonal);
 }
 
 // Muller method: N independent standard normals → normalise.
@@ -472,12 +480,18 @@ random_unit_vector(Rng &rng)
     auto normal = std::normal_distribution<typename Vector::Component>{};
 
     Vector vector;
-    for (auto &component : vector)
+    for (;;)
     {
-        component = normal(rng);
-    }
+        for (auto &component : vector)
+        {
+            component = normal(rng);
+        }
 
-    return math::normal(vector);
+        if (norm(vector) > 0)
+        {
+            return math::normalized(vector);
+        }
+    }
 }
 
 template <is_vector Vector>

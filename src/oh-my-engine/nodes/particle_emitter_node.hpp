@@ -244,20 +244,20 @@ class ParticleEmitterNode : public TransformNode
     {
         auto &origin = particles_.blueprint()->origin;
 
-        std::visit(
-            [&](auto &v)
+        auto visitor = [&](auto &vector)
         {
-            using T = std::decay_t<decltype(v)>;
+            using T = std::decay_t<decltype(vector)>;
             if constexpr (std::is_same_v<T, Vec3f>)
             {
-                v = pos;
+                vector = pos;
             }
             else
             {
-                std::visit([&](auto &region) { region.displace(pos - region.anchor()); }, v);
+                std::visit([&](auto &region) { region.displace(pos - region.anchor()); }, vector);
             }
-        },
-            origin);
+        };
+
+        std::visit(visitor, origin);
     }
 
   public:

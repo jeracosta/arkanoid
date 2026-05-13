@@ -462,6 +462,24 @@ orthonormalize(const Vector &vector, const Vector &dir)
     return normal(orthogonal);
 }
 
+// Muller method: N independent standard normals → normalise.
+// Produces a uniform distribution on the (N-1)-sphere without rejection.
+// O(N), works for any dimension.
+template <is_vector Vector, class Rng>
+Vector
+random_unit_vector(Rng &rng)
+{
+    auto normal = std::normal_distribution<typename Vector::Component>{};
+
+    Vector vector;
+    for (auto &component : vector)
+    {
+        component = normal(rng);
+    }
+
+    return math::normal(vector);
+}
+
 template <is_vector Vector>
 constexpr Vector
 clamp(const Vector &value, const Vector &min, const Vector &max)

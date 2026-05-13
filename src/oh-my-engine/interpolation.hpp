@@ -176,6 +176,13 @@ class InterpolationCurve : public Curve<T>
 // #region Spline curve
 
 template <typename T>
+struct SplineKey
+{
+    float position;
+    T     value;
+};
+
+template <typename T>
 struct SplineKnot
 {
     float position;
@@ -187,6 +194,22 @@ template <typename T>
 class SplineCurve : public Curve<T>
 {
     std::vector<SplineKnot<T>> knots_;
+
+    static T
+    segment_(const SplineKnot<T> &a, const SplineKnot<T> &b, float t)
+    {
+        float dt = b.position - a.position;
+        float s  = (t - a.position) / dt;
+        float s2 = s * s;
+        float s3 = s2 * s;
+
+        float h00 = 2.0f * s3 - 3.0f * s2 + 1.0f;
+        float h10 = s3 - 2.0f * s2 + s;
+        float h01 = -2.0f * s3 + 3.0f * s2;
+        float h11 = s3 - s2;
+
+        return a.value * h00 + a.tangent * (dt * h10) + b.value * h01 + b.tangent * (dt * h11);
+    }
 
   public:
     SplineCurve() = default;
@@ -208,25 +231,42 @@ class SplineCurve : public Curve<T>
         if (t >= knots_.back().position)
             return knots_.back().value;
 
-        auto it = std::upper_bound(
-            knots_.begin(), knots_.end(), t,
-            [](float t, const SplineKnot<T> &k) { return t < k.position; });
+        auto it = std::ranges::upper_bound(knots_, t, {}, &SplineKnot<T>::position);
 
-        auto &k1 = *(it - 1);
-        auto &k2 = *it;
+        return segment_(*(it - 1), *it, t);
+    }
 
-        float dt = k2.position - k1.position;
-        float s  = (t - k1.position) / dt;
+    static std::vector<SplineKnot<T>>
+    catmull_rom(std::initializer_list<SplineKey<T>> keys)
+    {
+        auto n      = keys.size();
+        auto *begin = keys.begin();
+        auto knots  = std::vector<SplineKnot<T>>();
+        knots.reserve(n);
 
-        float s2 = s * s;
-        float s3 = s2 * s;
+        auto tangent = [&](std::size_t i) -> T
+        {
+            if (n == 1)
+                return T{};
 
-        float h00 = 2.0f * s3 - 3.0f * s2 + 1.0f;
-        float h10 = s3 - 2.0f * s2 + s;
-        float h01 = -2.0f * s3 + 3.0f * s2;
-        float h11 = s3 - s2;
+            if (i == 0)
+                return (begin[1].value - begin[0].value) / (begin[1].position - begin[0].position);
 
-        return k1.value * h00 + k1.tangent * (dt * h10) + k2.value * h01 + k2.tangent * (dt * h11);
+            if (i == n - 1)
+                return (begin[i].value - begin[i - 1].value)
+                       / (begin[i].position - begin[i - 1].position);
+
+            return (begin[i + 1].value - begin[i - 1].value)
+                   / (begin[i + 1].position - begin[i - 1].position);
+        };
+
+        for (std::size_t i = 0; i < n; ++i)
+        {
+            knots.push_back({ .position = begin[i].position,
+                              .value    = begin[i].value,
+                              .tangent  = tangent(i) });
+        }
+        return knots;
     }
 };
 

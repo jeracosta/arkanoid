@@ -23,7 +23,7 @@ struct ParticleBlueprint
             auto min = mean - max_deviation;
             auto max = mean + max_deviation;
 
-            return make_random_vector(min, max, rng);
+            return random_vector(min, max, rng);
         }
     };
 

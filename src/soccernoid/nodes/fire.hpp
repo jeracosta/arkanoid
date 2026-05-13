@@ -47,7 +47,7 @@ class FireNode : public ome::TransformNode
 
         static inline const ome::ParticleEmitterNode::Settings settings_ = {
             .particle_blueprint = scheme_,
-            .emission_rate_     = 300,
+            .trigger_rate       = 300,
         };
 
       public:

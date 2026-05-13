@@ -25,8 +25,9 @@ class CometNode : public ome::TransformNode
 
             .initial_position = ome::Vec3f{ 0.0f, 0.2f, 0.0f },
 
-            .initial_velocity
-            = { ome::math::Box<3>({ -0.5f, -0.5f, -0.5f }, { 0.5f, 0.5f, 0.5f }), rng },
+            .initial_velocity = { ome::math::Box<3>(ome::Vec3f{ -0.5f, -0.5f, -0.5f },
+                                                    ome::Vec3f{ 0.5f, 0.5f, 0.5f }),
+                                  rng },
 
             .time_to_live = 1.0f,
 
@@ -38,7 +39,7 @@ class CometNode : public ome::TransformNode
 
         static inline const ome::ParticleEmitterNode::Settings settings_ = {
             .particle_blueprint = scheme_,
-            .emission_rate_     = 200,
+            .trigger_rate       = 200,
         };
 
       public:

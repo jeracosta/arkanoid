@@ -23,17 +23,7 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
 
     static constexpr ome::Vec3f spawn_position = { 0.0f, 7.0f, -3.0f };
 
-    ome::HitboxComponent hitbox_{
-        .min = { -0.10f, -0.10f, -0.10f },
-        .max = { 0.10f, 0.10f, 0.10f },
-    };
-
-    ome::HitboxComponent
-    hitbox_world_() const
-    {
-        auto transform = world_transform();
-        return { .min = transform.to_world(hitbox_.min), .max = transform.to_world(hitbox_.max) };
-    }
+    ome::HitboxComponent hitbox_{ { -0.10f, -0.10f, -0.10f }, { 0.10f, 0.10f, 0.10f } };
 
     class GlowParticlesNode_ : public ome::ParticleEmitterNode
     {

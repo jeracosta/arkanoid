@@ -8,7 +8,7 @@ template <std::size_t Dimension, typename Component = float>
 class Box
 {
   public:
-    using Vector = Vector<Dimension, Component>;
+    using Vector        = Vector<Dimension, Component>;
     using ComponentType = Component;
 
     static constexpr std::size_t
@@ -79,6 +79,41 @@ class Box
             std::uniform_real_distribution<Component> dist(min_[i], max_[i]);
             result[i] = dist(rng);
         }
+        return result;
+    }
+
+    // clang-format off
+
+    friend bool
+    overlaps(const Box &a, const Box &b)
+    {
+        constexpr auto compare = [](auto &a, auto &b)
+        {
+            return component_wise(std::less{}, a.min, b.max);
+        };
+
+        return compare(a, b) && compare(b, a);
+    }
+
+    // clang-format on
+
+    std::array<Vector, (std::size_t{ 1 } << Dimension)>
+    corners() const
+    {
+        std::array<Vector, (std::size_t{ 1 } << Dimension)> result{};
+
+        for (std::size_t i = 0; i < result.size(); ++i)
+        {
+            Vector corner{};
+
+            for (std::size_t j = 0; j < Dimension; ++j)
+            {
+                corner[j] = (i & (std::size_t{ 1 } << j)) ? max_[j] : min_[j];
+            }
+
+            result[i] = corner;
+        }
+
         return result;
     }
 

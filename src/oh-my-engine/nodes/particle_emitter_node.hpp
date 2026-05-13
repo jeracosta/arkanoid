@@ -140,23 +140,32 @@ class ParticleServer
     }
 
     void
-    render() const
+    render(ome::Vec3f camera_up, ome::Vec3f camera_right) const
     {
-
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE); // TODO: Make configurable
         glDepthMask(GL_FALSE);
 
-        static constexpr float scale_fallback = 3.0f;
-        glPointSize(scale_fallback);
-
-        glBegin(GL_POINTS);
+        glBegin(GL_QUADS);
         for (std::size_t i = 0; i < particle_count_; ++i)
         {
-            const auto &p = particles_[i];
-            glPointSize(p.scale); // FIXME: It does nothing between glBegin() and glEnd().
+            const auto &p      = particles_[i];
+            auto        half_u = camera_right * (p.scale * 0.5f);
+            auto        half_v = camera_up * (p.scale * 0.5f);
+
             glColor4f(p.color[0], p.color[1], p.color[2], p.color[3]);
-            glVertex3f(p.position[0], p.position[1], p.position[2]);
+
+            auto vertex = p.position - half_u - half_v;
+            glVertex3f(vertex[0], vertex[1], vertex[2]);
+
+            vertex = p.position + half_u - half_v;
+            glVertex3f(vertex[0], vertex[1], vertex[2]);
+
+            vertex = p.position + half_u + half_v;
+            glVertex3f(vertex[0], vertex[1], vertex[2]);
+
+            vertex = p.position - half_u + half_v;
+            glVertex3f(vertex[0], vertex[1], vertex[2]);
         }
         glEnd();
 
@@ -233,9 +242,9 @@ class ParticleEmitterNode : public TransformNode
 
         particles_.update(delta_time - elapsed);
 
-        // We schedule the rendering so it happens after other opaque nodes have rendered.
-        // TODO: We may need a proper rendering system. This is kinda hacky.
-        game()->schedule([this] { particles_.render(); });
+        auto &camera = Node::game()->camera;
+
+        game()->schedule([this, up = camera.up(), right = camera.right()] { particles_.render(up, right); });
 
         blueprint()->origin.mean = current_position;
         emission_accumulator_ -= static_cast<float>(emission_count) * emission_period_;

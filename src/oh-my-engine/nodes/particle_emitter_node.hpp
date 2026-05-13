@@ -13,15 +13,16 @@ namespace ome {
 
 struct ParticleBlueprint
 {
-    using ValueOrRegion = std::variant<Vec3f, math::AnyRegion<3, float>>;
+    using VectorOrRegion        = std::variant<Vec3f, math::AnyRegion<3, float>>;
+    using FloatOrVectorOrRegion = std::variant<float, Vec3f, math::AnyRegion<3, float>>;
 
     std::function<Vec4f(float)> color;
 
     std::function<float(float)> scale;
 
-    ValueOrRegion origin           = Vec3f{};
-    ValueOrRegion initial_velocity = Vec3f{};
-    ValueOrRegion acceleration     = Vec3f{};
+    VectorOrRegion        origin           = Vec3f{};
+    VectorOrRegion        initial_velocity = Vec3f{};
+    FloatOrVectorOrRegion acceleration     = Vec3f{};
 
     std::function<float(float)> angular_speed;
     float                       time_to_live;
@@ -52,7 +53,7 @@ class ParticleServer
     std::mt19937                    rng_{ std::random_device{}() };
 
     static Vec3f
-    sample_(const ParticleBlueprint::ValueOrRegion &vor, std::mt19937 &rng)
+    sample_(const ParticleBlueprint::VectorOrRegion &vor, std::mt19937 &rng)
     {
         auto visitor = [&](const auto &vector) -> Vec3f
         {
@@ -69,6 +70,37 @@ class ParticleServer
         };
 
         return std::visit(visitor, vor);
+    }
+
+    static Vec3f
+    sample_acceleration_(const ParticleBlueprint::FloatOrVectorOrRegion &accel,
+                         const Vec3f                                    &initial_velocity,
+                         std::mt19937                                   &rng)
+    {
+        auto visitor = [&](const auto &v) -> Vec3f
+        {
+            using T = std::decay_t<decltype(v)>;
+
+            if constexpr (std::is_same_v<T, float>)
+            {
+                auto speed = norm(initial_velocity);
+                if (speed > 0.0f)
+                {
+                    return v * (initial_velocity / speed);
+                }
+                return Vec3f{};
+            }
+            else if constexpr (std::is_same_v<T, Vec3f>)
+            {
+                return v;
+            }
+            else
+            {
+                return math::sample_uniform(v, rng);
+            }
+        };
+
+        return std::visit(visitor, accel);
     }
 
     void
@@ -99,9 +131,12 @@ class ParticleServer
 
         float t = 0.0f;
 
-        particles_[i] = Particle{ .position      = sample_(blueprint_.origin, rng_),
-                                  .velocity      = sample_(blueprint_.initial_velocity, rng_),
-                                  .acceleration  = sample_(blueprint_.acceleration, rng_),
+        auto velocity = sample_(blueprint_.initial_velocity, rng_);
+
+        particles_[i] = Particle{ .position = sample_(blueprint_.origin, rng_),
+                                  .velocity = velocity,
+                                  .acceleration
+                                  = sample_acceleration_(blueprint_.acceleration, velocity, rng_),
                                   .angle         = 0.0f,
                                   .age           = 0.0f,
                                   .time_to_live  = blueprint_.time_to_live,

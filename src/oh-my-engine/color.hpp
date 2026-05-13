@@ -83,7 +83,7 @@ class Color
     static Color
     rgb(Vec3f v)
     {
-        return rgba(Vec4f{v[0], v[1], v[2], 1.0f});
+        return rgba(Vec4f{ v[0], v[1], v[2], 1.0f });
     }
 
     static Color
@@ -137,31 +137,31 @@ class Color
     // #region Arithmetic operators
 
     friend Color
-    operator+(Color lhs, Color rhs)
+    operator+(const Color &lhs, const Color &rhs)
     {
         return Color::rgba(lhs.rgba_f() + rhs.rgba_f());
     }
 
     friend Color
-    operator-(Color lhs, Color rhs)
+    operator-(const Color &lhs, const Color &rhs)
     {
         return Color::rgba(lhs.rgba_f() - rhs.rgba_f());
     }
 
     friend Color
-    operator*(Color lhs, float rhs)
+    operator*(const Color &lhs, float rhs)
     {
         return Color::rgba(lhs.rgba_f() * rhs);
     }
 
     friend Color
-    operator*(float lhs, Color rhs)
+    operator*(float lhs, const Color &rhs)
     {
-        return rhs * lhs;
+        return Color::rgba(rhs.rgba_f() * lhs);
     }
 
     friend Color
-    operator/(Color lhs, float rhs)
+    operator/(const Color &lhs, float rhs)
     {
         return Color::rgba(lhs.rgba_f() / rhs);
     }

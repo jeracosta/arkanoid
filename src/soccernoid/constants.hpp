@@ -21,6 +21,7 @@ struct ColorPalette
 {
     ome::Color fog;
     ome::Color ball;
+    ome::Color projectile;
     ome::Color grass;
     ome::Color dirt;
     ome::Color goal;
@@ -29,13 +30,14 @@ struct ColorPalette
 };
 
 static const inline ColorPalette colors = {
-    .fog     = ome::Color::rgb(0, 0, 0),
-    .ball    = ome::Color::rgb(210, 50, 255),
-    .grass   = ome::Color::rgb(60, 175, 45),
-    .dirt    = ome::Color::rgb(105, 65, 35),
-    .goal    = ome::Color::rgb(230, 242, 217),
-    .red_kit = ome::Color::rgb(200, 30, 30),
-    .skin    = ome::Color::rgb(230, 190, 150),
+    .fog        = ome::Color::rgb(0, 0, 0),
+    .ball       = ome::Color::rgb(210, 50, 255),
+    .projectile = ome::Color::rgb(0, 255, 0),
+    .grass      = ome::Color::rgb(60, 175, 45),
+    .dirt       = ome::Color::rgb(105, 65, 35),
+    .goal       = ome::Color::rgb(230, 242, 217),
+    .red_kit    = ome::Color::rgb(200, 30, 30),
+    .skin       = ome::Color::rgb(230, 190, 150),
 };
 
 #ifndef SOCCERNOID_ASSETS_DIRECTORY_RELATIVE_PATH
@@ -151,12 +153,14 @@ struct TexturePalette
         SkyboxFaces space2;
     };
 
-    Item dirt;
+    Item          dirt;
+    Item          floor;
     SkyboxPalette skybox;
 };
 
 static const inline TexturePalette textures = {
     .dirt = { "dirt.png" },
+    .floor = { "floor.jpg" },
     .skybox = { //TODO: Generate faces from cubemap
         .ablaze = TexturePalette::SkyboxFaces::from_directory("skybox/ablaze"),
         .blink  = TexturePalette::SkyboxFaces::from_directory("skybox/blink"),
@@ -169,4 +173,4 @@ static const inline TexturePalette textures = {
     },
 };
 
-} // namespace soccernoid
+}; // namespace soccernoid

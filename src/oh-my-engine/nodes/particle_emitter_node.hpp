@@ -6,6 +6,7 @@
 #include <functional>
 #include <limits>
 #include <random>
+#include <type_traits>
 
 #include "oh-my-engine/color.hpp"
 #include "oh-my-engine/interpolation.hpp"
@@ -41,9 +42,14 @@ struct ParticleData
 
 // #region Particle scheme
 
+struct ParticleUpdateContext
+{
+    const ParticleData &particle;
+    const float        &delta_time;
+};
+
 struct ParticleScheme
 {
-
     // #region Particle scheme item
 
     template <class Sig>
@@ -59,8 +65,9 @@ struct ParticleScheme
         template <class G>
         static constexpr bool invocable_as_ = std::is_constructible_v<Function_, G>;
 
+        // Receives particle data and delta time, returns a value to update the particle with.
         static constexpr bool updates_particle_
-            = (arity_ == 1) && (std::same_as<std::remove_cvref_t<Args>, ParticleData> && ...);
+            = std::is_invocable_r_v<Return, Function_, const ParticleUpdateContext &>;
 
       public:
         Item() = default;
@@ -105,8 +112,9 @@ struct ParticleScheme
             requires updates_particle_
                      && std::derived_from<std::remove_cvref_t<TCurve>, Curve<Return>>
         Item(TCurve &&curve)
-            : fn_([curve = std::forward<TCurve>(curve)](const ParticleData &particle) -> Return
-        { return curve(particle.progress()); })
+            : fn_([curve
+                   = std::forward<TCurve>(curve)](const ParticleUpdateContext &context) -> Return
+        { return curve(context.particle.progress()); })
         {
         }
 
@@ -136,9 +144,12 @@ struct ParticleScheme
     Item<float()> time_to_live     = [] { return 1; };
 
     // Values computed every frame
-    Item<Vec3f(const ParticleData &)> acceleration = [](auto &) { return Vec3f{ 0 }; };
-    Item<Color(const ParticleData &)> color        = [](auto &) { return Color::white(); };
-    Item<float(const ParticleData &)> scale        = [](auto &) { return 1; };
+    Item<Vec3f(const ParticleUpdateContext &)> acceleration = [](auto &) { return Vec3f{ 0 }; };
+    Item<Color(const ParticleUpdateContext &)> color        = [](auto &) { return Color::white(); };
+    Item<float(const ParticleUpdateContext &)> scale        = [](auto &) { return 1; };
+
+    // [0, 1] multiplier for displacement towards emitter position
+    float emitter_attraction = 0;
 };
 
 // #endregion
@@ -187,14 +198,17 @@ class ParticleServer
 
         auto i = live_particle_count_++;
 
-        ParticleData particle{};
+        auto particle = ParticleData{};
+
+        auto context = ParticleUpdateContext{ .particle = particle, .delta_time = 0.0f };
+
         particle.age           = 0.0f;
         particle.time_to_live  = scheme_.time_to_live();
         particle.position      = scheme_.initial_position() + emission_origin_;
         particle.velocity      = scheme_.initial_velocity();
-        particle.acceleration  = scheme_.acceleration(particle);
-        particle.color         = scheme_.color(particle);
-        particle.scale         = scheme_.scale(particle);
+        particle.acceleration  = scheme_.acceleration(context);
+        particle.color         = scheme_.color(context);
+        particle.scale         = scheme_.scale(context);
         particle.angle         = 0.0f;
         particle.angular_speed = scheme_.angular_speed();
 
@@ -219,25 +233,31 @@ class ParticleServer
     void
     update(const Update &update)
     {
-        const Vec3f origin_delta = update.new_origin - emission_origin_;
-
         for (std::size_t i = 0; i < live_particle_count_;)
         {
-            auto &p = particles_[i];
+            auto delta_origin = update.new_origin - emission_origin_;
 
-            p.age += update.delta_time;
-            if (p.age >= p.time_to_live)
+            auto &particle = particles_[i];
+
+            particle.age += update.delta_time;
+            if (particle.age >= particle.time_to_live)
             {
                 kill_(i);
                 continue;
             }
 
-            p.acceleration = scheme_.acceleration(p);
-            p.velocity += p.acceleration * update.delta_time;
-            p.position += origin_delta + p.velocity * update.delta_time;
-            p.angle += p.angular_speed * update.delta_time;
-            p.color = scheme_.color(p);
-            p.scale = scheme_.scale(p);
+            auto context = ParticleUpdateContext{
+                .particle   = particle,
+                .delta_time = update.delta_time,
+            };
+
+            particle.acceleration = scheme_.acceleration(context);
+            particle.velocity += particle.acceleration * update.delta_time;
+            particle.position += particle.velocity * update.delta_time;
+            particle.position += delta_origin * scheme_.emitter_attraction;
+            particle.angle += particle.angular_speed * update.delta_time;
+            particle.color = scheme_.color(context);
+            particle.scale = scheme_.scale(context);
 
             ++i;
         }
@@ -298,8 +318,9 @@ class ParticleEmitterNode : public TransformNode
     struct Settings
     {
         ParticleScheme particle_blueprint;
-        float          emission_rate_; // how many particles to emit per time unit
-        bool           use_unscaled_time = false;
+        float          trigger_rate;              // how many times it triggers per time unit
+        uint           particles_per_trigger = 1; // how many particles to emit at each trigger
+        bool           use_unscaled_time     = false;
     };
 
     ParticleEmitterNode(Settings settings)
@@ -317,9 +338,8 @@ class ParticleEmitterNode : public TransformNode
         const auto previous_origin = particles_.origin();
         const auto current_origin  = world_transform().position;
 
-        const float period = settings_.emission_rate_ > 0.0f
-                                 ? 1.0f / settings_.emission_rate_
-                                 : std::numeric_limits<float>::infinity();
+        const float period = settings_.trigger_rate > 0.0f ? 1.0f / settings_.trigger_rate
+                                                           : std::numeric_limits<float>::infinity();
 
         [[unlikely]]
         if (!std::isfinite(period))
@@ -328,21 +348,22 @@ class ParticleEmitterNode : public TransformNode
         }
         else
         {
-            const float time_since_last_emit = accumulator_;
-            float       cursor               = 0.0f;
-            float       next_emit_at         = period - time_since_last_emit;
+            const float time_since_last_trigger = accumulator_;
+            float       cursor                  = 0.0f;
+            float       next_trigger_at         = period - time_since_last_trigger;
 
-            while (next_emit_at <= delta_time)
+            while (next_trigger_at <= delta_time)
             {
-                const float segment  = next_emit_at - cursor;
-                const float progress = delta_time > 0.0f ? next_emit_at / delta_time : 1.0f;
+                const float segment  = next_trigger_at - cursor;
+                const float progress = delta_time > 0.0f ? next_trigger_at / delta_time : 1.0f;
                 const Vec3f origin   = lerp(previous_origin, current_origin, progress);
 
                 particles_.update({ segment, origin });
-                particles_.emit();
 
-                cursor = next_emit_at;
-                next_emit_at += period;
+                particles_.emit(settings_.particles_per_trigger);
+
+                cursor = next_trigger_at;
+                next_trigger_at += period;
             }
 
             if (cursor < delta_time)
@@ -350,7 +371,7 @@ class ParticleEmitterNode : public TransformNode
                 particles_.update({ delta_time - cursor, current_origin });
             }
 
-            accumulator_ = std::fmod(time_since_last_emit + delta_time, period);
+            accumulator_ = std::fmod(time_since_last_trigger + delta_time, period);
         }
 
         auto &camera = Node::game()->camera;

@@ -8,7 +8,7 @@ template <std::size_t Dimension, typename Component = float>
 class Box
 {
   public:
-    using Vector        = Vector<Dimension, Component>;
+    using Vector = Vector<Dimension, Component>;
     using ComponentType = Component;
 
     static constexpr std::size_t
@@ -22,6 +22,12 @@ class Box
     Box(Vector min, Vector max)
         : min_(std::move(min)),
           max_(std::move(max))
+    {
+    }
+
+    Box(Component side_length)
+        : min_(Vector(-side_length / Component(2))),
+          max_(Vector(side_length / Component(2)))
     {
     }
 

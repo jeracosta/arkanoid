@@ -23,7 +23,7 @@ class CometNode : public ome::TransformNode
         static inline const ome::ParticleBlueprint blueprint_ = {
             .color
             = ome::InterpolationCurve<ome::Vec4f>{ { 1.0, 1.0, 1.0, 1.0 }, { 0.0, 0.0, 1.0, 0.0 } },
-            .scale            = ome::InterpolationCurve<float>{ 20.0f, 0.0f },
+            .scale            = ome::InterpolationCurve<float>{ 0.3f, 0.05f },
             .origin           = { .mean = { 0.0, 0.2, 0.0 } },
             .initial_velocity = { .mean = { 0, 0, 0 }, .max_deviation = { 0.5, 0.5, 0.5 } },
             .acceleration     = {},

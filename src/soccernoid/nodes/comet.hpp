@@ -1,5 +1,6 @@
 #include <memory>
 
+#include "oh-my-engine/math/box.hpp"
 #include "oh-my-engine/nodes/particle_emitter_node.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
 
@@ -20,27 +21,29 @@ class CometNode : public ome::TransformNode
     class ParticlesNode_ : public ome::ParticleEmitterNode
     {
       private:
-        static inline const ome::ParticleBlueprint blueprint_ = {
-            .color
-            = ome::InterpolationCurve<ome::Color>{
-                ome::Color::rgba(1.0f, 1.0f, 1.0f, 1.0f),
-                ome::Color::rgba(0.0f, 0.0f, 1.0f, 0.0f) },
-            .scale            = ome::InterpolationCurve<float>{ 0.3f, 0.05f },
-            .origin           = ome::Vec3f{ 0.0, 0.2, 0.0 },
-            .initial_velocity = ome::math::Box<3, float>({ -0.5, -0.5, -0.5 }, { 0.5, 0.5, 0.5 }),
-            .acceleration     = {},
-            .angular_speed    = ome::InterpolationCurve<float>{ 0, 0 },
-            .time_to_live     = 1.0,
+        static inline const ome::ParticleScheme scheme_ = {
+
+            .initial_position = ome::Vec3f{ 0.0f, 0.2f, 0.0f },
+
+            .initial_velocity
+            = { ome::math::Box<3>({ -0.5f, -0.5f, -0.5f }, { 0.5f, 0.5f, 0.5f }), rng },
+
+            .time_to_live = 1.0f,
+
+            .color = ome::InterpolationCurve{ ome::Color::rgba(1.0f, 1.0f, 1.0f, 1.0f),
+                                              ome::Color::rgba(0.0f, 0.0f, 1.0f, 0.0f) },
+
+            .scale = ome::InterpolationCurve{ 0.3f, 0.05f },
         };
 
-        static inline const ome::ParticleEmitterNode::Configuration config_ = {
-            .particle_blueprint       = blueprint_,
-            .emissions_per_time_unit_ = 200,
+        static inline const ome::ParticleEmitterNode::Settings settings_ = {
+            .particle_blueprint = scheme_,
+            .emission_rate_     = 200,
         };
 
       public:
         ParticlesNode_()
-            : ome::ParticleEmitterNode(config_)
+            : ome::ParticleEmitterNode(settings_)
         {
         }
     };

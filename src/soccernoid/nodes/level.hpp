@@ -1,9 +1,9 @@
 #include "oh-my-engine/node.hpp"
-#include "soccernoid/nodes/ball.hpp"
 #include "soccernoid/nodes/comet.hpp"
 #include "soccernoid/nodes/fire.hpp"
 #include "soccernoid/nodes/human.hpp"
 #include "soccernoid/nodes/player.hpp"
+#include "soccernoid/nodes/projectile.hpp"
 #include "soccernoid/nodes/terrain.hpp"
 
 namespace soccernoid {
@@ -35,7 +35,7 @@ class LevelNode : public ome::Node
             });
             cursor.add(goalkeeper).named("Goalkeeper").up();
 
-            cursor.add<BallNode>(*terrain, goalkeeper.get()).named("Ball").up();
+            cursor.add<ProjectileNode>().named("Projectile").up();
 
             cursor.add<PlayerNode>(PlayerNode::Configuration::make_harry()).named("Harry").up();
         } });

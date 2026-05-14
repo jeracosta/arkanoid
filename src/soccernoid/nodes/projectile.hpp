@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdlib>
+
 #include "oh-my-engine/color.hpp"
 #include "oh-my-engine/math/box.hpp"
 #include "oh-my-engine/math/sphere.hpp"
@@ -7,6 +9,7 @@
 #include "oh-my-engine/nodes/hitbox_node.hpp"
 #include "oh-my-engine/nodes/kinematic_node.hpp"
 #include "oh-my-engine/nodes/particle_emitter_node.hpp"
+#include "oh-my-engine/spline.hpp"
 #include "soccernoid/nodes/mixins/distance_culled.hpp"
 #include "soccernoid/nodes/mixins/falling.hpp"
 
@@ -35,9 +38,11 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
 
             .color = ome::Interpolation{ ome::Color::white(), colors.projectile },
 
-            .scale = ome::Interpolation{ 0.05f, 0.15f },
-
-            .emitter_attraction = 0.75f,
+            .scale = ome::Spline<float>::catmull_rom({
+                { 0.00f, 0.05f },
+                { 0.50f, 0.20f },
+                { 1.00f, 0.00f },
+            }),
         };
 
         static inline const ome::ParticleEmitterNode::Settings settings_ = {

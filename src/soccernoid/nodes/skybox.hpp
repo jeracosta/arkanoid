@@ -61,15 +61,17 @@ class SkyboxNode : public ome::Node
     {
         const auto &skybox = active_skybox_();
 
-        return { .world_region = ome::math::Box<3>(side_),
-                 .sprites      = {
-                    .front  = make_sprite_(skybox.front),
-                    .back   = make_sprite_(skybox.back),
-                    .left   = make_sprite_(skybox.left),
-                    .right  = make_sprite_(skybox.right),
-                    .top    = make_sprite_(skybox.top),
-                    .bottom = make_sprite_(skybox.bottom),
-                 } };
+        return {
+            .world_region = ome::math::Box<3>(side_),
+            .sprites      = {
+                .front  = make_sprite_(skybox.front),
+                .back   = make_sprite_(skybox.back),
+                .left   = make_sprite_(skybox.left),
+                .right  = make_sprite_(skybox.right),
+                .top    = make_sprite_(skybox.top),
+                .bottom = make_sprite_(skybox.bottom),
+            },
+        };
     }
 
     ome::open_gl::BoxRenderTask render_task_;

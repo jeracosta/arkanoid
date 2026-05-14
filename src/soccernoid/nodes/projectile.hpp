@@ -33,9 +33,9 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
 
             .time_to_live = 0.1f,
 
-            .color = ome::InterpolationCurve{ ome::Color::white(), colors.projectile },
+            .color = ome::Interpolation{ ome::Color::white(), colors.projectile },
 
-            .scale = ome::InterpolationCurve{ 0.05f, 0.15f },
+            .scale = ome::Interpolation{ 0.05f, 0.15f },
 
             .emitter_attraction = 0.75f,
         };
@@ -62,9 +62,9 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
 
             .time_to_live = 1.0f,
 
-            .color = ome::InterpolationCurve{ ome::Color::white(), colors.projectile },
+            .color = ome::Interpolation{ ome::Color::white(), colors.projectile },
 
-            .scale = ome::InterpolationCurve{ 0.075f, 0.0f },
+            .scale = ome::Interpolation{ 0.075f, 0.0f },
         };
 
         static inline const ome::ParticleEmitterNode::Settings settings_ = {

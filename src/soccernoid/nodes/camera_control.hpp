@@ -139,7 +139,7 @@ class CameraControlNode : public ome::Node
         CameraShot from{ camera_->target(), camera_->distance(), camera_->orientation() };
         CameraShot to = shot_for_view_(view_);
 
-        auto curve = std::make_shared<ome::InterpolationCurve<CameraShot>>(
+        auto curve = std::make_shared<ome::Interpolation<CameraShot>>(
             from, to, ome::EasingCurve::smoothstep());
         transition_.emplace(curve, 1.0f / settings_.transition_duration);
     }

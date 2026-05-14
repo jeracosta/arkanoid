@@ -11,9 +11,8 @@ class TimeSpeedNode : public ome::Node
   private:
     float scaling_factor_ = 1.1f;
 
-    std::shared_ptr<ome::InterpolationCurve<float>> speed_curve_
-        = std::make_shared<ome::InterpolationCurve<float>>(
-            0.0f, 1.0f, ome::EasingCurve::smoothstep(1));
+    std::shared_ptr<ome::Interpolation<float>> speed_curve_
+        = std::make_shared<ome::Interpolation<float>>(0.0f, 1.0f, ome::EasingCurve::smoothstep(1));
 
     ome::CurveProcess<float> speed_interpolation_{ speed_curve_, 2.5f };
 

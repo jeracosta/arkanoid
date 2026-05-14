@@ -98,16 +98,16 @@ class EasingCurve
 // #region Interpolation curve
 
 template <typename T>
-class InterpolationCurve : public Curve<T>
+class Interpolation : public Curve<T>
 {
     T           from_;
     T           to_;
     EasingCurve easing_;
 
   public:
-    InterpolationCurve() = default;
+    Interpolation() = default;
 
-    InterpolationCurve(T from, T to, EasingCurve easing = EasingCurve::linear())
+    Interpolation(T from, T to, EasingCurve easing = EasingCurve::linear())
         : from_(std::move(from)),
           to_(std::move(to)),
           easing_(std::move(easing))
@@ -165,7 +165,7 @@ class InterpolationCurve : public Curve<T>
 constexpr auto
 lerp(const auto &from, const auto &to, float t)
 {
-    return InterpolationCurve{ from, to, EasingCurve::linear() }(t);
+    return Interpolation{ from, to, EasingCurve::linear() }(t);
 }
 
 // #endregion

@@ -29,10 +29,10 @@ class CometNode : public ome::TransformNode
 
             .time_to_live = 1.0f,
 
-            .color = ome::InterpolationCurve{ ome::Color::rgba(1.0f, 1.0f, 1.0f, 1.0f),
-                                              ome::Color::rgba(0.0f, 0.0f, 1.0f, 0.0f) },
+            .color = ome::Interpolation{ ome::Color::rgba(1.0f, 1.0f, 1.0f, 1.0f),
+                                         ome::Color::rgba(0.0f, 0.0f, 1.0f, 0.0f) },
 
-            .scale = ome::InterpolationCurve{ 0.3f, 0.05f },
+            .scale = ome::Interpolation{ 0.3f, 0.05f },
         };
 
         static inline const ome::ParticleEmitterNode::Settings settings_ = {

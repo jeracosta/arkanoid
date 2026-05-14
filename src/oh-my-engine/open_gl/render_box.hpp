@@ -1,3 +1,5 @@
+#pragma once
+
 #include <memory>
 
 #include "oh-my-engine/math/box.hpp"

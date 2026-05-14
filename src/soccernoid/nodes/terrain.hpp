@@ -51,7 +51,7 @@ class TerrainNode : public ome::HitboxNode
               .left   = { textures.dirt,                { { 0.0f, 0.0f }, { length, height } } },
               .right  = { textures.dirt,                { { 0.0f, 0.0f }, { length, height } } },
               .top    = { textures.floor,               { { 0.0f, 0.0f }, { 1.0f,   1.0f   } } },
-              .bottom = { *ome::Texture::placeholder(), { { 0.0f, 0.0f }, { width,  length } } },
+              .bottom = { ome::Texture::placeholder(), { { 0.0f, 0.0f }, { width,  length } } },
           },
         }();
     }

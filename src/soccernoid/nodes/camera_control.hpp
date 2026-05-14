@@ -78,11 +78,14 @@ class CameraControlNode : public ome::Node
             return;
         }
 
-        auto [yaw, pitch] = -input.delta * settings_.mouse_sensitivity;
+        // FIXME: Clamp pitch to avoid turning over
+
+        auto [delta_yaw, delta_pitch] = -input.delta * settings_.mouse_sensitivity;
 
         auto yaw_axis = view_ == CameraView::FirstPerson ? ome::up : camera_->up();
-        camera_->rotate(yaw, yaw_axis);
-        camera_->rotate(pitch, camera_->right());
+        camera_->rotate(delta_yaw, yaw_axis);
+
+        camera_->rotate(delta_pitch, camera_->right());
     }
 
     void
@@ -161,6 +164,8 @@ class CameraControlNode : public ome::Node
         };
 
         // clang-format off
+
+        // FIXME: Moving up and down should not be relative to camera orientation
 
         static auto moves = std::to_array<MoveSpecification>({
             { Action::CameraForward,  ome::forward },

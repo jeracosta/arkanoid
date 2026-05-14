@@ -82,17 +82,17 @@ struct BoxRenderTask
 
         // +y top
         draw_face(sprites.top,
-                  { mn[0], mx[1], mn[2] },
-                  { mx[0], mx[1], mn[2] },
+                  { mn[0], mx[1], mx[2] },
                   { mx[0], mx[1], mx[2] },
-                  { mn[0], mx[1], mx[2] });
+                  { mx[0], mx[1], mn[2] },
+                  { mn[0], mx[1], mn[2] });
 
         // -y bottom
         draw_face(sprites.bottom,
-                  { mn[0], mn[1], mx[2] },
-                  { mx[0], mn[1], mx[2] },
+                  { mn[0], mn[1], mn[2] },
                   { mx[0], mn[1], mn[2] },
-                  { mn[0], mn[1], mn[2] });
+                  { mx[0], mn[1], mx[2] },
+                  { mn[0], mn[1], mx[2] });
 
         glDisable(GL_TEXTURE_2D);
     }

@@ -8,8 +8,9 @@
 namespace ome {
 
 template <typename T>
-struct Spline
+class SplineCurve : public Curve<T>
 {
+  public:
     struct ControlPoint
     {
         float position;
@@ -22,15 +23,12 @@ struct Spline
         T     value;
         T     tangent;
     };
-};
 
-template <typename T>
-class SplineCurve : public Curve<T>
-{
-    std::vector<typename Spline<T>::Knot> knots_;
+  private:
+    std::vector<Knot> knots_;
 
     static T
-    segment_(const typename Spline<T>::Knot &a, const typename Spline<T>::Knot &b, float t)
+    segment_(const Knot &a, const Knot &b, float t)
     {
         float dt = b.position - a.position;
         float s  = (t - a.position) / dt;
@@ -48,7 +46,7 @@ class SplineCurve : public Curve<T>
   public:
     SplineCurve() = default;
 
-    explicit SplineCurve(std::vector<typename Spline<T>::Knot> knots)
+    explicit SplineCurve(std::vector<Knot> knots)
         : knots_(std::move(knots))
     {
     }
@@ -65,31 +63,36 @@ class SplineCurve : public Curve<T>
         if (t >= knots_.back().position)
             return knots_.back().value;
 
-        auto it = std::ranges::upper_bound(knots_, t, {}, &Spline<T>::Knot::position);
+        auto it = std::ranges::upper_bound(knots_, t, {}, &Knot::position);
 
         return segment_(*(it - 1), *it, t);
     }
 
-    static std::vector<typename Spline<T>::Knot>
-    catmull_rom(std::initializer_list<typename Spline<T>::ControlPoint> control_points)
+    static SplineCurve
+    catmull_rom(std::initializer_list<ControlPoint> control_points)
     {
-        auto n      = control_points.size();
+        auto  n     = control_points.size();
         auto *begin = control_points.begin();
-        auto knots  = std::vector<typename Spline<T>::Knot>();
+        auto  knots = std::vector<Knot>();
         knots.reserve(n);
 
         auto tangent = [&](std::size_t i) -> T
         {
             if (n == 1)
+            {
                 return T{};
+            }
 
             if (i == 0)
-                return (begin[1].value - begin[0].value)
-                       / (begin[1].position - begin[0].position);
+            {
+                return (begin[1].value - begin[0].value) / (begin[1].position - begin[0].position);
+            }
 
             if (i == n - 1)
+            {
                 return (begin[i].value - begin[i - 1].value)
                        / (begin[i].position - begin[i - 1].position);
+            }
 
             return (begin[i + 1].value - begin[i - 1].value)
                    / (begin[i + 1].position - begin[i - 1].position);
@@ -97,11 +100,11 @@ class SplineCurve : public Curve<T>
 
         for (std::size_t i = 0; i < n; ++i)
         {
-            knots.push_back({ .position = begin[i].position,
-                              .value    = begin[i].value,
-                              .tangent  = tangent(i) });
+            knots.push_back(
+                { .position = begin[i].position, .value = begin[i].value, .tangent = tangent(i) });
         }
-        return knots;
+
+        return SplineCurve(std::move(knots));
     }
 };
 

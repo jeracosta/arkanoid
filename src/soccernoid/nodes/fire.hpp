@@ -23,7 +23,7 @@ class FireNode : public ome::TransformNode
 
             .time_to_live = 2.0f,
 
-            .color = ome::SplineCurve<ome::Color>(ome::SplineCurve<ome::Color>::catmull_rom({
+            .color = ome::SplineCurve<ome::Color>::catmull_rom({
                 { 0.00f, ome::Color::rgba(1.0f, 1.0f, 1.0f, 1.0f) },
                 { 0.10f, ome::Color::rgba(1.0f, 1.0f, 1.0f, 1.0f) },
                 { 0.20f, ome::Color::rgba(1.0f, 1.0f, 0.8f, 1.0f) },
@@ -33,16 +33,16 @@ class FireNode : public ome::TransformNode
                 { 0.80f, ome::Color::rgba(0.4f, 0.0f, 0.0f, 0.6f) },
                 { 0.90f, ome::Color::rgba(0.1f, 0.0f, 0.0f, 0.2f) },
                 { 1.00f, ome::Color::rgba(0.0f, 0.0f, 0.0f, 0.0f) },
-            })),
+            }),
 
-            .scale = ome::SplineCurve<float>(ome::SplineCurve<float>::catmull_rom({
+            .scale = ome::SplineCurve<float>::catmull_rom({
                 { 0.00f, 0.05f },
                 { 0.10f, 0.20f },
                 { 0.30f, 0.35f },
                 { 0.50f, 0.30f },
                 { 0.70f, 0.20f },
                 { 1.00f, 0.00f },
-            }))
+            })
         };
 
         static inline const ome::ParticleEmitterNode::Settings settings_ = {

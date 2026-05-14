@@ -23,7 +23,7 @@ class FireNode : public ome::TransformNode
 
             .time_to_live = 2.0f,
 
-            .color = ome::SplineCurve<ome::Color>::catmull_rom({
+            .color = ome::Spline<ome::Color>::catmull_rom({
                 { 0.00f, ome::Color::rgba(1.0f, 1.0f, 1.0f, 1.0f) },
                 { 0.10f, ome::Color::rgba(1.0f, 1.0f, 1.0f, 1.0f) },
                 { 0.20f, ome::Color::rgba(1.0f, 1.0f, 0.8f, 1.0f) },
@@ -35,7 +35,7 @@ class FireNode : public ome::TransformNode
                 { 1.00f, ome::Color::rgba(0.0f, 0.0f, 0.0f, 0.0f) },
             }),
 
-            .scale = ome::SplineCurve<float>::catmull_rom({
+            .scale = ome::Spline<float>::catmull_rom({
                 { 0.00f, 0.05f },
                 { 0.10f, 0.20f },
                 { 0.30f, 0.35f },

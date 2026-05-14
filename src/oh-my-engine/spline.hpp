@@ -8,7 +8,7 @@
 namespace ome {
 
 template <typename T>
-class SplineCurve : public Curve<T>
+class Spline : public Curve<T>
 {
   public:
     struct ControlPoint
@@ -44,9 +44,9 @@ class SplineCurve : public Curve<T>
     }
 
   public:
-    SplineCurve() = default;
+    Spline() = default;
 
-    explicit SplineCurve(std::vector<Knot> knots)
+    explicit Spline(std::vector<Knot> knots)
         : knots_(std::move(knots))
     {
     }
@@ -68,7 +68,7 @@ class SplineCurve : public Curve<T>
         return segment_(*(it - 1), *it, t);
     }
 
-    static SplineCurve
+    static Spline
     catmull_rom(std::initializer_list<ControlPoint> control_points)
     {
         auto  n     = control_points.size();
@@ -104,7 +104,7 @@ class SplineCurve : public Curve<T>
                 { .position = begin[i].position, .value = begin[i].value, .tangent = tangent(i) });
         }
 
-        return SplineCurve(std::move(knots));
+        return Spline(std::move(knots));
     }
 };
 

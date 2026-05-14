@@ -11,13 +11,6 @@ struct BoxRenderTask
 {
     math::Box<3> world_region;
 
-    // TODO: Extract Sprite
-    struct Sprite
-    {
-        std::shared_ptr<Texture> texture;
-        math::Box<2>             uv_region;
-    };
-
     struct
     {
         Sprite front;

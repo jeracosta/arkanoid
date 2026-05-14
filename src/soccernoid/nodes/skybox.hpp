@@ -9,12 +9,6 @@ namespace soccernoid {
 class SkyboxNode : public ome::Node
 {
   public:
-    SkyboxNode()
-        : Node(),
-          render_task_(make_render_task_())
-    {
-    }
-
     void
     on_tick_() override
     {
@@ -27,7 +21,7 @@ class SkyboxNode : public ome::Node
         glDepthMask(GL_FALSE);
         glDisable(GL_FOG);
 
-        render_task_();
+        render_();
 
         if (fog_was)
         {
@@ -41,40 +35,23 @@ class SkyboxNode : public ome::Node
   private:
     static constexpr float side_ = 2 * fog.end;
 
-    static const TexturePalette::SkyboxFaces &
-    active_skybox_()
+    void
+    render_()
     {
-        return textures.skybox.blink;
-    }
-
-    using Sprite = ome::open_gl::BoxRenderTask::Sprite;
-
-    static Sprite
-    make_sprite_(const TexturePalette::Item &item)
-    {
-        return { .texture   = static_cast<std::shared_ptr<ome::Texture>>(item),
-                 .uv_region = { { 0.0f, 0.0f }, { 1.0f, 1.0f } } };
-    }
-
-    static ome::open_gl::BoxRenderTask
-    make_render_task_()
-    {
-        const auto &skybox = active_skybox_();
-
-        return {
+        ome::open_gl::BoxRenderTask {
             .world_region = ome::math::Box<3>(side_),
-            .sprites      = {
-                .front  = make_sprite_(skybox.front),
-                .back   = make_sprite_(skybox.back),
-                .left   = make_sprite_(skybox.left),
-                .right  = make_sprite_(skybox.right),
-                .top    = make_sprite_(skybox.top),
-                .bottom = make_sprite_(skybox.bottom),
+            .sprites = {
+                .front  = { skybox_.front  },
+                .back   = { skybox_.back   },
+                .left   = { skybox_.left   },
+                .right  = { skybox_.right  },
+                .top    = { skybox_.top    },
+                .bottom = { skybox_.bottom },
             },
-        };
+        }();
     }
 
-    ome::open_gl::BoxRenderTask render_task_;
+    TexturePalette::SkyboxFaces skybox_ = textures.skybox.blink;
 };
 
 } // namespace soccernoid

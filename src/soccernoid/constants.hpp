@@ -77,7 +77,8 @@ struct TexturePalette
     class Item
     {
       private:
-        std::filesystem::path file_name_;
+        std::filesystem::path               file_name_;
+        std::function<void(ome::Texture &)> config_;
 
         mutable std::shared_ptr<ome::Texture> texture_;
 
@@ -89,12 +90,18 @@ struct TexturePalette
                 texture_ = ome::Texture::load(FilesystemPaths::textures / file_name_);
             }
 
+            if (config_)
+            {
+                config_(*texture_);
+            }
+
             return texture_;
         }
 
       public:
-        Item(std::filesystem::path file_name)
-            : file_name_(std::move(file_name))
+        Item(std::filesystem::path file_name, std::function<void(ome::Texture &)> config = nullptr)
+            : file_name_(std::move(file_name)),
+              config_(std::move(config))
         {
         }
 

@@ -10,6 +10,7 @@ class Box
   public:
     using Vector        = Vector<Dimension, Component>;
     using ComponentType = Component;
+    using Face          = Box<Dimension - 1, Component>;
 
     static constexpr std::size_t
     dimension()
@@ -37,10 +38,22 @@ class Box
         return min_;
     }
 
+    void
+    min(const Vector &new_min)
+    {
+        min_ = new_min;
+    }
+
     const Vector &
     max() const
     {
         return max_;
+    }
+
+    void
+    max(const Vector &new_max)
+    {
+        max_ = new_max;
     }
 
     Vector
@@ -97,29 +110,80 @@ class Box
 
     // clang-format on
 
-    std::array<Vector, (std::size_t{ 1 } << Dimension)>
+    // Lazy range over the corners of the box.
+    // Order: (min, min, ...), (max, min, ...), (min, max, ...), (max, max, ...), ...
+    auto
     corners() const
     {
-        std::array<Vector, (std::size_t{ 1 } << Dimension)> result{};
+        auto count = std::size_t{ 1 } << Dimension;
 
-        for (std::size_t i = 0; i < result.size(); ++i)
+        auto indices = std::views::iota(std::size_t{ 0 }, count);
+
+        auto make_corner = [this](std::size_t indice)
         {
             Vector corner{};
-
             for (std::size_t j = 0; j < Dimension; ++j)
             {
-                corner[j] = (i & (std::size_t{ 1 } << j)) ? max_[j] : min_[j];
+                corner[j] = (indice & (std::size_t{ 1 } << j)) ? max_[j] : min_[j];
+            }
+            return corner;
+        };
+
+        return indices | std::views::transform(make_corner);
+    }
+
+    // Lazy range over the faces of the box.
+    // Order: min-x, max-x, min-y, max-y, mix-z, max-z, ...
+    auto
+    faces() const
+    {
+        auto count = Dimension * 2;
+
+        auto indices = std::views::iota(std::size_t{ 0 }, count);
+
+        auto make_face = [this](std::size_t face_index)
+        {
+            const std::size_t axis   = face_index / 2;
+            const bool        is_max = face_index % 2;
+
+            Face face = *this;
+
+            if (is_max)
+            {
+                face.min_[axis] = max_[axis];
+            }
+            else
+            {
+                face.max_[axis] = min_[axis];
             }
 
-            result[i] = corner;
-        }
+            return face;
+        };
 
-        return result;
+        return indices | std::views::transform(make_face);
     }
 
   private:
     Vector min_{};
     Vector max_{};
 };
+
+inline float
+width(const Box<3> &box)
+{
+    return box.max()[0] - box.min()[0];
+}
+
+inline float
+length(const Box<3> &box)
+{
+    return box.max()[2] - box.min()[2];
+}
+
+inline float
+height(const Box<3> &box)
+{
+    return box.max()[1] - box.min()[1];
+}
 
 } // namespace ome::math

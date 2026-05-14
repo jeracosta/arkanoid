@@ -111,12 +111,6 @@ struct TexturePalette
             return *load_();
         }
 
-        void
-        wrap(ome::Vec2<GLenum> wrap) const
-        {
-            get().wrap(wrap);
-        }
-
         operator const ome::Texture &() const
         {
             return get();
@@ -142,13 +136,20 @@ struct TexturePalette
         static SkyboxFaces
         from_directory(const std::filesystem::path &directory)
         {
+            auto config = [](ome::Texture &texture)
+            {
+                texture.set_wrap({ GL_CLAMP_TO_EDGE });
+                texture.set_filters(GL_LINEAR, GL_LINEAR);
+                texture.set_blend_mode(GL_REPLACE);
+            };
+
             return {
-                .front  = { directory / "front.png" },
-                .back   = { directory / "back.png" },
-                .left   = { directory / "left.png" },
-                .right  = { directory / "right.png" },
-                .top    = { directory / "top.png" },
-                .bottom = { directory / "bottom.png" },
+                .front  = { directory / "front.png", config },
+                .back   = { directory / "back.png", config },
+                .left   = { directory / "left.png", config },
+                .right  = { directory / "right.png", config },
+                .top    = { directory / "top.png", config },
+                .bottom = { directory / "bottom.png", config },
             };
         }
     };

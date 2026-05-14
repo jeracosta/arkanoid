@@ -1,6 +1,9 @@
 #pragma once
 
+#include <GL/gl.h>
+
 #include "oh-my-engine/node.hpp"
+#include "oh-my-engine/open_gl/matrix_guard.hpp"
 #include "oh-my-engine/open_gl/render_box.hpp"
 #include "soccernoid/constants.hpp"
 
@@ -12,34 +15,37 @@ class SkyboxNode : public ome::Node
     void
     on_tick_() override
     {
-        auto      position = game()->camera.position();
-        GLboolean fog_was  = glIsEnabled(GL_FOG);
-
-        glPushMatrix();
-        glTranslatef(position[0], position[1], position[2]);
-
-        glDepthMask(GL_FALSE);
-        glDisable(GL_FOG);
-
         render_();
-
-        if (fog_was)
-        {
-            glEnable(GL_FOG);
-        }
-
-        glDepthMask(GL_TRUE);
-        glPopMatrix();
     }
 
   private:
-    static constexpr float side_ = 2 * fog.end;
-
     void
     render_()
     {
-        ome::open_gl::BoxRenderTask {
-            .world_region = ome::math::Box<3>(side_),
+        glPushAttrib(GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_FOG_BIT);
+
+        auto matrix_guard = ome::open_gl::MatrixGuard{ GL_MODELVIEW };
+
+        // This block removes the translation component of the modelview matrix.
+        // Ensures that the skybox seems centered around the camera.
+        {
+            GLfloat mv[16];
+            glGetFloatv(GL_MODELVIEW_MATRIX, mv);
+            mv[12] = 0.0f;
+            mv[13] = 0.0f;
+            mv[14] = 0.0f;
+            glLoadMatrixf(mv);
+        }
+
+        glDisable(GL_FOG);
+
+        glDepthMask(GL_FALSE);
+        glDepthFunc(GL_LEQUAL);
+
+        glDepthRange(1.0, 1.0);
+
+        ome::open_gl::BoxRenderTask{
+            .world_region = ome::math::Box<3>(game()->camera.far()),
             .sprites = {
                 .front  = { skybox_.front  },
                 .back   = { skybox_.back   },
@@ -49,6 +55,10 @@ class SkyboxNode : public ome::Node
                 .bottom = { skybox_.bottom },
             },
         }();
+
+        glDepthRange(0.0, 1.0);
+
+        glPopAttrib();
     }
 
     TexturePalette::SkyboxFaces skybox_ = textures.skybox.blink;

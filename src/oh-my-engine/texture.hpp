@@ -101,7 +101,13 @@ class Texture
     load(const std::filesystem::path &path);
 
     void
-    wrap(Vec2<GLenum> wrap = { GL_REPEAT, GL_REPEAT });
+    set_wrap(Vec2<GLenum> wrap = { GL_REPEAT, GL_REPEAT });
+
+    void
+    set_filters(GLenum min_filter = GL_LINEAR, GLenum mag_filter = GL_LINEAR);
+
+    void
+    set_blend_mode(GLenum mode);
 
     static std::shared_ptr<Texture>
     placeholder();

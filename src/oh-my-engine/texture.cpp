@@ -21,10 +21,6 @@ Texture::Texture(ImageBuffer image)
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
     auto &[width, height] = image.size();
 
     gluBuild2DMipmaps(
@@ -106,7 +102,7 @@ Texture::placeholder()
 }
 
 void
-Texture::wrap(Vec2<GLenum> wrap)
+Texture::set_wrap(Vec2<GLenum> wrap)
 {
     auto guard = open_gl::TextureBindingGuard<GL_TEXTURE_2D>();
 
@@ -114,6 +110,28 @@ Texture::wrap(Vec2<GLenum> wrap)
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap[0]);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap[1]);
+}
+
+void
+Texture::set_filters(GLenum min_filter, GLenum mag_filter)
+{
+    auto guard = open_gl::TextureBindingGuard<GL_TEXTURE_2D>();
+
+    glBindTexture(GL_TEXTURE_2D, id_);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
+
+} // namespace ome
+
+void
+Texture::set_blend_mode(GLenum mode)
+{
+    auto guard = open_gl::TextureBindingGuard<GL_TEXTURE_2D>();
+
+    glBindTexture(GL_TEXTURE_2D, id_);
+
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, mode);
 }
 
 } // namespace ome

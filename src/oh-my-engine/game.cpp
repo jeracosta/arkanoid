@@ -6,7 +6,7 @@
 
 #include "input.hpp"
 #include "node.hpp"
-#include "oh-my-engine/open_gl/matrix_mode_guard.hpp"
+#include "oh-my-engine/open_gl/matrix_guard.hpp"
 #include "time.hpp"
 #include "window.hpp"
 
@@ -173,7 +173,8 @@ Game::on_projection_update_(const ProjectionUpdated &event)
 {
     auto &projection = event.new_projection;
 
-    ome::open_gl::MatrixModeGuard mmg;
+    auto matrix_guard = ome::open_gl::MatrixGuard();
+
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 

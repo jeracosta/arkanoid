@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include "oh-my-engine/math/box.hpp"
 #include "oh-my-engine/texture.hpp"
 
@@ -34,12 +32,6 @@ struct BoxRenderTask
                              math::Vector<3> d)
         {
             open_gl::glBindTexture(*sprite.texture);
-
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
             const auto &uv0 = sprite.uv_region.min();
             const auto &uv1 = sprite.uv_region.max();

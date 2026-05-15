@@ -42,6 +42,12 @@ struct ParticleData
 
 // #region Particle scheme
 
+struct BlendMode
+{
+    GLenum source_factor      = GL_SRC_ALPHA;
+    GLenum destination_factor = GL_ONE;
+};
+
 struct ParticleUpdateContext
 {
     const ParticleData &particle;
@@ -150,6 +156,8 @@ struct ParticleScheme
 
     // [0, 1] multiplier for displacement towards emitter position
     float emitter_attraction = 0;
+
+    BlendMode blend_mode = {};
 };
 
 // #endregion
@@ -269,7 +277,7 @@ class ParticleServer
     render(ome::Vec3f camera_up, ome::Vec3f camera_right) const
     {
         glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE); // TODO: Make configurable
+        glBlendFunc(scheme_.blend_mode.source_factor, scheme_.blend_mode.destination_factor);
         glDepthMask(GL_FALSE);
 
         glBegin(GL_QUADS);

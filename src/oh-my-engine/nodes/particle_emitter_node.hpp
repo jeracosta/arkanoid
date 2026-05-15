@@ -155,7 +155,7 @@ struct ParticleScheme
     Item<float(const ParticleUpdateContext &)> scale        = [](auto &) { return 1; };
 
     // [0, 1] multiplier for displacement towards emitter position
-    float emitter_attraction = 0;
+    float emitter_pull = 0;
 
     BlendMode blend_mode = {};
 };
@@ -262,7 +262,7 @@ class ParticleServer
             particle.acceleration = scheme_.acceleration(context);
             particle.velocity += particle.acceleration * update.delta_time;
             particle.position += particle.velocity * update.delta_time;
-            particle.position += delta_origin * scheme_.emitter_attraction;
+            particle.position += delta_origin * scheme_.emitter_pull;
             particle.angle += particle.angular_speed * update.delta_time;
             particle.color = scheme_.color(context);
             particle.scale = scheme_.scale(context);

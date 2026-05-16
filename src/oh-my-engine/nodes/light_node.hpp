@@ -39,20 +39,20 @@ class LightNode : public TransformNode
     void
     on_tick_() override
     {
-        auto transform = world_transform();
+        const auto world = transform<Space::World>();
 
         if (auto *point = dynamic_cast<PointLight *>(light_.get()))
         {
-            point->position = transform.position;
+            point->position = world.position;
         }
         else if (auto *spot = dynamic_cast<SpotLight *>(light_.get()))
         {
-            spot->position  = transform.position;
-            spot->direction = light_node_detail::unit_light_direction_from_transform(transform);
+            spot->position  = world.position;
+            spot->direction = light_node_detail::unit_light_direction_from_transform(world);
         }
         else if (auto *dir = dynamic_cast<DirectionalLight *>(light_.get()))
         {
-            dir->direction = light_node_detail::unit_light_direction_from_transform(transform);
+            dir->direction = light_node_detail::unit_light_direction_from_transform(world);
         }
 
         light_->apply();

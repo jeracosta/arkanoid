@@ -1,9 +1,8 @@
 #include <memory>
 
 #include "oh-my-engine/light.hpp"
-#include "oh-my-engine/math/box.hpp"
-#include "oh-my-engine/nodes/light_node.hpp"
 #include "oh-my-engine/math/interval.hpp"
+#include "oh-my-engine/nodes/light_node.hpp"
 #include "oh-my-engine/nodes/particle_emitter_node.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
 #include "oh-my-engine/spline.hpp"
@@ -34,9 +33,7 @@ class FireNode : public ome::TransformNode
         FirePointLightNode_()
             : ome::LightNode(make_point_light_())
         {
-            auto transform     = local_transform();
-            transform.position = { 0.0f, 0.55f, 0.0f };
-            set_local_transform(transform);
+            update_transform<ome::Space::Local>([](auto &t) { t.position = { 0.0f, 0.55f, 0.0f }; });
         }
     };
 
@@ -91,14 +88,10 @@ class FireNode : public ome::TransformNode
     explicit FireNode(ome::Vec3f position = { 0 })
         : TransformNode()
     {
-<<<<<<< HEAD
-        set_local_transform({ .position = position });
+        update_transform<ome::Space::Local>([&](auto &t) { t.position = position; });
         extending(*this).add<FirePointLightNode_>().named("FireLight").up();
-=======
-        update_transform<ome::Space::Local>([&](auto &t) { t = { .position = position }; });
->>>>>>> 8c09886a2eda813ebbfd42603242681c45b994ac
         extending(*this).add(particles_).named("FireParticles").up();
     }
-}; // namespace soccernoid
+};
 
 } // namespace soccernoid

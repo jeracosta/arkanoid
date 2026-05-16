@@ -1,6 +1,5 @@
 #include "game.hpp"
 
-#include <GL/gl.h>
 #include <SDL2/SDL.h>
 #include <memory>
 

@@ -54,9 +54,7 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
         ProjectilePointLightNode_()
             : ome::LightNode(make_point_light_())
         {
-            auto transform     = local_transform();
-            transform.position = { 0.0f, 0.2f, 0.0f };
-            set_local_transform(transform);
+            update_transform<ome::Space::Local>([](auto &t) { t.position = { 0.0f, 0.2f, 0.0f }; });
         }
     };
 

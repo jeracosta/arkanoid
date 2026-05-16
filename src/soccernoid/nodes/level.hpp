@@ -1,5 +1,5 @@
+#include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/node.hpp"
-#include "oh-my-engine/node_composition.hpp"
 #include "soccernoid/nodes/comet.hpp"
 #include "soccernoid/nodes/fire.hpp"
 #include "soccernoid/nodes/human.hpp"
@@ -11,9 +11,11 @@
 
 namespace soccernoid {
 
+class LevelNode; // forward declaration
+
 struct Level
 {
-    std::function<void(ome::NodeCompositionCursor)> assemble_from;
+    std::function<void(LevelNode &)> configure;
 };
 
 class LevelNode : public ome::Node
@@ -24,26 +26,29 @@ class LevelNode : public ome::Node
   public:
     LevelNode()
     {
-        levels_.push_back({ [](ome::NodeCompositionCursor cursor)
+        levels_.push_back({ [](LevelNode &level)
         {
-            cursor.add<SkyboxNode>().named("Skybox").up();
+            level.emplace_child<SkyboxNode>().rename("Skybox");
 
-            cursor.add<CometNode>().named("Comet").up();
+            level.emplace_child<CometNode>().rename("Comet");
 
-            cursor.add<TerrainNode>(ome::Box{ { -5.0f, -fog.end, -5.0f }, { 5.0f, 0.0f, 5.0f } })
-                .named("Terreno")
-                .up();
+            level
+                .emplace_child<TerrainNode>(
+                    ome::Box{ { -5.0f, -fog.end, -5.0f }, { 5.0f, 0.0f, 5.0f } })
+                .rename("Terreno");
 
-            auto goalkeeper = std::make_shared<HumanNode>(HumanNode::Configuration{
-                .position = { 0.0f, 0.0f, -5.0f },
-            });
-            cursor.add(goalkeeper).named("Goalkeeper").up();
+            level
+                .emplace_child<HumanNode>(HumanNode::Configuration{
+                    .position = { 0.0f, 0.0f, -5.0f },
+                })
+                .rename("Goalkeeper");
 
-            cursor.add<ProjectileNode>().named("Projectile").up();
+            level.emplace_child<ProjectileNode>().rename("Projectile");
 
-            cursor.add<PlayerNode>(PlayerNode::Configuration::make_harry()).named("Harry").up();
+            level.emplace_child<PlayerNode>(PlayerNode::Configuration::make_harry())
+                .rename("Harry");
 
-            cursor.add<SnailNode>(ome::Vec3f{ -3.0f, 1.0f, -3.0f }).named("Snail").up();
+            level.emplace_child<SnailNode>(ome::Vec3f{ -3.0f, 1.0f, -3.0f }).rename("Snail");
 
             static constexpr uint pilars         = 7;
             static constexpr uint pilar_distance = 13;
@@ -61,7 +66,10 @@ class LevelNode : public ome::Node
 
                 auto name = std::format("Pilar {}", i + 1);
 
-                cursor.add<TerrainNode>(region).named(name).add<FireNode>().named("Fire").up().up();
+                level.emplace_child<TerrainNode>(region)
+                    .rename(name)
+                    .emplace_child<FireNode>()
+                    .rename("Fire");
             }
         } });
     }
@@ -74,8 +82,7 @@ class LevelNode : public ome::Node
             throw std::runtime_error(
                 std::format("'{}' node was mounted without any levels.", name()));
         }
-
-        levels_.front().assemble_from(extending(*this));
+        std::invoke(levels_.front().configure, std::ref(*this));
     }
 };
 

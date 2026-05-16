@@ -117,13 +117,13 @@ class Node : public std::enable_shared_from_this<Node>,
         return boost::typeindex::type_id_runtime(*this).pretty_name() + "@" + address_string(this);
     }
 
-    void
+    Node &
     rename(std::string new_name)
     {
         [[unlikely]]
         if (new_name == name_)
         {
-            return;
+            return *this;
         }
 
         [[unlikely]]
@@ -134,14 +134,14 @@ class Node : public std::enable_shared_from_this<Node>,
             auto &&task = [this, name = std::move(new_name)]() mutable { rename(std::move(name)); };
             game_->schedule(task);
 
-            return;
+            return *this;
         }
 
         [[unlikely]]
         if (!parent_)
         {
             name_ = std::move(new_name);
-            return;
+            return *this;
         }
 
         [[unlikely]]
@@ -157,6 +157,8 @@ class Node : public std::enable_shared_from_this<Node>,
 
         name_ = std::move(new_name);
         parent_->children_.emplace(name_, std::move(node));
+
+        return *this;
     }
 
     // #endregion
@@ -170,8 +172,10 @@ class Node : public std::enable_shared_from_this<Node>,
                | std::views::values | std::views::transform(&std::shared_ptr<Node>::get);
     }
 
-    Node *
-    add_child(std::shared_ptr<Node> child_owner)
+    template <class TChild>
+        requires std::derived_from<TChild, Node>
+    TChild &
+    add_child(std::shared_ptr<TChild> child_owner)
     {
         auto child = child_owner.get();
 
@@ -201,7 +205,7 @@ class Node : public std::enable_shared_from_this<Node>,
 
             game_->schedule(task);
 
-            return child;
+            return *child;
         }
 
         [[unlikely]]
@@ -220,15 +224,15 @@ class Node : public std::enable_shared_from_this<Node>,
             child->mount_to_(game_);
         }
 
-        return child;
+        return *child;
     }
 
-    template <class T, class... Args>
-        requires std::derived_from<T, Node>
-    Node *
+    template <class TChild, class... Args>
+        requires std::derived_from<TChild, Node>
+    TChild &
     emplace_child(Args &&...args)
     {
-        return add_child(std::make_shared<T>(std::forward<Args>(args)...));
+        return add_child(std::make_shared<TChild>(std::forward<Args>(args)...));
     }
 
     std::shared_ptr<Node>

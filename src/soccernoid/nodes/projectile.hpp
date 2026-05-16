@@ -20,7 +20,7 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
   private:
     using Base_ = DistanceCulled<Falling<ome::KinematicNode>>;
 
-    float radius_          = 0.10f; // futsal size 4 ball: circumference 62-64cm, radius ~0.10m
+    float radius_          = 0.10f;
     float elasticity_      = 0.90f;
     float speed_threshold_ = 0.1f;
 
@@ -89,8 +89,8 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
     {
         update_transform<ome::Space::Local>([&](auto &t) { t.position = spawn_position; });
 
-        extending(*this).add<GlowParticlesNode_>().named("GlowParticles");
-        extending(*this).add<TraceParticlesNode_>().named("TraceParticles");
+        emplace_child<GlowParticlesNode_>().rename("GlowParticles");
+        emplace_child<TraceParticlesNode_>().rename("TraceParticles");
     }
 
     void

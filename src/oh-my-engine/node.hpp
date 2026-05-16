@@ -223,6 +223,14 @@ class Node : public std::enable_shared_from_this<Node>,
         return child;
     }
 
+    template <class T, class... Args>
+        requires std::derived_from<T, Node>
+    Node *
+    emplace_child(Args &&...args)
+    {
+        return add_child(std::make_shared<T>(std::forward<Args>(args)...));
+    }
+
     std::shared_ptr<Node>
     remove_child(const std::string_view &name)
     {

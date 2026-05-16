@@ -233,6 +233,15 @@ class Interval
         return zip_transform(clamp, point, min, max);
     }
 
+    friend Vector
+    overlap_depth(const Interval &a, const Interval &b)
+    {
+        auto overlap_min = zip_transform(std::ranges::max, a.min(), b.min());
+        auto overlap_max = zip_transform(std::ranges::min, a.max(), b.max());
+
+        return overlap_max - overlap_min;
+    }
+
   private:
     // Constructor is private to ensure clearer factory methods are used instead.
     constexpr Interval(Vector min, Vector max)

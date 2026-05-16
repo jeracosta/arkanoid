@@ -223,6 +223,18 @@ class Interval
 
     // clang-format on
 
+    friend Vector
+    projection(const Vector &point, const Interval &interval)
+    {
+        auto clamp = [&](auto &component)
+        {
+            auto &[min, max] = interval.bounds();
+            return std::clamp(component, min, max);
+        };
+
+        return transform(point, clamp);
+    }
+
   private:
     // Constructor is private to ensure clearer factory methods are used instead.
     constexpr Interval(Vector min, Vector max)

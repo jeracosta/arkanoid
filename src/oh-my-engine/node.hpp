@@ -318,7 +318,9 @@ class Node : public std::enable_shared_from_this<Node>,
     void
     log(const auto &message, LogLevel level = LogLevel::Info)
     {
-        assert(is_mounted() && "Tried logging from an unmounted node; mount it first.");
+        assert(lifecycle_phase() == LifecyclePhase::Mounted
+               || lifecycle_phase() == LifecyclePhase::Mounting
+                      && "Tried logging from an unmounted node; mount it first.");
 
         auto prefix = std::format("\033[34m{} ({}): \033[0m", name(), address_string(this));
 
@@ -401,7 +403,7 @@ class Node : public std::enable_shared_from_this<Node>,
     void
     unmount_()
     {
-        assert(is_mounted());
+        assert(lifecycle_phase() == LifecyclePhase::Mounted);
 
         phase_ = Unmounting;
 

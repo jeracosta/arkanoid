@@ -87,9 +87,7 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
   public:
     ProjectileNode()
     {
-        auto transform     = local_transform();
-        transform.position = spawn_position;
-        set_local_transform(transform);
+        update_transform<ome::Space::Local>([&](auto &t) { t.position = spawn_position; });
 
         extending(*this).add<GlowParticlesNode_>().named("GlowParticles");
         extending(*this).add<TraceParticlesNode_>().named("TraceParticles");
@@ -106,11 +104,9 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
     void
     bounce_()
     {
-        if (world_transform().position[1] <= radius_)
+        if (transform<ome::Space::World>().position[1] <= radius_)
         {
-            auto transform        = local_transform();
-            transform.position[1] = radius_;
-            set_local_transform(transform);
+            update_transform<ome::Space::Local>([&](auto &t) { t.position[1] = radius_; });
 
             float fall_speed = dot(velocity(), ome::up);
             if (fall_speed >= 0.0f)

@@ -65,7 +65,7 @@ class CometNode : public ome::TransformNode
         auto offset   = ome::Vec3f{ std::cos(angle), 0.0f, std::sin(angle) } * movement_.radius;
         auto position = movement_.center + movement_.orientation * offset;
 
-        set_local_transform({ .position = position });
+        update_transform<ome::Space::Local>([&](auto &t) { t = { .position = position }; });
 
         particles_->blueprint()->acceleration = movement_.orientation * -tangent * 1.5f;
     }

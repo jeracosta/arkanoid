@@ -63,7 +63,7 @@ class FireNode : public ome::TransformNode
     explicit FireNode(ome::Vec3f position)
         : TransformNode()
     {
-        set_local_transform({ .position = position });
+        update_transform<ome::Space::Local>([&](auto &t) { t = { .position = position }; });
         extending(*this).add(particles_).named("FireParticles").up();
     }
 }; // namespace soccernoid

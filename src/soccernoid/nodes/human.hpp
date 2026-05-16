@@ -6,6 +6,7 @@
 #include "oh-my-engine/color.hpp"
 #include "oh-my-engine/math/vector.hpp"
 #include "oh-my-engine/nodes/hitbox_node.hpp"
+#include "oh-my-engine/nodes/transform_node.hpp"
 #include "soccernoid/constants.hpp"
 
 namespace soccernoid {
@@ -53,9 +54,7 @@ class HumanNode : public ome::HitboxNode
           jersey_color_(config.jersey_color),
           head_color_(config.head_color)
     {
-        auto transform     = local_transform();
-        transform.position = config.position;
-        set_local_transform(transform);
+        update_transform<ome::Space::Local>([&](auto &t) { t.position = config.position; });
     }
 
     void
@@ -68,7 +67,7 @@ class HumanNode : public ome::HitboxNode
     void
     render_()
     {
-        auto pos = world_transform().position;
+        auto pos = transform<ome::Space::World>().position;
 
         // Body — ellipsoid centered at ground level (bottom half underground)
         glColor(jersey_color_);

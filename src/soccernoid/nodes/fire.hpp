@@ -3,6 +3,7 @@
 #include "oh-my-engine/light.hpp"
 #include "oh-my-engine/math/box.hpp"
 #include "oh-my-engine/nodes/light_node.hpp"
+#include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/nodes/particle_emitter_node.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
 #include "oh-my-engine/spline.hpp"
@@ -44,11 +45,9 @@ class FireNode : public ome::TransformNode
       private:
         static inline const ome::ParticleScheme scheme_ = {
 
-            .initial_position
-            = { ome::math::Box<3>({ -0.3f, 0.0f, -0.3f }, { 0.3f, 0.0f, 0.3f }), rng },
+            .initial_position = { ome::Box({ -0.3f, 0.0f, -0.3f }, { 0.3f, 0.0f, 0.3f }), rng },
 
-            .initial_velocity
-            = { ome::math::Box<3>({ -0.5f, 1.2f, -0.5f }, { 0.5f, 2.8f, 0.5f }), rng },
+            .initial_velocity = { ome::Box({ -0.5f, 1.2f, -0.5f }, { 0.5f, 2.8f, 0.5f }), rng },
 
             .time_to_live = 2.0f,
 
@@ -89,11 +88,15 @@ class FireNode : public ome::TransformNode
     std::shared_ptr<ParticlesNode_> particles_ = std::make_shared<ParticlesNode_>();
 
   public:
-    explicit FireNode(ome::Vec3f position)
+    explicit FireNode(ome::Vec3f position = { 0 })
         : TransformNode()
     {
+<<<<<<< HEAD
         set_local_transform({ .position = position });
         extending(*this).add<FirePointLightNode_>().named("FireLight").up();
+=======
+        update_transform<ome::Space::Local>([&](auto &t) { t = { .position = position }; });
+>>>>>>> 8c09886a2eda813ebbfd42603242681c45b994ac
         extending(*this).add(particles_).named("FireParticles").up();
     }
 }; // namespace soccernoid

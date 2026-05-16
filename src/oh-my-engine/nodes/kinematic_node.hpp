@@ -61,17 +61,15 @@ class KinematicNode : public TransformNode
     void
     on_tick_() override
     {
-        const float dt = Node::game()->time.delta();
+        const float delta_time = Node::game()->time.delta();
 
-        auto transform = local_transform();
-
-        transform.position += kinematic_.velocity * dt;
-
-        transform.orientation.steer_pitch(kinematic_.angular_velocity[0] * dt);
-        transform.orientation.steer_yaw(kinematic_.angular_velocity[1] * dt);
-        transform.orientation.steer_roll(kinematic_.angular_velocity[2] * dt);
-
-        set_local_transform(transform);
+        update_transform<Space::Local>([&](auto &t)
+        {
+            t.position += kinematic_.velocity * delta_time;
+            t.orientation.steer_pitch(kinematic_.angular_velocity[0] * delta_time);
+            t.orientation.steer_yaw(kinematic_.angular_velocity[1] * delta_time);
+            t.orientation.steer_roll(kinematic_.angular_velocity[2] * delta_time);
+        });
 
         TransformNode::on_tick_();
     }

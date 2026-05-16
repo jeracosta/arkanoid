@@ -35,7 +35,7 @@ class PlayerNode : public ome::KinematicNode
         constexpr float         radius = 0.2f;
         static const ome::Color color  = ome::Color::hex(0x1486cc);
 
-        auto position = world_transform().position;
+        auto position = transform<ome::Space::World>().position;
 
         glColor(color);
         glPushMatrix();
@@ -112,9 +112,7 @@ class PlayerNode : public ome::KinematicNode
     void
     on_mount_() override
     {
-        auto transform     = local_transform();
-        transform.position = ome::up * 1.5f;
-        set_local_transform(transform);
+        update_transform<ome::Space::Local>([&](auto &t) { t.position = ome::up * 1.5f; });
         log("Hola");
     }
 };

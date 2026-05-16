@@ -1,39 +1,51 @@
 #pragma once
 
-#include "oh-my-engine/math/box.hpp"
+#include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
 
 namespace ome {
 
-using HitboxComponent = math::Box<3>;
+class HitboxNode; // forward declaration
+
+using Hitbox = Box;
 
 class HitboxNode : public TransformNode
 {
   public:
     HitboxNode() = default;
 
-    explicit HitboxNode(const HitboxComponent &hitbox)
-        : hitbox_(hitbox)
+    explicit HitboxNode(const Vec3f &size, const Vec3f &local_position = {})
+        : size_(size)
     {
+        update_transform<ome::Space::Local>([&](auto &t) { t.position = local_position; });
     }
 
-    const HitboxComponent &
-    hitbox_local() const noexcept
+    template <Space space>
+    const Hitbox
+    hitbox() const noexcept
     {
-        return hitbox_;
+        auto local = Hitbox{ -size_ / 2.0f, size_ / 2.0f };
+
+        if constexpr (space == Space::Local)
+        {
+            return local;
+        }
+        if constexpr (space == Space::World)
+        {
+            auto world_transform = transform<Space::World>();
+
+            return Hitbox{ world_transform * local.min(), world_transform * local.max() };
+        }
     }
 
-    const HitboxComponent
-    hitbox_world() const noexcept
+  protected:
+    virtual void
+    on_collision_(const HitboxNode &)
     {
-        auto local     = hitbox_local();
-        auto transform = world_transform();
-
-        return HitboxComponent{ transform.to_world(local.min()), transform.to_world(local.max()) };
     }
 
   private:
-    HitboxComponent hitbox_{};
+    Vec3f size_;
 };
 
 } // namespace ome

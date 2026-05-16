@@ -5,7 +5,7 @@
 #include <memory>
 
 #include "oh-my-engine/color.hpp"
-#include "oh-my-engine/math/box.hpp"
+#include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/math/vector.hpp"
 
 namespace ome {
@@ -24,7 +24,7 @@ namespace open_gl { void glBindTexture(const Texture &); }
 struct Sprite
 {
     std::shared_ptr<Texture> texture;
-    math::Box<2>             uv_region = { { 0.0f, 0.0f }, { 1.0f, 1.0f } };
+    Rect                     uv_region = { { 0.0f, 0.0f }, { 1.0f, 1.0f } };
 };
 
 // #endregion

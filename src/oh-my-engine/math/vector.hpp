@@ -159,11 +159,24 @@ class Vector
         std::ranges::copy(range, components_.begin());
     }
 
+    template <typename... Ts>
+        requires(sizeof...(Ts) == TDimension && (std::convertible_to<Ts, TComponent> && ...))
+    constexpr Vector(const std::tuple<Ts...> &tuple)
+        : Vector(tuple, std::index_sequence_for<Ts...>{})
+    {
+    }
+
+    constexpr Vector(const Vector &other) noexcept = default;
+
+    constexpr Vector(Vector &&other) noexcept = default;
+
     operator Component() const
         requires(TDimension == 1)
     {
         return components_[0];
     }
+
+    // #endregion
 
     template <CoordinateSystem NewBasis>
     Vector<TDimension, TComponent, NewBasis>
@@ -192,24 +205,9 @@ class Vector
         }
     }
 
-    template <typename... Ts>
-        requires(sizeof...(Ts) == TDimension && (std::convertible_to<Ts, TComponent> && ...))
-    constexpr Vector(const std::tuple<Ts...> &tuple)
-        : Vector(tuple, std::index_sequence_for<Ts...>{})
-    {
-    }
-
-    constexpr Vector(const Vector &other) noexcept = default;
-
-    constexpr Vector(Vector &&other) noexcept = default;
-
     ~Vector() noexcept = default;
 
     inline decltype(auto) constexpr
-    // #endregion
-
-    // #region Element access
-
     operator[](this auto &&self, size_t index)
     {
         if (index >= self.dimension())
@@ -277,6 +275,8 @@ class Vector
     }
     BINARY_ASSIGNMENT_OPERATOR(+=, Vector, std::plus)
     BINARY_ASSIGNMENT_OPERATOR(-=, Vector, std::minus)
+    BINARY_ASSIGNMENT_OPERATOR(*=, Vector, std::multiplies)
+    BINARY_ASSIGNMENT_OPERATOR(/=, Vector, std::divides)
     BINARY_ASSIGNMENT_OPERATOR(*=, Component, std::multiplies)
     BINARY_ASSIGNMENT_OPERATOR(/=, Component, std::divides)
 #undef BINARY_ASSIGNMENT_OPERATOR
@@ -306,7 +306,6 @@ class Vector
 #define X(name) using name = Vector<TDimension, Component, CoordinateSystem::name>;
     OME_COORDINATE_SYSTEMS(X)
 #undef X
-    // #endregion
 };
 
 #ifdef GLM_VERSION
@@ -351,8 +350,13 @@ BINARY_OPERATOR(/)
 
 // #region Utility functions
 
+template <is_vector L, is_vector R, typename Comparator>
+    requires std::same_as<std::invoke_result_t<Comparator,
+                                               typename std::remove_cvref_t<L>::Component,
+                                               typename std::remove_cvref_t<R>::Component>,
+                          bool>
 constexpr bool
-component_wise(auto comparator, is_vector auto &&lhs, auto &&rhs)
+component_wise(Comparator comparator, L &&lhs, R &&rhs)
 {
     static_assert(lhs.dimension() == rhs.dimension());
 

@@ -3,13 +3,14 @@
 #include <algorithm>
 
 #include "oh-my-engine/math/box.hpp"
+#include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/texture.hpp"
 
 namespace ome::open_gl {
 
 struct BoxRenderTask
 {
-    math::Box<3> world_region;
+    Box world_region;
 
     GLenum texture_env_mode = GL_MODULATE;
 

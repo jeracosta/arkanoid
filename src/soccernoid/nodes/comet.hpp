@@ -1,6 +1,6 @@
 #include <memory>
 
-#include "oh-my-engine/math/box.hpp"
+#include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/nodes/particle_emitter_node.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
 
@@ -25,7 +25,7 @@ class CometNode : public ome::TransformNode
 
             .initial_position = ome::Vec3f{ 0.0f, 0.2f, 0.0f },
 
-            .initial_velocity = { ome::math::Box<3>(0.5f), rng },
+            .initial_velocity = { ome::Box(0.5f), rng },
 
             .time_to_live = 1.0f,
 
@@ -65,7 +65,7 @@ class CometNode : public ome::TransformNode
         auto offset   = ome::Vec3f{ std::cos(angle), 0.0f, std::sin(angle) } * movement_.radius;
         auto position = movement_.center + movement_.orientation * offset;
 
-        set_local_transform({ .position = position });
+        update_transform<ome::Space::Local>([&](auto &t) { t = { .position = position }; });
 
         particles_->blueprint()->acceleration = movement_.orientation * -tangent * 1.5f;
     }

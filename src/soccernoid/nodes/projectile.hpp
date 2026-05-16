@@ -1,16 +1,20 @@
 #pragma once
 
 #include <memory>
+#include <cstdlib>
 
 #include "oh-my-engine/color.hpp"
 #include "oh-my-engine/light.hpp"
 #include "oh-my-engine/math/box.hpp"
+#include "oh-my-engine/color.hpp"
+#include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/math/sphere.hpp"
 #include "oh-my-engine/math/vector.hpp"
 #include "oh-my-engine/nodes/hitbox_node.hpp"
 #include "oh-my-engine/nodes/kinematic_node.hpp"
 #include "oh-my-engine/nodes/light_node.hpp"
 #include "oh-my-engine/nodes/particle_emitter_node.hpp"
+#include "oh-my-engine/spline.hpp"
 #include "soccernoid/nodes/mixins/distance_culled.hpp"
 #include "soccernoid/nodes/mixins/falling.hpp"
 
@@ -27,7 +31,7 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
 
     static constexpr ome::Vec3f spawn_position = { 0.0f, 7.0f, -3.0f };
 
-    ome::HitboxComponent hitbox_{ { -0.10f, -0.10f, -0.10f }, { 0.10f, 0.10f, 0.10f } };
+    ome::Hitbox hitbox_{ { -0.10f, -0.10f, -0.10f }, { 0.10f, 0.10f, 0.10f } };
 
     // Point light parented to the projectile so a colored pool follows the ball (GL_LIGHT2).
     class ProjectilePointLightNode_ : public ome::LightNode
@@ -66,9 +70,11 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
 
             .color = ome::Interpolation{ ome::Color::white(), colors.projectile },
 
-            .scale = ome::Interpolation{ 0.05f, 0.15f },
-
-            .emitter_attraction = 0.75f,
+            .scale = ome::Spline<float>::catmull_rom({
+                { 0.00f, 0.05f },
+                { 0.50f, 0.20f },
+                { 1.00f, 0.00f },
+            }),
         };
 
         static inline const ome::ParticleEmitterNode::Settings settings_ = {
@@ -89,7 +95,7 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
         static inline const ome::ParticleScheme scheme_ = {
             .initial_position = { ome::math::Sphere<3>({ 0 }, 0.15f), rng },
 
-            .initial_velocity = { ome::math::Box<3>(0.75f), rng },
+            .initial_velocity = { ome::Box(0.75f), rng },
 
             .time_to_live = 1.0f,
 
@@ -113,9 +119,7 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
   public:
     ProjectileNode()
     {
-        auto transform     = local_transform();
-        transform.position = spawn_position;
-        set_local_transform(transform);
+        update_transform<ome::Space::Local>([&](auto &t) { t.position = spawn_position; });
 
         extending(*this).add<ProjectilePointLightNode_>().named("GlowLight").up();
         extending(*this).add<GlowParticlesNode_>().named("GlowParticles");
@@ -133,11 +137,9 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
     void
     bounce_()
     {
-        if (world_transform().position[1] <= radius_)
+        if (transform<ome::Space::World>().position[1] <= radius_)
         {
-            auto transform        = local_transform();
-            transform.position[1] = radius_;
-            set_local_transform(transform);
+            update_transform<ome::Space::Local>([&](auto &t) { t.position[1] = radius_; });
 
             float fall_speed = dot(velocity(), ome::up);
             if (fall_speed >= 0.0f)

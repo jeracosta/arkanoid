@@ -1,5 +1,6 @@
 #include <memory>
 
+#include "oh-my-engine/blend_mode.hpp"
 #include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/nodes/particle_emitter_node.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
@@ -41,7 +42,9 @@ class FireNode : public ome::TransformNode
                 { 0.50f, 0.30f },
                 { 0.70f, 0.20f },
                 { 1.00f, 0.00f },
-            })
+            }),
+
+            .blend_mode = ome::BlendMode::additive(),
         };
 
         static inline const ome::ParticleEmitterNode::Settings settings_ = {

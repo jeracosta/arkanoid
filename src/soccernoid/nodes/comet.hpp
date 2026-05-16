@@ -33,6 +33,8 @@ class CometNode : public ome::TransformNode
                                          ome::Color::rgba(0.0f, 0.0f, 1.0f, 0.0f) },
 
             .scale = ome::Interpolation{ 0.3f, 0.05f },
+
+            .blend_mode = ome::BlendMode::additive(),
         };
 
         static inline const ome::ParticleEmitterNode::Settings settings_ = {

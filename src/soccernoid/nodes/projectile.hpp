@@ -45,6 +45,8 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
                 { 0.50f, 0.20f },
                 { 1.00f, 0.00f },
             }),
+
+            .blend_mode = ome::BlendMode::additive(),
         };
 
         static inline const ome::ParticleEmitterNode::Settings settings_ = {
@@ -72,6 +74,8 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
             .color = ome::Interpolation{ ome::Color::white(), colors.projectile },
 
             .scale = ome::Interpolation{ 0.075f, 0.0f },
+
+            .blend_mode = ome::BlendMode::additive(),
         };
 
         static inline const ome::ParticleEmitterNode::Settings settings_ = {

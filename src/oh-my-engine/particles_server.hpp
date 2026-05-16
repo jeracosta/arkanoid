@@ -1,10 +1,11 @@
 #pragma once
 
+#include "oh-my-engine/camera.hpp"
 #include "oh-my-engine/color.hpp"
 #include "oh-my-engine/curve.hpp"
 #include "oh-my-engine/math/region.hpp"
 #include "oh-my-engine/math/vector.hpp"
-#include "oh-my-engine/open_gl/blend_mode.hpp"
+#include "oh-my-engine/open_gl/render_billboard.hpp"
 
 namespace ome {
 
@@ -143,7 +144,9 @@ struct ParticleScheme
     // [0, 1] multiplier for displacement towards emitter position
     float emitter_pull = 0;
 
-    open_gl::BlendMode blend_mode = {};
+    Material::BlendMode blend_mode = {};
+
+    // TODO: support Material property, instead of just color and blend mode separately
 };
 
 // #endregion
@@ -260,37 +263,23 @@ class ParticleServer
     }
 
     void
-    render(ome::Vec3f camera_up, ome::Vec3f camera_right) const
+    render(Camera &camera) const
     {
-        glEnable(GL_BLEND);
-        glBlendFunc(scheme_.blend_mode.source_factor, scheme_.blend_mode.destination_factor);
         glDepthMask(GL_FALSE);
 
-        glBegin(GL_QUADS);
         for (std::size_t i = 0; i < live_particle_count_; ++i)
         {
-            const auto &p      = particles_[i];
-            auto        half_u = camera_right * (p.scale * 0.5f);
-            auto        half_v = camera_up * (p.scale * 0.5f);
+            const auto &particle = particles_[i];
 
-            glColor(p.color);
+            auto material = Material{
+                .color      = particle.color,
+                .blend_mode = scheme_.blend_mode,
+            };
 
-            auto vertex = p.position - half_u - half_v;
-            glVertex3f(vertex[0], vertex[1], vertex[2]);
-
-            vertex = p.position + half_u - half_v;
-            glVertex3f(vertex[0], vertex[1], vertex[2]);
-
-            vertex = p.position + half_u + half_v;
-            glVertex3f(vertex[0], vertex[1], vertex[2]);
-
-            vertex = p.position - half_u + half_v;
-            glVertex3f(vertex[0], vertex[1], vertex[2]);
+            open_gl::render_billboard(particle.position, { particle.scale }, material, camera);
         }
-        glEnd();
 
         glDepthMask(GL_TRUE);
-        glDisable(GL_BLEND);
     }
 
     std::size_t
@@ -306,4 +295,4 @@ class ParticleServer
     }
 };
 
-}
+} // namespace ome

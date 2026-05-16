@@ -8,12 +8,6 @@ namespace soccernoid {
 
 class SnailNode : public ome::TransformNode
 {
-  public:
-    explicit SnailNode(ome::Vec3f local_position)
-        : TransformNode(local_position + ome::up * size_)
-    {
-    }
-
   private:
     static constexpr float size_ = 0.2f;
 
@@ -22,7 +16,7 @@ class SnailNode : public ome::TransformNode
     {
         auto &camera = game()->camera;
 
-        auto position = transform<ome::Space::World>().position;
+        auto position = transform<ome::Space::World>().position + ome::up * size_;
 
         static const auto material
             = ome::Material{ .texture = textures.snail, .blend_mode = ome::BlendMode::alpha() };

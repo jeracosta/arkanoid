@@ -58,8 +58,7 @@ class FireNode : public ome::TransformNode
     std::shared_ptr<ParticlesNode_> particles_ = std::make_shared<ParticlesNode_>();
 
   public:
-    explicit FireNode(ome::Vec3f local_position = { 0 })
-        : TransformNode(local_position)
+    explicit FireNode()
     {
         add_child(particles_).rename("FireParticles");
     }

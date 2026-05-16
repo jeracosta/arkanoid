@@ -10,7 +10,6 @@ namespace ome {
 
 struct Material
 {
-
     std::shared_ptr<Texture> texture    = nullptr;
     Color                    color      = Color::white();
     BlendMode                blend_mode = BlendMode::opaque();

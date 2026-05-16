@@ -5,6 +5,7 @@
 #include "soccernoid/nodes/player.hpp"
 #include "soccernoid/nodes/projectile.hpp"
 #include "soccernoid/nodes/skybox.hpp"
+#include "soccernoid/nodes/snail.hpp"
 #include "soccernoid/nodes/terrain.hpp"
 
 namespace soccernoid {
@@ -40,6 +41,8 @@ class LevelNode : public ome::Node
             cursor.add<ProjectileNode>().named("Projectile").up();
 
             cursor.add<PlayerNode>(PlayerNode::Configuration::make_harry()).named("Harry").up();
+
+            cursor.add<SnailNode>(ome::Vec3f{ -3.0f, 0.0f, -3.0f }).named("Snail").up();
 
             static constexpr uint pilars         = 7;
             static constexpr uint pilar_distance = 13;

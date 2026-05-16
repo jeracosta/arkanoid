@@ -449,6 +449,16 @@ random_vector(Vector from, Vector to, RandomNumberGenerator &&rng)
     return result;
 }
 
+template <is_vector Vector>
+Vector
+projection(const Vector &vector, const Vector &onto)
+{
+    auto denom = dot(onto, onto);
+    assert(denom > 0);
+
+    return onto * (dot(vector, onto) / denom);
+}
+
 // Perpendicular component of vector relative to dir.
 // dir must be a unit vector.
 template <is_vector Vector>

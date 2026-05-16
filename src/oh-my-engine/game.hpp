@@ -42,6 +42,12 @@ class Game : public EventConnectionHolder
             bool       enabled = true;
         };
 
+        struct Lighting
+        {
+            Color global_ambient = Color::rgb(0.2f, 0.2f, 0.2f);
+            bool  enabled        = true;
+        };
+
         std::function<std::unique_ptr<Logger>()> make_logger
             = [] { return std::make_unique<ConsoleLogger>(); };
 
@@ -50,6 +56,8 @@ class Game : public EventConnectionHolder
         Camera::Settings camera;
 
         Fog fog;
+
+        Lighting lighting;
 
         std::function<input::InputMapper(Game &)> make_input_mapper = {};
 

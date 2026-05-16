@@ -1,11 +1,15 @@
 #pragma once
 
+#include <memory>
+
 #include "oh-my-engine/color.hpp"
+#include "oh-my-engine/light.hpp"
 #include "oh-my-engine/math/box.hpp"
 #include "oh-my-engine/math/sphere.hpp"
 #include "oh-my-engine/math/vector.hpp"
 #include "oh-my-engine/nodes/hitbox_node.hpp"
 #include "oh-my-engine/nodes/kinematic_node.hpp"
+#include "oh-my-engine/nodes/light_node.hpp"
 #include "oh-my-engine/nodes/particle_emitter_node.hpp"
 #include "soccernoid/nodes/mixins/distance_culled.hpp"
 #include "soccernoid/nodes/mixins/falling.hpp"
@@ -24,6 +28,33 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
     static constexpr ome::Vec3f spawn_position = { 0.0f, 7.0f, -3.0f };
 
     ome::HitboxComponent hitbox_{ { -0.10f, -0.10f, -0.10f }, { 0.10f, 0.10f, 0.10f } };
+
+    // Point light parented to the projectile so a colored pool follows the ball (GL_LIGHT2).
+    class ProjectilePointLightNode_ : public ome::LightNode
+    {
+      private:
+        static std::unique_ptr<ome::PointLight>
+        make_point_light_()
+        {
+            auto light = std::make_unique<ome::PointLight>(GL_LIGHT2);
+            light->ambient   = ome::Color::rgb(0.0f, 0.0f, 0.0f);
+            light->diffuse   = ome::Color::rgb(1.0f, 0.45f, 0.95f);
+            light->specular  = ome::Color::rgb(0.9f, 0.75f, 1.0f);
+            light->constant_attenuation  = 1.0f;
+            light->linear_attenuation      = 0.12f;
+            light->quadratic_attenuation   = 0.28f;
+            return light;
+        }
+
+      public:
+        ProjectilePointLightNode_()
+            : ome::LightNode(make_point_light_())
+        {
+            auto transform     = local_transform();
+            transform.position = { 0.0f, 0.2f, 0.0f };
+            set_local_transform(transform);
+        }
+    };
 
     class GlowParticlesNode_ : public ome::ParticleEmitterNode
     {
@@ -86,6 +117,7 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
         transform.position = spawn_position;
         set_local_transform(transform);
 
+        extending(*this).add<ProjectilePointLightNode_>().named("GlowLight").up();
         extending(*this).add<GlowParticlesNode_>().named("GlowParticles");
         extending(*this).add<TraceParticlesNode_>().named("TraceParticles");
     }

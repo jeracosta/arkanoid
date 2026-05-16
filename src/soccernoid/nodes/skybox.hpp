@@ -22,7 +22,10 @@ class SkyboxNode : public ome::Node
     void
     render_()
     {
-        glPushAttrib(GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_FOG_BIT);
+        // TEXTURE_BIT: save/restore GL_TEXTURE_ENV_MODE. Mode is global; world BoxRenderTask sets MODULATE.
+        glPushAttrib(GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_FOG_BIT | GL_TEXTURE_BIT);
+
+        glDisable(GL_LIGHTING);
 
         auto matrix_guard = ome::open_gl::MatrixGuard{ GL_MODELVIEW };
 
@@ -45,7 +48,8 @@ class SkyboxNode : public ome::Node
         glDepthRange(1.0, 1.0);
 
         ome::open_gl::BoxRenderTask{
-            .world_region = ome::math::Box<3>(game()->camera.far()),
+            .world_region     = ome::math::Box<3>(game()->camera.far()),
+            .texture_env_mode = GL_REPLACE,
             .sprites = {
                 .front  = { skybox_.front  },
                 .back   = { skybox_.back   },

@@ -43,7 +43,9 @@ class TerrainNode : public ome::HitboxNode
         const float height = ome::math::height(region);
 
         ome::open_gl::BoxRenderTask{
-          .world_region = region,
+          .world_region  = region,
+          .top_subdiv_x  = 24,
+          .top_subdiv_z  = 24,
           .sprites =
           {
               .front  = { textures.dirt,                { { 0.0f, 0.0f }, { width,  height } } },

@@ -39,6 +39,8 @@ main()
           .enabled = true,
       },
 
+      .lighting = {},
+
       .make_input_mapper = [&](auto &)
       {
           using namespace input;

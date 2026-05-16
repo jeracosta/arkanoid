@@ -4,6 +4,7 @@
 #include "soccernoid/nodes/human.hpp"
 #include "soccernoid/nodes/player.hpp"
 #include "soccernoid/nodes/projectile.hpp"
+#include "soccernoid/nodes/scene_lights.hpp"
 #include "soccernoid/nodes/skybox.hpp"
 #include "soccernoid/nodes/terrain.hpp"
 
@@ -24,6 +25,8 @@ class LevelNode : public ome::Node
     {
         levels_.push_back({ [](ome::Node::CompositionCursor cursor)
         {
+            cursor.add<SceneLightsNode>().named("Lights").up();
+
             cursor.add<SkyboxNode>().named("Skybox").up();
 
             cursor.add<CometNode>().named("Comet").up();

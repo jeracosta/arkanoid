@@ -1,6 +1,8 @@
 #include <memory>
 
+#include "oh-my-engine/light.hpp"
 #include "oh-my-engine/math/box.hpp"
+#include "oh-my-engine/nodes/light_node.hpp"
 #include "oh-my-engine/nodes/particle_emitter_node.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
 #include "oh-my-engine/spline.hpp"
@@ -10,6 +12,33 @@ namespace soccernoid {
 class FireNode : public ome::TransformNode
 {
   private:
+    // Point light at the fire pit lights nearby ground and characters
+    class FirePointLightNode_ : public ome::LightNode
+    {
+      private:
+        static std::unique_ptr<ome::PointLight>
+        make_point_light_()
+        {
+            auto light                   = std::make_unique<ome::PointLight>(GL_LIGHT3);
+            light->ambient               = ome::Color::rgb(0.0f, 0.0f, 0.0f);
+            light->diffuse               = ome::Color::rgb(1.0f, 0.55f, 0.12f);
+            light->specular              = ome::Color::rgb(1.0f, 0.75f, 0.35f);
+            light->constant_attenuation  = 1.0f;
+            light->linear_attenuation    = 0.06f;
+            light->quadratic_attenuation = 0.12f;
+            return light;
+        }
+
+      public:
+        FirePointLightNode_()
+            : ome::LightNode(make_point_light_())
+        {
+            auto transform     = local_transform();
+            transform.position = { 0.0f, 0.55f, 0.0f };
+            set_local_transform(transform);
+        }
+    };
+
     class ParticlesNode_ : public ome::ParticleEmitterNode
     {
       private:
@@ -64,6 +93,7 @@ class FireNode : public ome::TransformNode
         : TransformNode()
     {
         set_local_transform({ .position = position });
+        extending(*this).add<FirePointLightNode_>().named("FireLight").up();
         extending(*this).add(particles_).named("FireParticles").up();
     }
 }; // namespace soccernoid

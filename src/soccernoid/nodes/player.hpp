@@ -1,6 +1,7 @@
 #include "oh-my-engine/constants.hpp"
 #include "oh-my-engine/nodes/kinematic_node.hpp"
 #include "soccernoid/input.hpp"
+#include "soccernoid/nodes/projectile.hpp"
 
 namespace soccernoid {
 
@@ -91,6 +92,15 @@ class PlayerNode : public ome::KinematicNode
         });
     }
 
+    void
+    shoot_()
+    {
+        auto &projectile = game()->root_node()->emplace_child<ProjectileNode>();
+
+        projectile.position(transform<ome::Space::World>().position);
+        projectile.velocity(0.2 * ome::up + 5.0 * ome::forward);
+    }
+
   public:
     PlayerNode(const Configuration &config)
         : config_(config)
@@ -110,6 +120,8 @@ class PlayerNode : public ome::KinematicNode
     {
         update_transform<ome::Space::Local>([&](auto &t) { t.position = ome::up * 1.5f; });
         log("Hola");
+
+        hold(game()->input.bind(Action::PlayerShoot, &PlayerNode::shoot_, this));
     }
 };
 

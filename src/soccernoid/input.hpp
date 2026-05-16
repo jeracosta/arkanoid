@@ -27,6 +27,7 @@ enum class ome::input::Action
     PlayerLeft,
     PlayerRight,
     PlayerJump,
+    PlayerShoot,
 };
 
 namespace soccernoid {
@@ -68,6 +69,7 @@ configure_default_controls(ome::input::InputMapper *input_mapper)
         { PlayerLeft,       SDLK_LEFT,    { Press }         },
         { PlayerRight,      SDLK_RIGHT,   { Press }         },
         { PlayerJump,       SDLK_UP,      { Press }         },
+        { PlayerShoot,      SDLK_UP,      { Press, Repeat } },
     });
 
     // clang-format on

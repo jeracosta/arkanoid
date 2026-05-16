@@ -30,21 +30,22 @@ class HumanNode : public ome::HitboxNode
     static constexpr float head_radius_ = 0.24f;
     // Above-ground portion
     static constexpr float visible_body_top_ = body_height_ * 0.5f;
-    static constexpr float total_height_     = visible_body_top_ + 2.0f * head_radius_;
 
     ome::Color jersey_color_;
     ome::Color head_color_;
 
   public:
     HumanNode()
-        : HitboxNode({ 2.0f * body_radius_, total_height_, 2.0f * body_radius_ }),
+        : HitboxNode({ 2.0f * body_radius_, body_height_ + 2.0f * head_radius_, 2.0f * body_radius_ },
+                      { 0.0f, head_radius_, 0.0f }),
           jersey_color_(colors.red_kit),
           head_color_(colors.skin)
     {
     }
 
     explicit HumanNode(const Configuration &config)
-        : HitboxNode({ 2.0f * body_radius_, total_height_, 2.0f * body_radius_ }),
+        : HitboxNode({ 2.0f * body_radius_, body_height_ + 2.0f * head_radius_, 2.0f * body_radius_ },
+                      { 0.0f, head_radius_, 0.0f }),
           jersey_color_(config.jersey_color),
           head_color_(config.head_color)
     {

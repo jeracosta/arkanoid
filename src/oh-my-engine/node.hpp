@@ -209,6 +209,12 @@ class Node : public std::enable_shared_from_this<Node>,
         }
 
         [[unlikely]]
+        if (child->name_.empty())
+        {
+            child->name_ = child->default_name();
+        }
+
+        [[unlikely]]
         if (children_.contains(child->name_))
         {
             throw std::runtime_error(std::format(

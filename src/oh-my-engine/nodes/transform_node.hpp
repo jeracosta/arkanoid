@@ -58,6 +58,11 @@ class TransformNode : public Node
     {
     }
 
+    explicit TransformNode(Vec3f local_position)
+    {
+        set_transform<Space::Local>({ .position = local_position });
+    }
+
     template <Space space>
     TransformComponent
     transform() const

@@ -351,8 +351,13 @@ BINARY_OPERATOR(/)
 
 // #region Utility functions
 
+template <is_vector L, is_vector R, typename Comparator>
+    requires std::same_as<std::invoke_result_t<Comparator,
+                                               typename std::remove_cvref_t<L>::Component,
+                                               typename std::remove_cvref_t<R>::Component>,
+                          bool>
 constexpr bool
-component_wise(auto comparator, is_vector auto &&lhs, auto &&rhs)
+component_wise(Comparator comparator, L &&lhs, R &&rhs)
 {
     static_assert(lhs.dimension() == rhs.dimension());
 

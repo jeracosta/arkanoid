@@ -36,22 +36,33 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
         void
         on_collision_(ome::HitboxNode &other) override
         {
-            log(std::format("Collided with {}", other.name()), ome::LogLevel::Debug);
+            log(std::format("Collided with {} ({})", other.name(), other.default_name()),
+                ome::LogLevel::Debug);
 
             auto hitbox        = this->hitbox<ome::Space::World>();
             auto others_hitbox = other.hitbox<ome::Space::World>();
 
-            static_cast<KinematicNode *>(parent())->update_kinematic<ome::Space::Local>(
-                [&](ome::KinematicComponent &kinematic)
-            {
-                auto distance = projection(hitbox.center(), others_hitbox) - hitbox.center();
+            auto *parent = static_cast<KinematicNode *>(this->parent());
 
-                if (norm(distance) <= 0)
+            parent->update_kinematic<ome::Space::Local>([&](ome::KinematicComponent &kinematic)
+            {
+                constexpr float epsilon = 1e-4f;
+
+                auto overlap          = overlap_depth(hitbox, others_hitbox);
+                auto penetration_axis = std::ranges::min_element(overlap) - overlap.begin();
+
+                if (overlap[penetration_axis] < epsilon)
                 {
                     return;
                 }
 
-                auto normal_velocity = projection(kinematic.velocity, distance);
+                bool is_negative = (hitbox.center()[penetration_axis]
+                                    < others_hitbox.center()[penetration_axis]);
+
+                ome::Vec3f normal;
+                normal[penetration_axis] = is_negative ? -1.0f : 1.0f;
+
+                auto normal_velocity = projection(kinematic.velocity, normal);
                 auto normal_speed    = norm(normal_velocity);
 
                 if (normal_speed < speed_threshold_)
@@ -63,10 +74,10 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
                     kinematic.velocity -= (1.0f + elasticity_) * normal_velocity;
                 }
 
-                auto normal = -distance / norm(distance);
+                auto correction = normal * (overlap[penetration_axis] + epsilon);
 
-                static_cast<KinematicNode *>(parent())->update_transform<ome::Space::Local>(
-                    [&](auto &t) { t.position += -distance + normal * (radius_ + 1e-4f); });
+                parent->update_transform<ome::Space::Local>([&](auto &transform)
+                { transform.position += correction; });
             });
         }
     };

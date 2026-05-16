@@ -1,6 +1,7 @@
 #include <memory>
 
 #include "oh-my-engine/math/interval.hpp"
+#include "oh-my-engine/node_composition.hpp"
 #include "oh-my-engine/nodes/particle_emitter_node.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
 

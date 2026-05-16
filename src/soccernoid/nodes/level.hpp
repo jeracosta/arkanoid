@@ -1,4 +1,5 @@
 #include "oh-my-engine/node.hpp"
+#include "oh-my-engine/node_composition.hpp"
 #include "soccernoid/nodes/comet.hpp"
 #include "soccernoid/nodes/fire.hpp"
 #include "soccernoid/nodes/human.hpp"
@@ -12,7 +13,7 @@ namespace soccernoid {
 
 struct Level
 {
-    std::function<void(ome::Node::CompositionCursor)> assemble_from;
+    std::function<void(ome::NodeCompositionCursor)> assemble_from;
 };
 
 class LevelNode : public ome::Node
@@ -23,7 +24,7 @@ class LevelNode : public ome::Node
   public:
     LevelNode()
     {
-        levels_.push_back({ [](ome::Node::CompositionCursor cursor)
+        levels_.push_back({ [](ome::NodeCompositionCursor cursor)
         {
             cursor.add<SkyboxNode>().named("Skybox").up();
 
@@ -42,7 +43,7 @@ class LevelNode : public ome::Node
 
             cursor.add<PlayerNode>(PlayerNode::Configuration::make_harry()).named("Harry").up();
 
-            cursor.add<SnailNode>(ome::Vec3f{ -3.0f, 0.0f, -3.0f }).named("Snail").up();
+            cursor.add<SnailNode>(ome::Vec3f{ -3.0f, 1.0f, -3.0f }).named("Snail").up();
 
             static constexpr uint pilars         = 7;
             static constexpr uint pilar_distance = 13;

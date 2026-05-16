@@ -3,9 +3,11 @@
 #include <cstdlib>
 
 #include "oh-my-engine/color.hpp"
+#include "oh-my-engine/game.hpp"
 #include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/math/sphere.hpp"
 #include "oh-my-engine/math/vector.hpp"
+#include "oh-my-engine/node.hpp"
 #include "oh-my-engine/nodes/hitbox_node.hpp"
 #include "oh-my-engine/nodes/kinematic_node.hpp"
 #include "oh-my-engine/nodes/particle_emitter_node.hpp"
@@ -108,7 +110,9 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
         {
             update_transform<ome::Space::Local>([&](auto &t) { t.position[1] = radius_; });
 
-            float fall_speed = dot(velocity(), ome::up);
+            auto velocity = kinematic<ome::Space::Local>().velocity;
+
+            float fall_speed = dot(velocity, ome::up);
             if (fall_speed >= 0.0f)
             {
                 return;
@@ -116,12 +120,12 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
 
             if (std::abs(fall_speed) < speed_threshold_)
             {
-                set_velocity({ velocity()[0], 0.0f, velocity()[2] });
-                schedule_unmount();
-                return;
+                update_kinematic<ome::Space::Local>([&](auto &k) { k.velocity[1] = 0.0f; });
             }
 
-            set_velocity({ velocity()[0], -fall_speed * elasticity_, velocity()[2] });
+            update_kinematic<ome::Space::Local>([&](auto &k)
+            { k.velocity[1] = -fall_speed * elasticity_; });
+
             return;
         }
     }

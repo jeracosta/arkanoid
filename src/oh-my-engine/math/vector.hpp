@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstddef>
 #include <functional>
+#include <glm/glm.hpp>
 #include <numeric>
 #include <random>
 #include <ranges>

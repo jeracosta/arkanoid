@@ -49,7 +49,7 @@ class PlayerNode : public ome::KinematicNode
     void
     process_movement_()
     {
-        set_velocity(velocity() * std::exp(-config_.speed_decay * game()->time.delta()));
+        velocity(kinematic().velocity * std::exp(-config_.speed_decay * game()->time.delta()));
 
         struct MoveSpecification
         {
@@ -81,15 +81,14 @@ class PlayerNode : public ome::KinematicNode
 
         auto direction = normalized(raw_direction);
 
-        auto velocity
-            = this->velocity() + direction * config_.movement_force * game()->time.delta();
-
-        if (norm(velocity) > config_.max_speed)
+        update_kinematic<ome::Space::World>([&](auto &k)
         {
-            velocity = normalized(velocity) * config_.max_speed;
-        }
-
-        set_velocity(velocity);
+            k.velocity += direction * config_.movement_force * game()->time.delta();
+            if (norm(k.velocity) > config_.max_speed)
+            {
+                k.velocity = normalized(k.velocity) * config_.max_speed;
+            }
+        });
     }
 
   public:

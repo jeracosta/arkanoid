@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 #include "oh-my-engine/nodes/transform_node.hpp"
 
 namespace ome {
@@ -22,40 +24,60 @@ class KinematicNode : public TransformNode
     {
     }
 
-    const Component &
-    kinematic() const noexcept
-    {
-        return kinematic_;
-    }
-
-    void
-    set_kinematic(const Component &k) noexcept
-    {
-        kinematic_ = k;
-    }
-
-    const Vec3f &
-    velocity() const noexcept
-    {
-        return kinematic_.velocity;
-    }
-
-    void
-    set_velocity(const Vec3f &v) noexcept
+    KinematicNode &
+    velocity(const Vec3f &v) noexcept
     {
         kinematic_.velocity = v;
+        return *this;
     }
 
-    const Vec3f &
-    angular_velocity() const noexcept
-    {
-        return kinematic_.angular_velocity;
-    }
-
-    void
-    set_angular_velocity(const Vec3f &av) noexcept
+    KinematicNode &
+    angular_velocity(const Vec3f &av) noexcept
     {
         kinematic_.angular_velocity = av;
+        return *this;
+    }
+
+    template <Space space = Space::Local>
+    Component
+    kinematic() const noexcept
+    {
+        if constexpr (space == Space::Local)
+        {
+            return kinematic_;
+        }
+        else
+        {
+            auto world             = kinematic_;
+            auto orient            = transform<Space::World>().orientation;
+            world.velocity         = orient * kinematic_.velocity;
+            world.angular_velocity = orient * kinematic_.angular_velocity;
+            return world;
+        }
+    }
+
+    template <Space space = Space::Local>
+    void
+    update_kinematic(const std::function<void(Component &)> &fn)
+    {
+        if constexpr (space == Space::Local)
+        {
+            fn(kinematic_);
+        }
+        else
+        {
+            auto world_orient = transform<Space::World>().orientation;
+
+            Component world;
+            world.velocity         = world_orient * kinematic_.velocity;
+            world.angular_velocity = world_orient * kinematic_.angular_velocity;
+
+            fn(world);
+
+            auto inv_rot                = inverse_of(world_orient);
+            kinematic_.velocity         = inv_rot * world.velocity;
+            kinematic_.angular_velocity = inv_rot * world.angular_velocity;
+        }
     }
 
     void

@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "camera.hpp"
+#include "collision_server.hpp"
 #include "color.hpp"
 #include "input.hpp"
 #include "logger.hpp"
@@ -115,6 +116,8 @@ class Game : public EventConnectionHolder
     Time time;
 
     input::InputMapper input;
+
+    CollisionServer collision_server;
 
     void
     stop()

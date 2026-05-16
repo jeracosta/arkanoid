@@ -215,7 +215,7 @@ class Interval
     {
         constexpr auto compare = [](auto &a, auto &b)
         {
-            return component_wise(std::less{}, a.min, b.max);
+            return component_wise(std::less{}, a.min(), b.max());
         };
 
         return compare(a, b) && compare(b, a);

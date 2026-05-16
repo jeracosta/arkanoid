@@ -40,12 +40,26 @@ class HitboxNode : public TransformNode
     }
 
   protected:
+    void
+    on_mount_() override
+    {
+        game()->collision_server.register_hitbox(*this);
+    }
+
+    void
+    on_unmount_() override
+    {
+        game()->collision_server.unregister_hitbox(*this);
+    }
+
     virtual void
-    on_collision_(const HitboxNode &)
+    on_collision_(HitboxNode &)
     {
     }
 
   private:
+    friend class CollisionServer;
+
     Vec3f size_;
 };
 

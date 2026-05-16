@@ -226,13 +226,11 @@ class Interval
     friend Vector
     projection(const Vector &point, const Interval &interval)
     {
-        auto clamp = [&](auto &component)
-        {
-            auto &[min, max] = interval.bounds();
-            return std::clamp(component, min, max);
-        };
+        auto [min, max] = interval.bounds();
 
-        return transform(point, clamp);
+        auto clamp = [](auto x, auto min, auto max) { return std::clamp(x, min, max); };
+
+        return zip_transform(clamp, point, min, max);
     }
 
   private:

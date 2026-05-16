@@ -428,11 +428,12 @@ Vector(Range &&range) -> Vector<decltype(std::ranges::size(range))::value,
 template <typename... Args>
 Vector(Args...) -> Vector<sizeof...(Args), std::common_type_t<Args...>>;
 
-template <is_vector Vector>
+template <is_vector First, is_vector... Rest>
+    requires(sizeof...(Rest) >= 1)
 constexpr auto
-zip_transform(auto transformation, const Vector &lhs, const Vector &rhs)
+zip_transform(auto transformation, const First &first, const Rest &...rest)
 {
-    return Vector(std::views::zip_transform(transformation, lhs, rhs));
+    return First(std::views::zip_transform(transformation, first, rest...));
 }
 
 template <is_vector Vector>
@@ -520,8 +521,8 @@ template <is_vector Vector>
 constexpr Vector
 clamp(const Vector &value, const Vector &min, const Vector &max)
 {
-    return Vector(std::views::zip_transform(
-        [](auto x, auto lo, auto hi) { return std::clamp(x, lo, hi); }, value, min, max));
+    return zip_transform(
+        [](auto x, auto lo, auto hi) { return std::clamp(x, lo, hi); }, value, min, max);
 }
 
 // #endregion

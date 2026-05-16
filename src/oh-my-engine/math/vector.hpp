@@ -396,7 +396,7 @@ norm(const is_vector auto &vector)
 {
     auto sum_square = [](auto acc, auto x) { return acc + x * x; };
 
-    return std::sqrt(std::accumulate(std::begin(vector), std::end(vector), 0, sum_square));
+    return std::sqrt(std::accumulate(std::begin(vector), std::end(vector), 0.0f, sum_square));
 }
 
 // TODO: Consider renaming to "normalize" for consistency with common terminology.
@@ -430,9 +430,16 @@ Vector(Args...) -> Vector<sizeof...(Args), std::common_type_t<Args...>>;
 
 template <is_vector Vector>
 constexpr auto
-transform(auto transformation, const Vector &lhs, const Vector &rhs)
+zip_transform(auto transformation, const Vector &lhs, const Vector &rhs)
 {
     return Vector(std::views::zip_transform(transformation, lhs, rhs));
+}
+
+template <is_vector Vector>
+constexpr auto
+transform(const Vector &vector, auto transformation)
+{
+    return Vector(vector | std::views::transform(transformation));
 }
 
 template <is_vector Vector, class RandomNumberGenerator>

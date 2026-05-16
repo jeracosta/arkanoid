@@ -144,7 +144,7 @@ struct ParticleScheme
     // [0, 1] multiplier for displacement towards emitter position
     float emitter_pull = 0;
 
-    Material::BlendMode blend_mode = {};
+    BlendMode blend_mode = {};
 
     // TODO: support Material property, instead of just color and blend mode separately
 };

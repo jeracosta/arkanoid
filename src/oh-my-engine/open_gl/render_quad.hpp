@@ -11,15 +11,8 @@ namespace ome::open_gl {
 inline void
 render_quad(const std::array<Vec3f, 4> &vertices, const Material &material)
 {
-    if (material.blend_mode)
-    {
-        glEnable(GL_BLEND);
-        glBlendFunc(material.blend_mode->source_factor, material.blend_mode->destination_factor);
-    }
-    else
-    {
-        glDisable(GL_BLEND);
-    }
+    glEnable(GL_BLEND);
+    glBlendFunc(material.blend_mode.source_factor, material.blend_mode.destination_factor);
 
     if (material.texture)
     {

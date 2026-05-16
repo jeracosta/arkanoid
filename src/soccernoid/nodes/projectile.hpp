@@ -26,7 +26,7 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
 
     static constexpr ome::Vec3f spawn_position = { 0.0f, 7.0f, -3.0f };
 
-    ome::HitboxComponent hitbox_{ { -0.10f, -0.10f, -0.10f }, { 0.10f, 0.10f, 0.10f } };
+    ome::Hitbox hitbox_{ { -0.10f, -0.10f, -0.10f }, { 0.10f, 0.10f, 0.10f } };
 
     class GlowParticlesNode_ : public ome::ParticleEmitterNode
     {

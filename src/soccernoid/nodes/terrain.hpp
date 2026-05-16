@@ -7,14 +7,13 @@
 
 namespace soccernoid {
 
-// TODO: Make hitbox a child
 class TerrainNode : public ome::HitboxNode
 {
   public:
-    // Futsal: penalty point (origin) to goal line (-6m), full court width (20m centered at origin)
-    TerrainNode()
-        : HitboxNode({ { -10.0f, -fog.end, -10.0f }, { 10.0f, 0.0f, 10.0f } })
+    TerrainNode(ome::math::Box<3> region)
+        : HitboxNode(region.size())
     {
+        update_transform<ome::Space::Local>([&](auto &t) { t.position = region.anchor(); });
     }
 
     void
@@ -24,23 +23,14 @@ class TerrainNode : public ome::HitboxNode
     }
 
   private:
-    const ome::math::Box<3>
-    world_region_() const noexcept
-    {
-        auto local     = hitbox_local();
-        auto transform = world_transform();
-
-        return { transform.to_world(local.min()), transform.to_world(local.max()) };
-    }
-
     void
     render_tower_()
     {
-        const auto region = world_region_();
+        auto region = hitbox<ome::Space::World>();
 
-        const float width  = ome::math::width(region);
-        const float length = ome::math::length(region);
-        const float height = ome::math::height(region);
+        const float width  = region.width();
+        const float height = region.height();
+        const float length = region.length();
 
         ome::open_gl::BoxRenderTask{
           .world_region = region,
@@ -51,7 +41,7 @@ class TerrainNode : public ome::HitboxNode
               .left   = { textures.dirt,                { { 0.0f, 0.0f }, { length, height } } },
               .right  = { textures.dirt,                { { 0.0f, 0.0f }, { length, height } } },
               .top    = { textures.floor,               { { 0.0f, 0.0f }, { 1.0f,   1.0f   } } },
-              .bottom = { ome::Texture::placeholder(), { { 0.0f, 0.0f }, { width,  length } } },
+              .bottom = { ome::Texture::placeholder(),  { { 0.0f, 0.0f }, { width,  length } } },
           },
         }();
     }

@@ -37,20 +37,14 @@ class HumanNode : public ome::HitboxNode
 
   public:
     HumanNode()
-        : HitboxNode({
-              { -body_radius_, 0.0f, -body_radius_ },
-              { body_radius_, total_height_, body_radius_ },
-          }),
+        : HitboxNode({ 2.0f * body_radius_, total_height_, 2.0f * body_radius_ }),
           jersey_color_(colors.red_kit),
           head_color_(colors.skin)
     {
     }
 
     explicit HumanNode(const Configuration &config)
-        : HitboxNode({
-              { -body_radius_, 0.0f, -body_radius_ },
-              { body_radius_, total_height_, body_radius_ },
-          }),
+        : HitboxNode({ 2.0f * body_radius_, total_height_, 2.0f * body_radius_ }),
           jersey_color_(config.jersey_color),
           head_color_(config.head_color)
     {

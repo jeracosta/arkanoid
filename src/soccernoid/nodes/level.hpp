@@ -5,6 +5,7 @@
 #include "soccernoid/nodes/player.hpp"
 #include "soccernoid/nodes/projectile.hpp"
 #include "soccernoid/nodes/skybox.hpp"
+#include "soccernoid/nodes/spikes/vortice.hpp"
 #include "soccernoid/nodes/terrain.hpp"
 
 namespace soccernoid {
@@ -28,10 +29,11 @@ class LevelNode : public ome::Node
 
             cursor.add<CometNode>().named("Comet").up();
 
-            cursor.add<FireNode>(ome::Vec3f{ 3.0f, 0.0f, -3.0f }).named("Fire").up();
-
-            auto terrain = std::make_shared<TerrainNode>();
-            cursor.add(terrain).named("Terreno").up();
+            cursor
+                .add<TerrainNode>(
+                    ome::math::Box<3>{ { -10.0f, -fog.end, -10.0f }, { 10.0f, 0.0f, 10.0f } })
+                .named("Terreno")
+                .up();
 
             auto goalkeeper = std::make_shared<HumanNode>(HumanNode::Configuration{
                 .position = { 0.0f, 0.0f, -5.0f },
@@ -41,6 +43,8 @@ class LevelNode : public ome::Node
             cursor.add<ProjectileNode>().named("Projectile").up();
 
             cursor.add<PlayerNode>(PlayerNode::Configuration::make_harry()).named("Harry").up();
+
+            cursor.add<spikes::VorticeNode>(ome::Vec3f{ 0.0f, -5.0f, 0.0f }).named("Vortice").up();
         } });
     }
 

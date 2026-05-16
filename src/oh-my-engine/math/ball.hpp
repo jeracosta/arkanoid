@@ -25,7 +25,7 @@ class Ball
     }
 
     const Vector &
-    anchor() const
+    center() const
     {
         return center_;
     }

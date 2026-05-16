@@ -24,7 +24,7 @@ namespace open_gl { void glBindTexture(const Texture &); }
 struct Sprite
 {
     std::shared_ptr<Texture> texture;
-    Rect                     uv_region = { { 0.0f, 0.0f }, { 1.0f, 1.0f } };
+    Rect                     uv_region = Rect::from_bounds({ 0.0f, 0.0f }, { 1.0f, 1.0f });
 };
 
 // #endregion

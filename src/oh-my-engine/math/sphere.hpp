@@ -26,7 +26,7 @@ class Sphere
     }
 
     const Vector &
-    anchor() const
+    center() const
     {
         return center_;
     }

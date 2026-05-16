@@ -1,3 +1,4 @@
+#include "oh-my-engine/constants.hpp"
 #include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/node.hpp"
 #include "soccernoid/nodes/comet.hpp"
@@ -55,7 +56,7 @@ Level::standard()
 
         level
             .emplace_child<TerrainNode>(
-                ome::Box{ { -5.0f, -fog.end, -5.0f }, { 5.0f, 0.0f, 5.0f } })
+                ome::Box::from_bounds({ -5.0f, -fog.end, -5.0f }, { 5.0f, 0.0f, 5.0f }))
             .rename("Terreno");
 
         level
@@ -77,17 +78,19 @@ Level::standard()
         {
             float angle = (static_cast<float>(i) / pilars) * 2.0f * std::numbers::pi_v<float>;
 
+            float size = 1.0f;
+
             auto location = ome::Vec3f{ std::cos(angle), 0.0f, std::sin(angle) };
             location *= pilar_distance;
             location[1] = -1.0f;
 
-            ome::Box region = { location - ome::Vec3f{ 0.5f, 0.0f, 0.5f },
-                                location + ome::Vec3f{ 0.5f, 1.0f, 0.5f } };
+            auto region = ome::Box::from_size_location({ size }, location);
 
             auto name = std::format("Pilar {}", i + 1);
 
-            level.emplace_child<TerrainNode>(region).rename(name).emplace_child<FireNode>().rename(
-                "Fire");
+            auto &terrain = level.emplace_child<TerrainNode>(region).rename(name);
+
+            terrain.emplace_child<FireNode>().position(ome::up * size / 2).rename("Fire");
         }
     } };
 }

@@ -22,8 +22,7 @@ struct BoxRenderTask
     void
     operator()() const
     {
-        const auto &mn = world_region.min();
-        const auto &mx = world_region.max();
+        const auto &[min, max] = world_region.bounds();
 
         auto draw_face = [&](const Sprite   &sprite,
                              math::Vector<3> a,
@@ -54,45 +53,45 @@ struct BoxRenderTask
 
         // +z front
         draw_face(sprites.front,
-                  { mn[0], mn[1], mx[2] },
-                  { mx[0], mn[1], mx[2] },
-                  { mx[0], mx[1], mx[2] },
-                  { mn[0], mx[1], mx[2] });
+                  { min[0], min[1], max[2] },
+                  { max[0], min[1], max[2] },
+                  { max[0], max[1], max[2] },
+                  { min[0], max[1], max[2] });
 
         // -z back
         draw_face(sprites.back,
-                  { mx[0], mn[1], mn[2] },
-                  { mn[0], mn[1], mn[2] },
-                  { mn[0], mx[1], mn[2] },
-                  { mx[0], mx[1], mn[2] });
+                  { max[0], min[1], min[2] },
+                  { min[0], min[1], min[2] },
+                  { min[0], max[1], min[2] },
+                  { max[0], max[1], min[2] });
 
         // -x left
         draw_face(sprites.left,
-                  { mn[0], mn[1], mn[2] },
-                  { mn[0], mn[1], mx[2] },
-                  { mn[0], mx[1], mx[2] },
-                  { mn[0], mx[1], mn[2] });
+                  { min[0], min[1], min[2] },
+                  { min[0], min[1], max[2] },
+                  { min[0], max[1], max[2] },
+                  { min[0], max[1], min[2] });
 
         // +x right
         draw_face(sprites.right,
-                  { mx[0], mn[1], mx[2] },
-                  { mx[0], mn[1], mn[2] },
-                  { mx[0], mx[1], mn[2] },
-                  { mx[0], mx[1], mx[2] });
+                  { max[0], min[1], max[2] },
+                  { max[0], min[1], min[2] },
+                  { max[0], max[1], min[2] },
+                  { max[0], max[1], max[2] });
 
         // +y top
         draw_face(sprites.top,
-                  { mn[0], mx[1], mx[2] },
-                  { mx[0], mx[1], mx[2] },
-                  { mx[0], mx[1], mn[2] },
-                  { mn[0], mx[1], mn[2] });
+                  { min[0], max[1], max[2] },
+                  { max[0], max[1], max[2] },
+                  { max[0], max[1], min[2] },
+                  { min[0], max[1], min[2] });
 
         // -y bottom
         draw_face(sprites.bottom,
-                  { mn[0], mn[1], mn[2] },
-                  { mx[0], mn[1], mn[2] },
-                  { mx[0], mn[1], mx[2] },
-                  { mn[0], mn[1], mx[2] });
+                  { min[0], min[1], min[2] },
+                  { max[0], min[1], min[2] },
+                  { max[0], min[1], max[2] },
+                  { min[0], min[1], max[2] });
 
         glDisable(GL_TEXTURE_2D);
     }

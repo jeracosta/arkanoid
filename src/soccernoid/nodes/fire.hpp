@@ -15,9 +15,10 @@ class FireNode : public ome::TransformNode
       private:
         static inline const ome::ParticleScheme scheme_ = {
 
-            .initial_position = { ome::Box({ -0.3f, 0.0f, -0.3f }, { 0.3f, 0.0f, 0.3f }), rng },
+            .initial_position = { ome::Box::from_size({ 0.5f, 0.0f, 0.5f }), rng },
 
-            .initial_velocity = { ome::Box({ -0.5f, 1.2f, -0.5f }, { 0.5f, 2.8f, 0.5f }), rng },
+            .initial_velocity
+            = { ome::Box::from_bounds({ -0.5f, 1.2f, -0.5f }, { 0.5f, 2.8f, 0.5f }), rng },
 
             .time_to_live = 2.0f,
 

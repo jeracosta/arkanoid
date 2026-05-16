@@ -26,7 +26,7 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
 
     static constexpr ome::Vec3f spawn_position = { 0.0f, 7.0f, -3.0f };
 
-    ome::Hitbox hitbox_{ { -0.10f, -0.10f, -0.10f }, { 0.10f, 0.10f, 0.10f } };
+    ome::Hitbox hitbox_ = ome::Hitbox::from_size({ radius_ * 2 });
 
     class GlowParticlesNode_ : public ome::ParticleEmitterNode
     {
@@ -63,7 +63,7 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
         static inline const ome::ParticleScheme scheme_ = {
             .initial_position = { ome::math::Sphere<3>({ 0 }, 0.15f), rng },
 
-            .initial_velocity = { ome::Box(0.75f), rng },
+            .initial_velocity = { ome::Box::from_size(0.75f), rng },
 
             .time_to_live = 1.0f,
 

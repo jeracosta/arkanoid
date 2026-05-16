@@ -25,7 +25,7 @@ class CometNode : public ome::TransformNode
 
             .initial_position = ome::Vec3f{ 0.0f, 0.2f, 0.0f },
 
-            .initial_velocity = { ome::Box(0.5f), rng },
+            .initial_velocity = { ome::Box::from_size(1.0f), rng },
 
             .time_to_live = 1.0f,
 

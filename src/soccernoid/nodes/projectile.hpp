@@ -1,13 +1,10 @@
 #pragma once
 
-#include <cstdlib>
-
 #include "oh-my-engine/color.hpp"
 #include "oh-my-engine/game.hpp"
 #include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/math/sphere.hpp"
 #include "oh-my-engine/math/vector.hpp"
-#include "oh-my-engine/node.hpp"
 #include "oh-my-engine/nodes/hitbox_node.hpp"
 #include "oh-my-engine/nodes/kinematic_node.hpp"
 #include "oh-my-engine/nodes/particle_emitter_node.hpp"
@@ -22,13 +19,57 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
   private:
     using Base_ = DistanceCulled<Falling<ome::KinematicNode>>;
 
-    float radius_          = 0.10f;
-    float elasticity_      = 0.90f;
-    float speed_threshold_ = 0.1f;
+    static constexpr float radius_          = 0.10f;
+    static constexpr float elasticity_      = 0.90f; // 1.0f = perfectly elastic, 0.0f = inelastic
+    static constexpr float speed_threshold_ = 0.1f;
 
     static constexpr ome::Vec3f spawn_position = { 0.0f, 7.0f, -3.0f };
 
-    ome::Hitbox hitbox_ = ome::Hitbox::from_size({ radius_ * 2 });
+    class HitboxNode_ : public ome::HitboxNode
+    {
+      public:
+        HitboxNode_()
+            : ome::HitboxNode({ radius_ * 2 })
+        {
+        }
+
+        void
+        on_collision_(ome::HitboxNode &other) override
+        {
+            log(std::format("Collided with {}", other.name()), ome::LogLevel::Debug);
+
+            auto hitbox        = this->hitbox<ome::Space::World>();
+            auto others_hitbox = other.hitbox<ome::Space::World>();
+
+            static_cast<KinematicNode *>(parent())->update_kinematic<ome::Space::Local>(
+                [&](ome::KinematicComponent &kinematic)
+            {
+                auto distance = projection(hitbox.center(), others_hitbox) - hitbox.center();
+
+                if (norm(distance) <= 0)
+                {
+                    return;
+                }
+
+                auto normal_velocity = projection(kinematic.velocity, distance);
+                auto normal_speed    = norm(normal_velocity);
+
+                if (normal_speed < speed_threshold_)
+                {
+                    kinematic.velocity -= normal_velocity;
+                }
+                else
+                {
+                    kinematic.velocity -= (1.0f + elasticity_) * normal_velocity;
+                }
+
+                auto normal = -distance / norm(distance);
+
+                static_cast<KinematicNode *>(parent())->update_transform<ome::Space::Local>(
+                    [&](auto &t) { t.position += -distance + normal * (radius_ + 1e-4f); });
+            });
+        }
+    };
 
     class GlowParticlesNode_ : public ome::ParticleEmitterNode
     {
@@ -97,41 +138,13 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
 
         emplace_child<GlowParticlesNode_>().rename("GlowParticles");
         emplace_child<TraceParticlesNode_>().rename("TraceParticles");
+        emplace_child<HitboxNode_>().rename("Hitbox");
     }
 
     void
     on_tick_() override
     {
         Base_::on_tick_();
-        bounce_();
-    }
-
-  private:
-    void
-    bounce_()
-    {
-        if (transform<ome::Space::World>().position[1] <= radius_)
-        {
-            update_transform<ome::Space::Local>([&](auto &t) { t.position[1] = radius_; });
-
-            auto velocity = kinematic<ome::Space::Local>().velocity;
-
-            float fall_speed = dot(velocity, ome::up);
-            if (fall_speed >= 0.0f)
-            {
-                return;
-            }
-
-            if (std::abs(fall_speed) < speed_threshold_)
-            {
-                update_kinematic<ome::Space::Local>([&](auto &k) { k.velocity[1] = 0.0f; });
-            }
-
-            update_kinematic<ome::Space::Local>([&](auto &k)
-            { k.velocity[1] = -fall_speed * elasticity_; });
-
-            return;
-        }
     }
 };
 

@@ -5,7 +5,6 @@
 #include "soccernoid/nodes/player.hpp"
 #include "soccernoid/nodes/projectile.hpp"
 #include "soccernoid/nodes/skybox.hpp"
-#include "soccernoid/nodes/spikes/vortice.hpp"
 #include "soccernoid/nodes/terrain.hpp"
 
 namespace soccernoid {
@@ -29,7 +28,7 @@ class LevelNode : public ome::Node
 
             cursor.add<CometNode>().named("Comet").up();
 
-            cursor.add<TerrainNode>(ome::Box{ { -8.0f, -fog.end, -8.0f }, { 8.0f, 0.0f, 8.0f } })
+            cursor.add<TerrainNode>(ome::Box{ { -5.0f, -fog.end, -5.0f }, { 5.0f, 0.0f, 5.0f } })
                 .named("Terreno")
                 .up();
 
@@ -42,7 +41,24 @@ class LevelNode : public ome::Node
 
             cursor.add<PlayerNode>(PlayerNode::Configuration::make_harry()).named("Harry").up();
 
-            cursor.add<spikes::VorticeNode>(ome::Vec3f{ 0.0f, -5.0f, 0.0f }).named("Vortice").up();
+            static constexpr uint pilars         = 7;
+            static constexpr uint pilar_distance = 13;
+
+            for (uint i = 0; i < pilars; ++i)
+            {
+                float angle = (static_cast<float>(i) / pilars) * 2.0f * std::numbers::pi_v<float>;
+
+                auto location = ome::Vec3f{ std::cos(angle), 0.0f, std::sin(angle) };
+                location *= pilar_distance;
+                location[1] = -1.0f;
+
+                ome::Box region = { location - ome::Vec3f{ 0.5f, 0.0f, 0.5f },
+                                    location + ome::Vec3f{ 0.5f, 1.0f, 0.5f } };
+
+                auto name = std::format("Pilar {}", i + 1);
+
+                cursor.add<TerrainNode>(region).named(name).add<FireNode>().named("Fire").up().up();
+            }
         } });
     }
 

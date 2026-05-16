@@ -1,5 +1,6 @@
 #pragma once
 
+#include "oh-my-engine/constants.hpp"
 #include "oh-my-engine/math/vector.hpp"
 
 namespace ome::math {
@@ -54,6 +55,30 @@ class Box
     max(const Vector &new_max)
     {
         max_ = new_max;
+    }
+
+    Vec3f
+    size() const
+    {
+        return max_ - min_;
+    }
+
+    inline float
+    width() const
+    {
+        return dot(size(), ome::right);
+    }
+
+    inline float
+    height() const
+    {
+        return dot(size(), ome::up);
+    }
+
+    inline float
+    length() const
+    {
+        return dot(size(), ome::forward);
     }
 
     Vector
@@ -167,23 +192,5 @@ class Box
     Vector min_{};
     Vector max_{};
 };
-
-inline float
-width(const Box<3> &box)
-{
-    return box.max()[0] - box.min()[0];
-}
-
-inline float
-length(const Box<3> &box)
-{
-    return box.max()[2] - box.min()[2];
-}
-
-inline float
-height(const Box<3> &box)
-{
-    return box.max()[1] - box.min()[1];
-}
 
 } // namespace ome::math

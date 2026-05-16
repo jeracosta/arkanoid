@@ -3,7 +3,7 @@
 #include <cstdlib>
 
 #include "oh-my-engine/color.hpp"
-#include "oh-my-engine/math/box.hpp"
+#include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/math/sphere.hpp"
 #include "oh-my-engine/math/vector.hpp"
 #include "oh-my-engine/nodes/hitbox_node.hpp"
@@ -63,7 +63,7 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
         static inline const ome::ParticleScheme scheme_ = {
             .initial_position = { ome::math::Sphere<3>({ 0 }, 0.15f), rng },
 
-            .initial_velocity = { ome::math::Box<3>(0.75f), rng },
+            .initial_velocity = { ome::Box(0.75f), rng },
 
             .time_to_live = 1.0f,
 

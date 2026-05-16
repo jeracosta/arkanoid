@@ -1,6 +1,6 @@
 #include <memory>
 
-#include "oh-my-engine/math/box.hpp"
+#include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/nodes/particle_emitter_node.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
 
@@ -25,7 +25,7 @@ class CometNode : public ome::TransformNode
 
             .initial_position = ome::Vec3f{ 0.0f, 0.2f, 0.0f },
 
-            .initial_velocity = { ome::math::Box<3>(0.5f), rng },
+            .initial_velocity = { ome::Box(0.5f), rng },
 
             .time_to_live = 1.0f,
 

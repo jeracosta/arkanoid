@@ -1,13 +1,13 @@
 #pragma once
 
-#include "oh-my-engine/math/box.hpp"
+#include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/texture.hpp"
 
 namespace ome::open_gl {
 
 struct BoxRenderTask
 {
-    math::Box<3> world_region;
+    Box world_region;
 
     struct
     {

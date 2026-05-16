@@ -10,7 +10,7 @@ namespace soccernoid {
 class TerrainNode : public ome::HitboxNode
 {
   public:
-    TerrainNode(ome::math::Box<3> region)
+    TerrainNode(ome::Box region)
         : HitboxNode(region.size())
     {
         update_transform<ome::Space::Local>([&](auto &t) { t.position = region.anchor(); });

@@ -3,15 +3,17 @@
 #include "oh-my-engine/constants.hpp"
 #include "oh-my-engine/math/vector.hpp"
 
-namespace ome::math {
+namespace ome {
+
+namespace math {
 
 template <std::size_t Dimension, typename Component = float>
-class Box
+class Interval
 {
   public:
     using Vector        = Vector<Dimension, Component>;
     using ComponentType = Component;
-    using Face          = Box<Dimension - 1, Component>;
+    using Face          = Interval<Dimension - 1, Component>;
 
     static constexpr std::size_t
     dimension()
@@ -19,15 +21,15 @@ class Box
         return Dimension;
     }
 
-    Box() = default;
+    Interval() = default;
 
-    Box(Vector min, Vector max)
+    Interval(Vector min, Vector max)
         : min_(std::move(min)),
           max_(std::move(max))
     {
     }
 
-    Box(Component side_length)
+    Interval(Component side_length)
         : min_(Vector(-side_length / Component(2))),
           max_(Vector(side_length / Component(2)))
     {
@@ -123,7 +125,7 @@ class Box
     // clang-format off
 
     friend bool
-    overlaps(const Box &a, const Box &b)
+    overlaps(const Interval &a, const Interval &b)
     {
         constexpr auto compare = [](auto &a, auto &b)
         {
@@ -193,4 +195,9 @@ class Box
     Vector max_{};
 };
 
-} // namespace ome::math
+} // namespace math
+
+using Box  = math::Interval<3>;
+using Rect = math::Interval<2>;
+
+} // namespace ome

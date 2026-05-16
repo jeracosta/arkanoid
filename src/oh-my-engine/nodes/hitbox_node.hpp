@@ -1,13 +1,13 @@
 #pragma once
 
-#include "oh-my-engine/math/box.hpp"
+#include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
 
 namespace ome {
 
 class HitboxNode; // forward declaration
 
-using Hitbox = math::Box<3>;
+using Hitbox = Box;
 
 class HitboxNode : public TransformNode
 {
@@ -36,6 +36,12 @@ class HitboxNode : public TransformNode
 
             return Hitbox{ world_transform * local.min(), world_transform * local.max() };
         }
+    }
+
+  protected:
+    virtual void
+    on_collision_(const HitboxNode &)
+    {
     }
 
   private:

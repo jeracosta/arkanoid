@@ -1,6 +1,6 @@
 #include <memory>
 
-#include "oh-my-engine/math/box.hpp"
+#include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/nodes/particle_emitter_node.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
 #include "oh-my-engine/spline.hpp"
@@ -15,11 +15,9 @@ class FireNode : public ome::TransformNode
       private:
         static inline const ome::ParticleScheme scheme_ = {
 
-            .initial_position
-            = { ome::math::Box<3>({ -0.3f, 0.0f, -0.3f }, { 0.3f, 0.0f, 0.3f }), rng },
+            .initial_position = { ome::Box({ -0.3f, 0.0f, -0.3f }, { 0.3f, 0.0f, 0.3f }), rng },
 
-            .initial_velocity
-            = { ome::math::Box<3>({ -0.5f, 1.2f, -0.5f }, { 0.5f, 2.8f, 0.5f }), rng },
+            .initial_velocity = { ome::Box({ -0.5f, 1.2f, -0.5f }, { 0.5f, 2.8f, 0.5f }), rng },
 
             .time_to_live = 2.0f,
 

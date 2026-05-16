@@ -29,9 +29,7 @@ class LevelNode : public ome::Node
 
             cursor.add<CometNode>().named("Comet").up();
 
-            cursor
-                .add<TerrainNode>(
-                    ome::math::Box<3>{ { -10.0f, -fog.end, -10.0f }, { 10.0f, 0.0f, 10.0f } })
+            cursor.add<TerrainNode>(ome::Box{ { -8.0f, -fog.end, -8.0f }, { 8.0f, 0.0f, 8.0f } })
                 .named("Terreno")
                 .up();
 

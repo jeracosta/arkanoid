@@ -38,14 +38,14 @@ class CameraControlNode : public SoccernoidNode<>
   public:
     struct Settings
     {
-        float mouse_sensitivity   = 0.01f;
         float movement_speed      = 5.0f;
         float sprint_multiplier   = 2.0f;
         float transition_duration = 0.5f;
     };
 
   private:
-    using View = settings::camera::View;
+    using MouseSensitivity = settings::camera::MouseSensitivity;
+    using View             = settings::camera::View;
 
     ome::Camera *camera_;
     Settings     settings_;
@@ -69,7 +69,8 @@ class CameraControlNode : public SoccernoidNode<>
 
         // FIXME: Clamp pitch to avoid turning over
 
-        auto [delta_yaw, delta_pitch] = -input.delta * settings_.mouse_sensitivity;
+        auto mouse_sensitivity        = game()->settings.get<MouseSensitivity>().value;
+        auto [delta_yaw, delta_pitch] = -input.delta * mouse_sensitivity;
 
         auto yaw_axis = view_ == CameraView::FirstPerson ? ome::up : camera_->up();
         camera_->rotate(delta_yaw, yaw_axis);

@@ -109,6 +109,25 @@ struct View
     operator==(const View &) const = default;
 };
 
+struct MouseSensitivity
+{
+    float value = 0.01f;
+
+    constexpr MouseSensitivity(float value = 0.01f)
+        : value(value)
+    {
+    }
+
+    constexpr
+    operator float() const
+    {
+        return value;
+    }
+
+    constexpr bool
+    operator==(const MouseSensitivity &) const = default;
+};
+
 } // namespace soccernoid::settings::camera
 
 namespace soccernoid {
@@ -116,18 +135,21 @@ namespace soccernoid {
 class Settings : private ome::EventBus<settings::window::Fullscreen,
                                        settings::time::Paused,
                                        settings::time::Speed,
-                                       settings::camera::View>
+                                       settings::camera::View,
+                                       settings::camera::MouseSensitivity>
 {
   private:
     using EventBus_ = ome::EventBus<settings::window::Fullscreen,
                                     settings::time::Paused,
                                     settings::time::Speed,
-                                    settings::camera::View>;
+                                    settings::camera::View,
+                                    settings::camera::MouseSensitivity>;
 
     std::tuple<settings::window::Fullscreen,
                settings::time::Paused,
                settings::time::Speed,
-               settings::camera::View>
+               settings::camera::View,
+               settings::camera::MouseSensitivity>
         values_;
 
   public:

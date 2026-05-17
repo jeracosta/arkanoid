@@ -78,7 +78,7 @@ class Window : EventBus<WindowResized>, public ome::sdl::EventHandler
 
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
-        SDL_SetRelativeMouseMode(SDL_TRUE);
+        set_relative_mouse_mode(true);
         SDL_GL_SetSwapInterval(1);
     }
 
@@ -130,6 +130,12 @@ class Window : EventBus<WindowResized>, public ome::sdl::EventHandler
     toggle_fullscreen()
     {
         set_fullscreen(!is_fullscreen());
+    }
+
+    void
+    set_relative_mouse_mode(bool enabled)
+    {
+        SDL_SetRelativeMouseMode(enabled ? SDL_TRUE : SDL_FALSE);
     }
 
     friend void

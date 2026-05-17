@@ -79,13 +79,11 @@ class Window : EventBus<WindowResized>, public ome::sdl::EventHandler
     Window(const Window &) = delete;
 
     Window &
-    operator=(const Window &)
-        = delete;
+    operator=(const Window &) = delete;
 
     Window(Window &&) = default;
     Window &
-    operator=(Window &&)
-        = default;
+    operator=(Window &&) = default;
 
     ~Window()
     {
@@ -116,10 +114,16 @@ class Window : EventBus<WindowResized>, public ome::sdl::EventHandler
     }
 
     void
+    set_fullscreen(bool enabled)
+    {
+        auto flag = enabled ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0;
+        SDL_SetWindowFullscreen(window_, flag);
+    }
+
+    void
     toggle_fullscreen()
     {
-        auto flag = is_fullscreen() ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
-        SDL_SetWindowFullscreen(window_, flag);
+        set_fullscreen(!is_fullscreen());
     }
 
     friend void

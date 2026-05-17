@@ -56,7 +56,11 @@ Game::Game(const Configuration &config)
 {
 }
 
-Game::~Game() = default;
+Game::~Game()
+{
+    // Shut ImGui down while the SDL GL context (owned by `window`) is alive.
+    debug_ui_.reset();
+}
 
 void
 Game::initialize_()
@@ -67,6 +71,8 @@ Game::initialize_()
     }
 
     initialized_ = true;
+
+    debug_ui_.emplace(window);
 
     if (config_.make_logger)
     {
@@ -160,8 +166,10 @@ Game::update_()
             running_ = false;
         }
 
-        event | input | window; // piped to chain of handlers
+        event | *debug_ui_ | input | window; // piped to chain of handlers
     }
+
+    debug_ui_->begin_frame();
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -186,6 +194,8 @@ Game::update_()
     }
 
     tasks_.clear();
+
+    debug_ui_->end_frame();
 
     SDL_GL_SwapWindow(window);
 

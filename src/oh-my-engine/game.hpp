@@ -7,10 +7,12 @@
 #include <GL/glext.h>
 #include <SDL2/SDL.h>
 #include <memory>
+#include <optional>
 
 #include "camera.hpp"
 #include "collision_server.hpp"
 #include "color.hpp"
+#include "debug_ui.hpp"
 #include "input.hpp"
 #include "logger.hpp"
 #include "time.hpp"
@@ -91,6 +93,10 @@ class Game : public EventConnectionHolder
     std::shared_ptr<Node>              root_node_;
     std::vector<std::function<void()>> tasks_;
     std::unique_ptr<Logger>            logger_;
+
+    // Constructed in initialize_() (needs the window + GL context); explicitly
+    // torn down in ~Game() while `window` (and its GL context) is still alive.
+    std::optional<DebugUi> debug_ui_;
 
     void
     mount_(std::shared_ptr<Node> node);

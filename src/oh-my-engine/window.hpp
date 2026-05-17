@@ -132,6 +132,12 @@ class Window : EventBus<WindowResized>, public ome::sdl::EventHandler
         set_fullscreen(!is_fullscreen());
     }
 
+    bool
+    is_relative_mouse_mode() const
+    {
+        return SDL_GetRelativeMouseMode() == SDL_TRUE;
+    }
+
     void
     set_relative_mouse_mode(bool enabled)
     {

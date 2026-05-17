@@ -62,7 +62,7 @@ class CameraControlNode : public SoccernoidNode<>
     void
     on_mouse_motion_(const ome::input::MouseMotionInput &input)
     {
-        if (is_transitioning_())
+        if (is_transitioning_() || !game()->window.is_relative_mouse_mode())
         {
             return;
         }
@@ -81,7 +81,7 @@ class CameraControlNode : public SoccernoidNode<>
     void
     on_mouse_wheel_(const ome::input::MouseWheelInput &input)
     {
-        if (is_transitioning_())
+        if (is_transitioning_() || !game()->window.is_relative_mouse_mode())
         {
             return;
         }

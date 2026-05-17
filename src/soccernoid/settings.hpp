@@ -28,14 +28,37 @@ struct Fullscreen
 
 } // namespace soccernoid::settings::window
 
+namespace soccernoid::settings::time {
+
+struct Paused
+{
+    bool value = false;
+
+    constexpr Paused(bool value = false)
+        : value(value)
+    {
+    }
+
+    constexpr
+    operator bool() const
+    {
+        return value;
+    }
+
+    constexpr bool
+    operator==(const Paused &) const = default;
+};
+
+} // namespace soccernoid::settings::time
+
 namespace soccernoid {
 
-class Settings : private ome::EventBus<settings::window::Fullscreen>
+class Settings : private ome::EventBus<settings::window::Fullscreen, settings::time::Paused>
 {
   private:
-    using EventBus_ = ome::EventBus<settings::window::Fullscreen>;
+    using EventBus_ = ome::EventBus<settings::window::Fullscreen, settings::time::Paused>;
 
-    std::tuple<settings::window::Fullscreen> values_;
+    std::tuple<settings::window::Fullscreen, settings::time::Paused> values_;
 
   public:
     using EventBus_::bind;

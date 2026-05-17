@@ -76,7 +76,7 @@ class Game : public EventConnectionHolder
         std::function<void(Game &)> on_update = {};
     };
 
-    ~Game();
+    virtual ~Game();
 
     // #endregion
 
@@ -84,6 +84,7 @@ class Game : public EventConnectionHolder
 
   private:
     Configuration                      config_;
+    bool                               initialized_ = false;
     bool                               running_     = false;
     unsigned long                      frame_count_ = 0;
     std::shared_ptr<Enviroment>        enviroment_  = Enviroment::instance();
@@ -91,17 +92,23 @@ class Game : public EventConnectionHolder
     std::vector<std::function<void()>> tasks_;
     std::unique_ptr<Logger>            logger_;
 
-    Game(const Configuration &config);
-
     void
     mount_(std::shared_ptr<Node> node);
 
     void
     update_();
 
+  protected:
+    Game(const Configuration &config);
+
+    void
+    initialize_();
+
     void
     run_()
     {
+        initialize_();
+
         running_ = true;
 
         while (running_)

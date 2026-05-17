@@ -54,6 +54,20 @@ Game::Game(const Configuration &config)
       window(config.window),
       camera(config.camera)
 {
+}
+
+Game::~Game() = default;
+
+void
+Game::initialize_()
+{
+    if (initialized_)
+    {
+        return;
+    }
+
+    initialized_ = true;
+
     if (config_.make_logger)
     {
         logger_ = config_.make_logger();
@@ -116,8 +130,6 @@ Game::Game(const Configuration &config)
         glDisable(GL_LIGHTING);
     }
 }
-
-Game::~Game() = default;
 
 void
 Game::mount_(std::shared_ptr<Node> node_owner)

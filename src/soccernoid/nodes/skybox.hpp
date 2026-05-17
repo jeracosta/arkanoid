@@ -47,8 +47,9 @@ class SkyboxNode : public ome::Node
 
         glDepthRange(1.0, 1.0);
 
+        const float far = game()->camera.far();
         ome::open_gl::BoxRenderTask{
-            .world_region      = ome::Box(game()->camera.far()),
+            .world_region      = ome::Box::from_size(ome::Vec3f{ far, far, far }),
             .texture_env_mode  = GL_REPLACE,
             .sprites           = {
                 .front  = { skybox_.front  },

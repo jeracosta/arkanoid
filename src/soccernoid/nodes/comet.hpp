@@ -25,7 +25,7 @@ class CometNode : public ome::TransformNode
 
             .initial_position = ome::Vec3f{ 0.0f, 0.2f, 0.0f },
 
-            .initial_velocity = { ome::Box(0.5f), rng },
+            .initial_velocity = { ome::Box::from_size(1.0f), rng },
 
             .time_to_live = 1.0f,
 
@@ -33,6 +33,8 @@ class CometNode : public ome::TransformNode
                                          ome::Color::rgba(0.0f, 0.0f, 1.0f, 0.0f) },
 
             .scale = ome::Interpolation{ 0.3f, 0.05f },
+
+            .blend_mode = ome::BlendMode::additive(),
         };
 
         static inline const ome::ParticleEmitterNode::Settings settings_ = {
@@ -53,7 +55,7 @@ class CometNode : public ome::TransformNode
     CometNode()
         : TransformNode()
     {
-        extending(*this).add(particles_).named("Particles").up();
+        add_child(particles_).rename("Particles");
     }
 
     void

@@ -42,9 +42,10 @@ class FireNode : public ome::TransformNode
       private:
         static inline const ome::ParticleScheme scheme_ = {
 
-            .initial_position = { ome::Box({ -0.3f, 0.0f, -0.3f }, { 0.3f, 0.0f, 0.3f }), rng },
+            .initial_position = { ome::Box::from_size({ 0.5f, 0.0f, 0.5f }), rng },
 
-            .initial_velocity = { ome::Box({ -0.5f, 1.2f, -0.5f }, { 0.5f, 2.8f, 0.5f }), rng },
+            .initial_velocity
+            = { ome::Box::from_bounds({ -0.5f, 1.2f, -0.5f }, { 0.5f, 2.8f, 0.5f }), rng },
 
             .time_to_live = 2.0f,
 
@@ -67,7 +68,9 @@ class FireNode : public ome::TransformNode
                 { 0.50f, 0.30f },
                 { 0.70f, 0.20f },
                 { 1.00f, 0.00f },
-            })
+            }),
+
+            .blend_mode = ome::BlendMode::additive(),
         };
 
         static inline const ome::ParticleEmitterNode::Settings settings_ = {
@@ -89,8 +92,8 @@ class FireNode : public ome::TransformNode
         : TransformNode()
     {
         update_transform<ome::Space::Local>([&](auto &t) { t.position = position; });
-        extending(*this).add<FirePointLightNode_>().named("FireLight").up();
-        extending(*this).add(particles_).named("FireParticles").up();
+        emplace_child<FirePointLightNode_>().rename("FireLight");
+        add_child(particles_).rename("FireParticles");
     }
 };
 

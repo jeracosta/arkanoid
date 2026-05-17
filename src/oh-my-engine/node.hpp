@@ -117,13 +117,13 @@ class Node : public std::enable_shared_from_this<Node>,
         return boost::typeindex::type_id_runtime(*this).pretty_name() + "@" + address_string(this);
     }
 
-    void
+    Node &
     rename(std::string new_name)
     {
         [[unlikely]]
         if (new_name == name_)
         {
-            return;
+            return *this;
         }
 
         [[unlikely]]
@@ -134,14 +134,14 @@ class Node : public std::enable_shared_from_this<Node>,
             auto &&task = [this, name = std::move(new_name)]() mutable { rename(std::move(name)); };
             game_->schedule(task);
 
-            return;
+            return *this;
         }
 
         [[unlikely]]
         if (!parent_)
         {
             name_ = std::move(new_name);
-            return;
+            return *this;
         }
 
         [[unlikely]]
@@ -157,6 +157,8 @@ class Node : public std::enable_shared_from_this<Node>,
 
         name_ = std::move(new_name);
         parent_->children_.emplace(name_, std::move(node));
+
+        return *this;
     }
 
     // #endregion
@@ -170,8 +172,10 @@ class Node : public std::enable_shared_from_this<Node>,
                | std::views::values | std::views::transform(&std::shared_ptr<Node>::get);
     }
 
-    Node *
-    add_child(std::shared_ptr<Node> child_owner)
+    template <class TChild>
+        requires std::derived_from<TChild, Node>
+    TChild &
+    add_child(std::shared_ptr<TChild> child_owner)
     {
         auto child = child_owner.get();
 
@@ -201,7 +205,13 @@ class Node : public std::enable_shared_from_this<Node>,
 
             game_->schedule(task);
 
-            return child;
+            return *child;
+        }
+
+        [[unlikely]]
+        if (child->name_.empty())
+        {
+            child->name_ = child->default_name();
         }
 
         [[unlikely]]
@@ -220,7 +230,15 @@ class Node : public std::enable_shared_from_this<Node>,
             child->mount_to_(game_);
         }
 
-        return child;
+        return *child;
+    }
+
+    template <class TChild, class... Args>
+        requires std::derived_from<TChild, Node>
+    TChild &
+    emplace_child(Args &&...args)
+    {
+        return add_child(std::make_shared<TChild>(std::forward<Args>(args)...));
     }
 
     std::shared_ptr<Node>
@@ -306,7 +324,9 @@ class Node : public std::enable_shared_from_this<Node>,
     void
     log(const auto &message, LogLevel level = LogLevel::Info)
     {
-        assert(is_mounted() && "Tried logging from an unmounted node; mount it first.");
+        assert(lifecycle_phase() == LifecyclePhase::Mounted
+               || lifecycle_phase() == LifecyclePhase::Mounting
+                      && "Tried logging from an unmounted node; mount it first.");
 
         auto prefix = std::format("\033[34m{} ({}): \033[0m", name(), address_string(this));
 
@@ -389,7 +409,7 @@ class Node : public std::enable_shared_from_this<Node>,
     void
     unmount_()
     {
-        assert(is_mounted());
+        assert(lifecycle_phase() == LifecyclePhase::Mounted);
 
         phase_ = Unmounting;
 
@@ -410,73 +430,6 @@ class Node : public std::enable_shared_from_this<Node>,
 
     friend class Game; // allows Game to mount and unmount nodes.
 };
-
-// #region Builder utilities
-
-// Stateful fluent interface for building a node tree.
-class Node::CompositionCursor
-{
-    std::vector<Node *> stack_;
-
-  public:
-    template <class Root>
-        requires std::derived_from<std::remove_cvref_t<Root>, Node>
-    explicit CompositionCursor(Root &root)
-    {
-        stack_.push_back(&root);
-    }
-
-    CompositionCursor &
-    add(std::shared_ptr<Node> child)
-    {
-        auto *parent = stack_.back();
-        auto *node   = parent->add_child(std::move(child));
-        stack_.push_back(node);
-        return *this;
-    }
-
-    template <class T, class... Args>
-        requires std::derived_from<T, Node>
-    CompositionCursor &
-    add(Args &&...args)
-    {
-        return add(std::make_shared<T>(std::forward<Args>(args)...));
-    }
-
-    CompositionCursor &
-    named(std::string name)
-    {
-        stack_.back()->rename(std::move(name));
-
-        return *this;
-    }
-
-    CompositionCursor &
-    up()
-    {
-        if (stack_.size() == 1)
-        {
-            throw std::runtime_error("Node builder tried to move up from root node.");
-        }
-
-        stack_.pop_back();
-
-        return *this;
-    }
-
-    operator Node &()
-    {
-        return *stack_.front(); // root
-    }
-};
-
-[[nodiscard]] inline Node::CompositionCursor
-extending(Node &root)
-{
-    return Node::CompositionCursor(root);
-}
-
-// #endregion
 
 // #region Tree traversal utilities
 

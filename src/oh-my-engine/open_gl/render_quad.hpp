@@ -11,14 +11,15 @@ namespace ome::open_gl {
 inline void
 render_quad(const std::array<Vec3f, 4> &vertices, const Material &material)
 {
-    if (material.blend_mode)
+    if (material.blend_mode.source_factor == GL_ONE
+        && material.blend_mode.destination_factor == GL_ZERO)
     {
-        glEnable(GL_BLEND);
-        glBlendFunc(material.blend_mode->source_factor, material.blend_mode->destination_factor);
+        glDisable(GL_BLEND);
     }
     else
     {
-        glDisable(GL_BLEND);
+        glEnable(GL_BLEND);
+        glBlendFunc(material.blend_mode.source_factor, material.blend_mode.destination_factor);
     }
 
     if (material.texture)
@@ -46,6 +47,7 @@ render_quad(const std::array<Vec3f, 4> &vertices, const Material &material)
     glEnd();
 
     glDisable(GL_BLEND);
+    glDisable(GL_TEXTURE_2D);
 }
 
 } // namespace ome::open_gl

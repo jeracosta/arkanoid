@@ -2,7 +2,6 @@
 
 #include <algorithm>
 
-#include "oh-my-engine/math/box.hpp"
 #include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/texture.hpp"
 
@@ -30,8 +29,9 @@ struct BoxRenderTask
     void
     operator()() const
     {
-        const auto &mn = world_region.min();
-        const auto &mx = world_region.max();
+        const auto         bounds = world_region.bounds();
+        const auto        &mn     = bounds.min;
+        const auto        &mx     = bounds.max;
 
         const GLint prev_env_mode = []
         {

@@ -24,7 +24,7 @@ class HitboxNode : public TransformNode
     const Hitbox
     hitbox() const noexcept
     {
-        auto local = Hitbox{ -size_ / 2.0f, size_ / 2.0f };
+        auto local = Hitbox::from_size(size_);
 
         if constexpr (space == Space::Local)
         {
@@ -34,17 +34,32 @@ class HitboxNode : public TransformNode
         {
             auto world_transform = transform<Space::World>();
 
-            return Hitbox{ world_transform * local.min(), world_transform * local.max() };
+            return Hitbox::from_bounds(world_transform * local.min(),
+                                       world_transform * local.max());
         }
     }
 
   protected:
+    void
+    on_mount_() override
+    {
+        game()->collision_server.register_hitbox(*this);
+    }
+
+    void
+    on_unmount_() override
+    {
+        game()->collision_server.unregister_hitbox(*this);
+    }
+
     virtual void
-    on_collision_(const HitboxNode &)
+    on_collision_(HitboxNode &)
     {
     }
 
   private:
+    friend class CollisionServer;
+
     Vec3f size_;
 };
 

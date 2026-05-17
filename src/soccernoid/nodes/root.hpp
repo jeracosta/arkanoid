@@ -14,14 +14,11 @@ class RootNode : public ome::Node
     RootNode()
         : Node("Root")
     {
-        // clang-format off
-        extending(*this)
-            .add<CameraControlNode>(CameraControlNode::Settings{}).named("Camera").up()
-            .add<WindowControlNode>().named("Window").up()
-            .add<ome::Slowed<FrameRateNode, 1.0f>>().named("FrameRate").up()
-            .add<TimeSpeedNode>().named("TimeSpeed").up()
-            .add<LevelNode>().named("Level").up();
-        // clang-format on
+        emplace_child<CameraControlNode>(CameraControlNode::Settings{}).rename("Camera");
+        emplace_child<WindowControlNode>().rename("Window");
+        emplace_child<ome::Slowed<FrameRateNode, 1.0f>>().rename("FrameRate");
+        emplace_child<TimeSpeedNode>().rename("TimeSpeed");
+        emplace_child<LevelNode>().rename("Level");
     }
 
     void

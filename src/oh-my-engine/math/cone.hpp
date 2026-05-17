@@ -56,12 +56,6 @@ class Cone
         return height_;
     }
 
-    const Vector &
-    anchor() const
-    {
-        return apex_;
-    }
-
     void
     displace(const Vector &delta)
     {

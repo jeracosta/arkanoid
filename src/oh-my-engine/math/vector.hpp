@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstddef>
 #include <functional>
+#include <glm/glm.hpp>
 #include <numeric>
 #include <random>
 #include <ranges>
@@ -395,7 +396,7 @@ norm(const is_vector auto &vector)
 {
     auto sum_square = [](auto acc, auto x) { return acc + x * x; };
 
-    return std::sqrt(std::accumulate(std::begin(vector), std::end(vector), 0, sum_square));
+    return std::sqrt(std::accumulate(std::begin(vector), std::end(vector), 0.0f, sum_square));
 }
 
 // TODO: Consider renaming to "normalize" for consistency with common terminology.
@@ -427,11 +428,19 @@ Vector(Range &&range) -> Vector<decltype(std::ranges::size(range))::value,
 template <typename... Args>
 Vector(Args...) -> Vector<sizeof...(Args), std::common_type_t<Args...>>;
 
+template <is_vector First, is_vector... Rest>
+    requires(sizeof...(Rest) >= 1)
+constexpr auto
+zip_transform(auto transformation, const First &first, const Rest &...rest)
+{
+    return First(std::views::zip_transform(transformation, first, rest...));
+}
+
 template <is_vector Vector>
 constexpr auto
-transform(auto transformation, const Vector &lhs, const Vector &rhs)
+transform(const Vector &vector, auto transformation)
 {
-    return Vector(std::views::zip_transform(transformation, lhs, rhs));
+    return Vector(vector | std::views::transform(transformation));
 }
 
 template <is_vector Vector, class RandomNumberGenerator>
@@ -446,6 +455,16 @@ random_vector(Vector from, Vector to, RandomNumberGenerator &&rng)
     }
 
     return result;
+}
+
+template <is_vector Vector>
+Vector
+projection(const Vector &vector, const Vector &onto)
+{
+    auto denom = dot(onto, onto);
+    assert(denom > 0);
+
+    return onto * (dot(vector, onto) / denom);
 }
 
 // Perpendicular component of vector relative to dir.
@@ -502,8 +521,8 @@ template <is_vector Vector>
 constexpr Vector
 clamp(const Vector &value, const Vector &min, const Vector &max)
 {
-    return Vector(std::views::zip_transform(
-        [](auto x, auto lo, auto hi) { return std::clamp(x, lo, hi); }, value, min, max));
+    return zip_transform(
+        [](auto x, auto lo, auto hi) { return std::clamp(x, lo, hi); }, value, min, max);
 }
 
 // #endregion

@@ -2,8 +2,8 @@
 
 #include <GL/gl.h>
 #include <memory>
-#include <optional>
 
+#include "oh-my-engine/blend_mode.hpp"
 #include "oh-my-engine/color.hpp"
 #include "oh-my-engine/texture.hpp"
 
@@ -11,21 +11,15 @@ namespace ome {
 
 struct Material
 {
-    struct BlendMode
-    {
-        GLenum source_factor      = GL_SRC_ALPHA;
-        GLenum destination_factor = GL_ONE;
-    };
-
     Color ambient;
     Color diffuse;
     Color specular;
     Color emission;
     float shininess;
 
-    Color                            color      = Color::white();
-    std::shared_ptr<Texture>         texture    = nullptr;
-    std::optional<BlendMode>         blend_mode = std::nullopt;
+    Color                     color      = Color::white();
+    std::shared_ptr<Texture>  texture    = nullptr;
+    BlendMode                 blend_mode = BlendMode::opaque();
 
     Material()
         : ambient(Color::rgb(0.2f, 0.2f, 0.2f)),

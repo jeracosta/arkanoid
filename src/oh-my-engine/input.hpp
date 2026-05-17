@@ -148,6 +148,14 @@ class KeyboardInputMapper : public ome::sdl::EventHandler
         return slot_of_(action).bus.bind<KeyboardInput>(std::forward<TCallback>(callback));
     }
 
+    template <typename T>
+    [[nodiscard]] decltype(auto)
+    bind(Action action, void (T::*member)(), T *instance)
+    {
+        return slot_of_(action).bus.bind<KeyboardInput>([instance, member]()
+        { (instance->*member)(); });
+    }
+
     [[nodiscard]] bool
     is_pressed(Action action) const noexcept
     {

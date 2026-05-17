@@ -3,6 +3,7 @@
 #include "oh-my-engine/constants.hpp"
 #include "oh-my-engine/nodes/kinematic_node.hpp"
 #include "soccernoid/input.hpp"
+#include "soccernoid/nodes/projectile.hpp"
 
 namespace soccernoid {
 
@@ -52,7 +53,7 @@ class PlayerNode : public ome::KinematicNode
     void
     process_movement_()
     {
-        set_velocity(velocity() * std::exp(-config_.speed_decay * game()->time.delta()));
+        velocity(kinematic().velocity * std::exp(-config_.speed_decay * game()->time.delta()));
 
         struct MoveSpecification
         {
@@ -84,15 +85,23 @@ class PlayerNode : public ome::KinematicNode
 
         auto direction = normalized(raw_direction);
 
-        auto velocity
-            = this->velocity() + direction * config_.movement_force * game()->time.delta();
-
-        if (norm(velocity) > config_.max_speed)
+        update_kinematic<ome::Space::World>([&](auto &k)
         {
-            velocity = normalized(velocity) * config_.max_speed;
-        }
+            k.velocity += direction * config_.movement_force * game()->time.delta();
+            if (norm(k.velocity) > config_.max_speed)
+            {
+                k.velocity = normalized(k.velocity) * config_.max_speed;
+            }
+        });
+    }
 
-        set_velocity(velocity);
+    void
+    shoot_()
+    {
+        auto &projectile = game()->root_node()->emplace_child<ProjectileNode>();
+
+        projectile.position(transform<ome::Space::World>().position);
+        projectile.velocity(0.2 * ome::up + 5.0 * ome::forward);
     }
 
   public:
@@ -114,6 +123,8 @@ class PlayerNode : public ome::KinematicNode
     {
         update_transform<ome::Space::Local>([&](auto &t) { t.position = ome::up * 1.5f; });
         log("Hola");
+
+        hold(game()->input.bind(Action::PlayerShoot, &PlayerNode::shoot_, this));
     }
 };
 

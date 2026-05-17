@@ -17,7 +17,10 @@ class Falling : public TBase
     void
     on_tick_() override
     {
-        this->set_velocity(this->velocity() + force_ * this->game()->time.delta());
+        this->template update_kinematic<ome::Space::World>([&](auto &k)
+        {
+            k.velocity += force_ * this->game()->time.delta();
+        });
 
         TBase::on_tick_();
     }

@@ -145,7 +145,7 @@ struct ParticleScheme
     // [0, 1] multiplier for displacement towards emitter position
     float emitter_pull = 0;
 
-    Material::BlendMode blend_mode = {};
+    BlendMode blend_mode = BlendMode::additive();
 
     // TODO: support Material property, instead of just color and blend mode separately
 };
@@ -273,8 +273,8 @@ class ParticleServer
             const auto &particle = particles_[i];
 
             Material material;
-            material.color      = particle.color;
-            material.blend_mode = scheme_.blend_mode;
+            material.color       = particle.color;
+            material.blend_mode  = scheme_.blend_mode;
 
             open_gl::render_billboard(particle.position, { particle.scale }, material, camera);
         }

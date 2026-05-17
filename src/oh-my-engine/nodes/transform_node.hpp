@@ -86,6 +86,27 @@ class TransformNode : public Node
         fn(local_transform_);
     }
 
+    TransformNode &
+    position(const Vec3f &position)
+    {
+        update_transform<Space::Local>([&](auto &t) { t.position = position; });
+        return *this;
+    }
+
+    TransformNode &
+    orientation(const Orientation &orientation)
+    {
+        update_transform<Space::Local>([&](auto &t) { t.orientation = orientation; });
+        return *this;
+    }
+
+    TransformNode &
+    scale(const Vec3f &scale)
+    {
+        update_transform<Space::Local>([&](auto &t) { t.scale = scale; });
+        return *this;
+    }
+
   private:
     template <Space space>
     void

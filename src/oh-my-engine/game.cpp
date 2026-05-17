@@ -166,6 +166,8 @@ Game::update_()
         visit_dfs(*root_node_, &Node::tick, [](Node &) {});
     }
 
+    collision_server.process_collisions();
+
     for (auto &task : tasks_)
     {
         task();

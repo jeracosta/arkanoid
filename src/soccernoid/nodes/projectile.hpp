@@ -1,12 +1,10 @@
 #pragma once
 
-#include <memory>
 #include <cstdlib>
+#include <memory>
 
 #include "oh-my-engine/color.hpp"
 #include "oh-my-engine/light.hpp"
-#include "oh-my-engine/math/box.hpp"
-#include "oh-my-engine/color.hpp"
 #include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/math/sphere.hpp"
 #include "oh-my-engine/math/vector.hpp"
@@ -25,13 +23,68 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
   private:
     using Base_ = DistanceCulled<Falling<ome::KinematicNode>>;
 
-    float radius_          = 0.10f; // futsal size 4 ball: circumference 62-64cm, radius ~0.10m
-    float elasticity_      = 0.90f;
-    float speed_threshold_ = 0.1f;
+    static constexpr float radius_          = 0.10f;
+    static constexpr float elasticity_      = 0.90f; // 1.0f = perfectly elastic, 0.0f = inelastic
+    static constexpr float speed_threshold_ = 0.1f;
 
     static constexpr ome::Vec3f spawn_position = { 0.0f, 7.0f, -3.0f };
 
-    ome::Hitbox hitbox_{ { -0.10f, -0.10f, -0.10f }, { 0.10f, 0.10f, 0.10f } };
+    class HitboxNode_ : public ome::HitboxNode
+    {
+      public:
+        HitboxNode_()
+            : ome::HitboxNode(ome::Vec3f{ radius_ * 2, radius_ * 2, radius_ * 2 })
+        {
+        }
+
+        void
+        on_collision_(ome::HitboxNode &other) override
+        {
+            log(std::format("Collided with {} ({})", other.name(), other.default_name()),
+                ome::LogLevel::Debug);
+
+            auto hitbox        = this->hitbox<ome::Space::World>();
+            auto others_hitbox = other.hitbox<ome::Space::World>();
+
+            auto *parent = static_cast<KinematicNode *>(this->parent());
+
+            parent->update_kinematic<ome::Space::Local>([&](ome::KinematicComponent &kinematic)
+            {
+                constexpr float epsilon = 1e-4f;
+
+                auto overlap          = overlap_depth(hitbox, others_hitbox);
+                auto penetration_axis = std::ranges::min_element(overlap) - overlap.begin();
+
+                if (overlap[penetration_axis] < epsilon)
+                {
+                    return;
+                }
+
+                bool is_negative = (hitbox.center()[penetration_axis]
+                                    < others_hitbox.center()[penetration_axis]);
+
+                ome::Vec3f normal;
+                normal[penetration_axis] = is_negative ? -1.0f : 1.0f;
+
+                auto normal_velocity = projection(kinematic.velocity, normal);
+                auto normal_speed    = norm(normal_velocity);
+
+                if (normal_speed < speed_threshold_)
+                {
+                    kinematic.velocity -= normal_velocity;
+                }
+                else
+                {
+                    kinematic.velocity -= (1.0f + elasticity_) * normal_velocity;
+                }
+
+                auto correction = normal * (overlap[penetration_axis] + epsilon);
+
+                parent->update_transform<ome::Space::Local>([&](auto &transform)
+                { transform.position += correction; });
+            });
+        }
+    };
 
     // Point light parented to the projectile so a colored pool follows the ball (GL_LIGHT2).
     class ProjectilePointLightNode_ : public ome::LightNode
@@ -41,12 +94,12 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
         make_point_light_()
         {
             auto light = std::make_unique<ome::PointLight>(GL_LIGHT2);
-            light->ambient   = ome::Color::rgb(0.0f, 0.0f, 0.0f);
-            light->diffuse   = ome::Color::rgb(1.0f, 0.45f, 0.95f);
-            light->specular  = ome::Color::rgb(0.9f, 0.75f, 1.0f);
-            light->constant_attenuation  = 1.0f;
-            light->linear_attenuation      = 0.12f;
-            light->quadratic_attenuation   = 0.28f;
+            light->ambient              = ome::Color::rgb(0.0f, 0.0f, 0.0f);
+            light->diffuse              = ome::Color::rgb(1.0f, 0.45f, 0.95f);
+            light->specular             = ome::Color::rgb(0.9f, 0.75f, 1.0f);
+            light->constant_attenuation = 1.0f;
+            light->linear_attenuation   = 0.12f;
+            light->quadratic_attenuation = 0.28f;
             return light;
         }
 
@@ -73,6 +126,8 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
                 { 0.50f, 0.20f },
                 { 1.00f, 0.00f },
             }),
+
+            .blend_mode = ome::BlendMode::additive(),
         };
 
         static inline const ome::ParticleEmitterNode::Settings settings_ = {
@@ -93,13 +148,15 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
         static inline const ome::ParticleScheme scheme_ = {
             .initial_position = { ome::math::Sphere<3>({ 0 }, 0.15f), rng },
 
-            .initial_velocity = { ome::Box(0.75f), rng },
+            .initial_velocity = { ome::Box::from_size(0.75f), rng },
 
             .time_to_live = 1.0f,
 
             .color = ome::Interpolation{ ome::Color::white(), colors.projectile },
 
             .scale = ome::Interpolation{ 0.075f, 0.0f },
+
+            .blend_mode = ome::BlendMode::additive(),
         };
 
         static inline const ome::ParticleEmitterNode::Settings settings_ = {
@@ -119,42 +176,16 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
     {
         update_transform<ome::Space::Local>([&](auto &t) { t.position = spawn_position; });
 
-        extending(*this).add<ProjectilePointLightNode_>().named("GlowLight").up();
-        extending(*this).add<GlowParticlesNode_>().named("GlowParticles");
-        extending(*this).add<TraceParticlesNode_>().named("TraceParticles");
+        emplace_child<ProjectilePointLightNode_>().rename("GlowLight");
+        emplace_child<GlowParticlesNode_>().rename("GlowParticles");
+        emplace_child<TraceParticlesNode_>().rename("TraceParticles");
+        emplace_child<HitboxNode_>().rename("Hitbox");
     }
 
     void
     on_tick_() override
     {
         Base_::on_tick_();
-        bounce_();
-    }
-
-  private:
-    void
-    bounce_()
-    {
-        if (transform<ome::Space::World>().position[1] <= radius_)
-        {
-            update_transform<ome::Space::Local>([&](auto &t) { t.position[1] = radius_; });
-
-            float fall_speed = dot(velocity(), ome::up);
-            if (fall_speed >= 0.0f)
-            {
-                return;
-            }
-
-            if (std::abs(fall_speed) < speed_threshold_)
-            {
-                set_velocity({ velocity()[0], 0.0f, velocity()[2] });
-                schedule_unmount();
-                return;
-            }
-
-            set_velocity({ velocity()[0], -fall_speed * elasticity_, velocity()[2] });
-            return;
-        }
     }
 };
 

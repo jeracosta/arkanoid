@@ -18,6 +18,7 @@
 #include "soccernoid/constants.hpp"
 #include "soccernoid/input.hpp"
 #include "soccernoid/nodes/root.hpp"
+#include "soccernoid/soccernoid.hpp"
 
 using namespace ome;
 using namespace soccernoid;
@@ -25,7 +26,7 @@ using namespace soccernoid;
 int
 main()
 {
-    Game::run({
+    Soccernoid::run({
       .window = {
           .title = "Soccernoid",
           .size  = {640, 480},

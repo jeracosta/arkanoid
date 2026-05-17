@@ -71,6 +71,7 @@ class HumanNode : public ome::HitboxNode
             glTranslatef(pos[0], pos[1], pos[2]);
             glScalef(1.0f, body_height_ / (2.0f * body_radius_), 1.0f);
             GLUquadric *q = gluNewQuadric();
+            gluQuadricNormals(q, GLU_SMOOTH);
             gluSphere(q, body_radius_, 16, 16);
             gluDeleteQuadric(q);
         }
@@ -82,6 +83,7 @@ class HumanNode : public ome::HitboxNode
         {
             glTranslatef(pos[0], pos[1] + visible_body_top_ + head_radius_, pos[2]);
             GLUquadric *q = gluNewQuadric();
+            gluQuadricNormals(q, GLU_SMOOTH);
             gluSphere(q, head_radius_, 16, 16);
             gluDeleteQuadric(q);
         }

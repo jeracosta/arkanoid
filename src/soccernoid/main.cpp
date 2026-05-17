@@ -1,4 +1,8 @@
+#ifndef GL_GLEXT_PROTOTYPES
+#define GL_GLEXT_PROTOTYPES 1
+#endif
 #include <GL/gl.h>
+#include <GL/glext.h>
 #include <GL/glu.h>
 #include <SDL2/SDL.h>
 #include <SDL_keycode.h>
@@ -38,6 +42,8 @@ main()
           .end     = fog.end,
           .enabled = true,
       },
+
+      .lighting = {},
 
       .make_input_mapper = [&](auto &)
       {

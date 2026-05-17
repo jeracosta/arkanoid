@@ -1,3 +1,5 @@
+#include <GL/glu.h>
+
 #include "oh-my-engine/constants.hpp"
 #include "oh-my-engine/nodes/kinematic_node.hpp"
 #include "soccernoid/input.hpp"
@@ -40,6 +42,7 @@ class PlayerNode : public ome::KinematicNode
         glPushMatrix();
         {
             GLUquadric *q = gluNewQuadric();
+            gluQuadricNormals(q, GLU_SMOOTH);
             glTranslatef(position[0], position[1], position[2]);
             gluSphere(q, radius, 32, 32);
             gluDeleteQuadric(q);

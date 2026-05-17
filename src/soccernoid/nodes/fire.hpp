@@ -1,7 +1,8 @@
 #include <memory>
 
-#include "oh-my-engine/blend_mode.hpp"
+#include "oh-my-engine/light.hpp"
 #include "oh-my-engine/math/interval.hpp"
+#include "oh-my-engine/nodes/light_node.hpp"
 #include "oh-my-engine/nodes/particle_emitter_node.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
 #include "oh-my-engine/spline.hpp"
@@ -11,6 +12,31 @@ namespace soccernoid {
 class FireNode : public ome::TransformNode
 {
   private:
+    // Point light at the fire pit lights nearby ground and characters
+    class FirePointLightNode_ : public ome::LightNode
+    {
+      private:
+        static std::unique_ptr<ome::PointLight>
+        make_point_light_()
+        {
+            auto light                   = std::make_unique<ome::PointLight>(GL_LIGHT3);
+            light->ambient               = ome::Color::rgb(0.0f, 0.0f, 0.0f);
+            light->diffuse               = ome::Color::rgb(1.0f, 0.55f, 0.12f);
+            light->specular              = ome::Color::rgb(1.0f, 0.75f, 0.35f);
+            light->constant_attenuation  = 1.0f;
+            light->linear_attenuation    = 0.06f;
+            light->quadratic_attenuation = 0.12f;
+            return light;
+        }
+
+      public:
+        FirePointLightNode_()
+            : ome::LightNode(make_point_light_())
+        {
+            update_transform<ome::Space::Local>([](auto &t) { t.position = { 0.0f, 0.55f, 0.0f }; });
+        }
+    };
+
     class ParticlesNode_ : public ome::ParticleEmitterNode
     {
       private:
@@ -62,10 +88,13 @@ class FireNode : public ome::TransformNode
     std::shared_ptr<ParticlesNode_> particles_ = std::make_shared<ParticlesNode_>();
 
   public:
-    explicit FireNode()
+    explicit FireNode(ome::Vec3f position = { 0 })
+        : TransformNode()
     {
+        update_transform<ome::Space::Local>([&](auto &t) { t.position = position; });
+        emplace_child<FirePointLightNode_>().rename("FireLight");
         add_child(particles_).rename("FireParticles");
     }
-}; // namespace soccernoid
+};
 
 } // namespace soccernoid

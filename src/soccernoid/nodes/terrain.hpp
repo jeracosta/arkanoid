@@ -35,18 +35,19 @@ class TerrainNode : public ome::HitboxNode
 
         using Bounds = ome::Rect::Bounds;
 
-        ome::open_gl::BoxRenderTask
-        {
+        ome::open_gl::BoxRenderTask{
             .world_region = region,
-          .sprites =
-          {
-              .front  = { textures.dirt,               Bounds{ { 0.0f, 0.0f }, { width,  height } } },
-              .back   = { textures.dirt,               Bounds{ { 0.0f, 0.0f }, { width,  height } } },
-              .left   = { textures.dirt,               Bounds{ { 0.0f, 0.0f }, { length, height } } },
-              .right  = { textures.dirt,               Bounds{ { 0.0f, 0.0f }, { length, height } } },
-              .top    = { textures.floor,              Bounds{ { 0.0f, 0.0f }, { 1.0f,   1.0f   } } },
-              .bottom = { ome::Texture::placeholder(), Bounds{ { 0.0f, 0.0f }, { width,  length } } },
-          },
+            .top_subdiv_x = 24,
+            .top_subdiv_z = 24,
+            .sprites =
+                {
+                    .front  = { textures.dirt,               Bounds{ { 0.0f, 0.0f }, { width,  height } } },
+                    .back   = { textures.dirt,               Bounds{ { 0.0f, 0.0f }, { width,  height } } },
+                    .left   = { textures.dirt,               Bounds{ { 0.0f, 0.0f }, { length, height } } },
+                    .right  = { textures.dirt,               Bounds{ { 0.0f, 0.0f }, { length, height } } },
+                    .top    = { textures.floor,              Bounds{ { 0.0f, 0.0f }, { 1.0f,   1.0f   } } },
+                    .bottom = { ome::Texture::placeholder(), Bounds{ { 0.0f, 0.0f }, { width,  length } } },
+                },
         }();
     }
 };

@@ -1,12 +1,16 @@
 #pragma once
 
+#include <cstdlib>
+#include <memory>
+
 #include "oh-my-engine/color.hpp"
-#include "oh-my-engine/game.hpp"
+#include "oh-my-engine/light.hpp"
 #include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/math/sphere.hpp"
 #include "oh-my-engine/math/vector.hpp"
 #include "oh-my-engine/nodes/hitbox_node.hpp"
 #include "oh-my-engine/nodes/kinematic_node.hpp"
+#include "oh-my-engine/nodes/light_node.hpp"
 #include "oh-my-engine/nodes/particle_emitter_node.hpp"
 #include "oh-my-engine/spline.hpp"
 #include "soccernoid/nodes/mixins/distance_culled.hpp"
@@ -29,7 +33,7 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
     {
       public:
         HitboxNode_()
-            : ome::HitboxNode({ radius_ * 2 })
+            : ome::HitboxNode(ome::Vec3f{ radius_ * 2, radius_ * 2, radius_ * 2 })
         {
         }
 
@@ -79,6 +83,31 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
                 parent->update_transform<ome::Space::Local>([&](auto &transform)
                 { transform.position += correction; });
             });
+        }
+    };
+
+    // Point light parented to the projectile so a colored pool follows the ball (GL_LIGHT2).
+    class ProjectilePointLightNode_ : public ome::LightNode
+    {
+      private:
+        static std::unique_ptr<ome::PointLight>
+        make_point_light_()
+        {
+            auto light = std::make_unique<ome::PointLight>(GL_LIGHT2);
+            light->ambient              = ome::Color::rgb(0.0f, 0.0f, 0.0f);
+            light->diffuse              = ome::Color::rgb(1.0f, 0.45f, 0.95f);
+            light->specular             = ome::Color::rgb(0.9f, 0.75f, 1.0f);
+            light->constant_attenuation = 1.0f;
+            light->linear_attenuation   = 0.12f;
+            light->quadratic_attenuation = 0.28f;
+            return light;
+        }
+
+      public:
+        ProjectilePointLightNode_()
+            : ome::LightNode(make_point_light_())
+        {
+            update_transform<ome::Space::Local>([](auto &t) { t.position = { 0.0f, 0.2f, 0.0f }; });
         }
     };
 
@@ -147,6 +176,7 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
     {
         update_transform<ome::Space::Local>([&](auto &t) { t.position = spawn_position; });
 
+        emplace_child<ProjectilePointLightNode_>().rename("GlowLight");
         emplace_child<GlowParticlesNode_>().rename("GlowParticles");
         emplace_child<TraceParticlesNode_>().rename("TraceParticles");
         emplace_child<HitboxNode_>().rename("Hitbox");

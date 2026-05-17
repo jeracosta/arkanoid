@@ -18,8 +18,13 @@ class SnailNode : public ome::TransformNode
 
         auto position = transform<ome::Space::World>().position + ome::up * size_;
 
-        static const auto material
-            = ome::Material{ .texture = textures.snail, .blend_mode = ome::BlendMode::alpha() };
+        static const ome::Material material = []
+        {
+            ome::Material m;
+            m.texture    = textures.snail;
+            m.blend_mode = ome::BlendMode::alpha();
+            return m;
+        }();
 
         game()->schedule([&]
         { ome::open_gl::render_billboard(position, { size_ }, material, camera); });

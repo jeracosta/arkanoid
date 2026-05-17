@@ -1,6 +1,10 @@
 #pragma once
 
+#ifndef GL_GLEXT_PROTOTYPES
+#define GL_GLEXT_PROTOTYPES 1
+#endif
 #include <GL/gl.h>
+#include <GL/glext.h>
 #include <SDL2/SDL.h>
 #include <memory>
 
@@ -43,6 +47,12 @@ class Game : public EventConnectionHolder
             bool       enabled = true;
         };
 
+        struct Lighting
+        {
+            Color global_ambient = Color::rgb(0.2f, 0.2f, 0.2f);
+            bool  enabled        = true;
+        };
+
         std::function<std::unique_ptr<Logger>()> make_logger
             = [] { return std::make_unique<ConsoleLogger>(); };
 
@@ -51,6 +61,8 @@ class Game : public EventConnectionHolder
         Camera::Settings camera;
 
         Fog fog;
+
+        Lighting lighting;
 
         std::function<input::InputMapper(Game &)> make_input_mapper = {};
 

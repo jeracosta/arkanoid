@@ -149,6 +149,29 @@ struct MovementSpeed
 
 } // namespace soccernoid::settings::camera
 
+namespace soccernoid::settings::render {
+
+struct ShowFrameRate
+{
+    bool value = true;
+
+    constexpr ShowFrameRate(bool value = true)
+        : value(value)
+    {
+    }
+
+    constexpr
+    operator bool() const
+    {
+        return value;
+    }
+
+    constexpr bool
+    operator==(const ShowFrameRate &) const = default;
+};
+
+} // namespace soccernoid::settings::render
+
 namespace soccernoid {
 
 class Settings : private ome::EventBus<settings::window::Fullscreen,
@@ -156,7 +179,8 @@ class Settings : private ome::EventBus<settings::window::Fullscreen,
                                        settings::time::Speed,
                                        settings::camera::View,
                                        settings::camera::MouseSensitivity,
-                                       settings::camera::MovementSpeed>
+                                       settings::camera::MovementSpeed,
+                                       settings::render::ShowFrameRate>
 {
   private:
     using EventBus_ = ome::EventBus<settings::window::Fullscreen,
@@ -164,14 +188,16 @@ class Settings : private ome::EventBus<settings::window::Fullscreen,
                                     settings::time::Speed,
                                     settings::camera::View,
                                     settings::camera::MouseSensitivity,
-                                    settings::camera::MovementSpeed>;
+                                    settings::camera::MovementSpeed,
+                                    settings::render::ShowFrameRate>;
 
     std::tuple<settings::window::Fullscreen,
                settings::time::Paused,
                settings::time::Speed,
                settings::camera::View,
                settings::camera::MouseSensitivity,
-               settings::camera::MovementSpeed>
+               settings::camera::MovementSpeed,
+               settings::render::ShowFrameRate>
         values_;
 
   public:

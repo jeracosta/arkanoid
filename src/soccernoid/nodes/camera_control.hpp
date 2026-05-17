@@ -38,13 +38,13 @@ class CameraControlNode : public SoccernoidNode<>
   public:
     struct Settings
     {
-        float movement_speed      = 5.0f;
         float sprint_multiplier   = 2.0f;
         float transition_duration = 0.5f;
     };
 
   private:
     using MouseSensitivity = settings::camera::MouseSensitivity;
+    using MovementSpeed    = settings::camera::MovementSpeed;
     using View             = settings::camera::View;
 
     ome::Camera *camera_;
@@ -199,7 +199,7 @@ class CameraControlNode : public SoccernoidNode<>
         auto is_sprinting = game()->input.is_pressed(Action::CameraSprint);
 
         auto speed_factor = is_sprinting ? settings_.sprint_multiplier : 1.0f;
-        auto speed        = settings_.movement_speed * speed_factor;
+        auto speed        = game()->settings.get<MovementSpeed>().value * speed_factor;
 
         auto velocity     = direction * speed;
         auto displacement = velocity * game()->time.unscaled.delta();

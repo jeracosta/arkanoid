@@ -10,6 +10,7 @@ class TimeSpeedNode : public SoccernoidNode<>
 {
   private:
     using Paused = settings::time::Paused;
+    using Speed  = settings::time::Speed;
 
     float scaling_factor_ = 1.1f;
 
@@ -21,11 +22,15 @@ class TimeSpeedNode : public SoccernoidNode<>
     void
     speed_by_(float factor_)
     {
-        auto speed = speed_curve_->to() * factor_;
+        game()->settings.set<Speed>(game()->settings.get<Speed>().value * factor_);
+    }
 
-        speed_curve_->to(speed);
+    void
+    set_speed_(Speed speed)
+    {
+        speed_curve_->to(speed.value);
 
-        log(std::format("Time speed: {}", speed));
+        log(std::format("Time speed: {}", speed.value));
     }
 
     void
@@ -53,6 +58,7 @@ class TimeSpeedNode : public SoccernoidNode<>
         }));
 
         hold(game()->settings.bind([this](const Paused &paused) { set_paused_(paused); }));
+        hold(game()->settings.bind([this](const Speed &speed) { set_speed_(speed); }));
     }
 
     void

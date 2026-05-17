@@ -49,16 +49,38 @@ struct Paused
     operator==(const Paused &) const = default;
 };
 
+struct Speed
+{
+    float value = 1.0f;
+
+    constexpr Speed(float value = 1.0f)
+        : value(value)
+    {
+    }
+
+    constexpr
+    operator float() const
+    {
+        return value;
+    }
+
+    constexpr bool
+    operator==(const Speed &) const = default;
+};
+
 } // namespace soccernoid::settings::time
 
 namespace soccernoid {
 
-class Settings : private ome::EventBus<settings::window::Fullscreen, settings::time::Paused>
+class Settings : private ome::EventBus<settings::window::Fullscreen,
+                                       settings::time::Paused,
+                                       settings::time::Speed>
 {
   private:
-    using EventBus_ = ome::EventBus<settings::window::Fullscreen, settings::time::Paused>;
+    using EventBus_ = ome::
+        EventBus<settings::window::Fullscreen, settings::time::Paused, settings::time::Speed>;
 
-    std::tuple<settings::window::Fullscreen, settings::time::Paused> values_;
+    std::tuple<settings::window::Fullscreen, settings::time::Paused, settings::time::Speed> values_;
 
   public:
     using EventBus_::bind;

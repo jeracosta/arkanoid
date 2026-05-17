@@ -72,15 +72,63 @@ struct Speed
 
 namespace soccernoid {
 
+enum class CameraView
+{
+    FirstPerson,
+    ThirdPerson,
+    Count_,
+};
+
+inline CameraView
+succesor(CameraView view)
+{
+    return static_cast<CameraView>((static_cast<int>(view) + 1)
+                                   % static_cast<int>(CameraView::Count_));
+}
+
+} // namespace soccernoid
+
+namespace soccernoid::settings::camera {
+
+struct View
+{
+    CameraView value = CameraView::ThirdPerson;
+
+    constexpr View(CameraView value = CameraView::ThirdPerson)
+        : value(value)
+    {
+    }
+
+    constexpr
+    operator CameraView() const
+    {
+        return value;
+    }
+
+    constexpr bool
+    operator==(const View &) const = default;
+};
+
+} // namespace soccernoid::settings::camera
+
+namespace soccernoid {
+
 class Settings : private ome::EventBus<settings::window::Fullscreen,
                                        settings::time::Paused,
-                                       settings::time::Speed>
+                                       settings::time::Speed,
+                                       settings::camera::View>
 {
   private:
-    using EventBus_ = ome::
-        EventBus<settings::window::Fullscreen, settings::time::Paused, settings::time::Speed>;
+    using EventBus_ = ome::EventBus<settings::window::Fullscreen,
+                                    settings::time::Paused,
+                                    settings::time::Speed,
+                                    settings::camera::View>;
 
-    std::tuple<settings::window::Fullscreen, settings::time::Paused, settings::time::Speed> values_;
+    std::tuple<settings::window::Fullscreen,
+               settings::time::Paused,
+               settings::time::Speed,
+               settings::camera::View>
+        values_;
 
   public:
     using EventBus_::bind;

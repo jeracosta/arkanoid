@@ -2,6 +2,7 @@
 
 #include <imgui.h>
 
+#include "soccernoid/input.hpp"
 #include "soccernoid/nodes/soccernoid_node.hpp"
 #include "soccernoid/settings.hpp"
 
@@ -14,6 +15,18 @@ namespace soccernoid {
 class SettingsHudNode : public SoccernoidNode<>
 {
   private:
+    bool visible_ = false;
+
+    // Opening the HUD frees the cursor and pauses the game; closing restores
+    // both. Pause goes through Settings so TimeSpeedNode reacts as usual.
+    void
+    toggle_()
+    {
+        visible_ = !visible_;
+        game()->window.set_relative_mouse_mode(!visible_);
+        game()->settings.set(settings::time::Paused{ visible_ });
+    }
+
     template <class T>
     void
     checkbox_(const char *label)
@@ -56,8 +69,19 @@ class SettingsHudNode : public SoccernoidNode<>
 
   public:
     void
+    on_mount_() override
+    {
+        hold(game()->input.bind(Action::ToggleHud, [this] { toggle_(); }));
+    }
+
+    void
     on_tick_() override
     {
+        if (!visible_)
+        {
+            return;
+        }
+
         ImGui::Begin("Soccernoid");
 
         ImGui::Text("FPS: %.0f", game()->instant_frame_rate());

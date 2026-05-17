@@ -3,6 +3,7 @@
 #include "soccernoid/nodes/camera_control.hpp"
 #include "soccernoid/nodes/frame_rate.hpp"
 #include "soccernoid/nodes/level.hpp"
+#include "soccernoid/nodes/settings_hud.hpp"
 #include "soccernoid/nodes/time_speed.hpp"
 #include "soccernoid/nodes/window_control.hpp"
 
@@ -17,6 +18,7 @@ class RootNode : public ome::Node
         emplace_child<CameraControlNode>(CameraControlNode::Settings{}).rename("Camera");
         emplace_child<WindowControlNode>().rename("Window");
         emplace_child<ome::Slowed<FrameRateNode, 1.0f>>().rename("FrameRate");
+        emplace_child<SettingsHudNode>().rename("Hud");
         emplace_child<TimeSpeedNode>().rename("TimeSpeed");
         emplace_child<LevelNode>().rename("Level");
     }

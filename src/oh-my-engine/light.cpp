@@ -43,13 +43,13 @@ PointLight::apply() const
     glLightfv(gl_light_id_, GL_DIFFUSE, diffuse_color);
     glLightfv(gl_light_id_, GL_SPECULAR, specular_color);
 
-    GLfloat position[] = {
-        position[0],
-        position[1],
-        position[2],
-        1.0f
+    const GLfloat gl_position[] = {
+        this->position[0],
+        this->position[1],
+        this->position[2],
+        1.0f,
     };
-    glLightfv(gl_light_id_, GL_POSITION, position);
+    glLightfv(gl_light_id_, GL_POSITION, gl_position);
 
     glLightf(gl_light_id_, GL_CONSTANT_ATTENUATION, constant_attenuation);
     glLightf(gl_light_id_, GL_LINEAR_ATTENUATION, linear_attenuation);
@@ -73,13 +73,13 @@ SpotLight::apply() const
     glLightfv(gl_light_id_, GL_DIFFUSE, diffuse_color);
     glLightfv(gl_light_id_, GL_SPECULAR, specular_color);
 
-    GLfloat position[] = {
-        position[0],
-        position[1],
-        position[2],
-        1.0f
+    const GLfloat gl_position[] = {
+        this->position[0],
+        this->position[1],
+        this->position[2],
+        1.0f,
     };
-    glLightfv(gl_light_id_, GL_POSITION, position);
+    glLightfv(gl_light_id_, GL_POSITION, gl_position);
 
     GLfloat spot_direction[] = {
         direction[0],

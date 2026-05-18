@@ -29,7 +29,7 @@ class Mesh
     Mesh(const Mesh &)            = delete;
     Mesh &operator=(const Mesh &) = delete;
     Mesh(Mesh &&)                 = delete;
-    Mesh &operator=(Mesh &&)     = delete;
+    Mesh &operator=(Mesh &&)      = delete;
 
     static std::shared_ptr<Mesh>
     load(const std::filesystem::path &path);

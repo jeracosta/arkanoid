@@ -1,6 +1,8 @@
 #include "oh-my-engine/texture.hpp"
 
 #include <GL/glu.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <cstring>
 #include <ranges>
@@ -10,6 +12,46 @@
 #include "oh-my-engine/open_gl/texture_binding_guard.hpp"
 
 namespace ome {
+
+namespace {
+
+std::shared_ptr<Texture>
+make_texture_from_rgba_surface(SDL_Surface *surface_converted_rgba_must_free_and_nonnull)
+{
+    SDL_Surface *surface = surface_converted_rgba_must_free_and_nonnull;
+
+    auto size             = Vec2u{ surface->w, surface->h };
+    auto &[width, height] = size;
+
+    auto image = ImageBuffer(size);
+
+    using namespace std::views;
+
+    auto rows = [height](void *storage, std::size_t pitch)
+    {
+        auto *base = static_cast<std::byte *>(storage);
+
+        return iota(std::size_t{ 0 }, static_cast<std::size_t>(height))
+               | transform([=](std::size_t i)
+        { return reinterpret_cast<ImageBuffer::Pixel *>(base + i * pitch); });
+    };
+
+    auto row_size = width * sizeof(ImageBuffer::Pixel);
+
+    auto image_rows   = rows(image.raw(), row_size);
+    auto surface_rows = rows(surface->pixels, surface->pitch);
+
+    for (auto &&[image_row, surface_row] : zip(image_rows, surface_rows | reverse))
+    {
+        std::memcpy(image_row, surface_row, row_size);
+    }
+
+    SDL_FreeSurface(surface);
+
+    return std::make_shared<Texture>(std::move(image));
+}
+
+} // namespace
 
 Texture::Texture(ImageBuffer image)
 {
@@ -52,38 +94,7 @@ Texture::load(const std::filesystem::path &path)
             std::format("Failed to convert texture `{}`: {}", path.string(), SDL_GetError()));
     }
 
-    auto size             = Vec2u{ surface->w, surface->h };
-    auto &[width, height] = size;
-
-    auto image = ImageBuffer(size);
-
-    // NOTE: SDL surfaces are stored in top-down order, but OpenGL expects bottom-up order.
-    //       We will copy the rows in reverse order to effectively flip the image vertically.
-
-    using namespace std::views;
-
-    auto rows = [height](void *storage, std::size_t pitch)
-    {
-        auto *base = static_cast<std::byte *>(storage);
-
-        return iota(std::size_t{ 0 }, static_cast<std::size_t>(height))
-               | transform([=](std::size_t i)
-        { return reinterpret_cast<ImageBuffer::Pixel *>(base + i * pitch); });
-    };
-
-    auto row_size = width * sizeof(ImageBuffer::Pixel);
-
-    auto image_rows   = rows(image.raw(), row_size);
-    auto surface_rows = rows(surface->pixels, surface->pitch);
-
-    for (auto &&[image_row, surface_row] : zip(image_rows, surface_rows | reverse))
-    {
-        std::memcpy(image_row, surface_row, row_size);
-    }
-
-    SDL_FreeSurface(surface);
-
-    return std::make_shared<Texture>(std::move(image));
+    return make_texture_from_rgba_surface(surface);
 }
 
 ImageBuffer

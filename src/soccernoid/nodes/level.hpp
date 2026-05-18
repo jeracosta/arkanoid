@@ -1,12 +1,16 @@
+#include <filesystem>
 #include <memory>
+#include <vector>
 
 #include "oh-my-engine/constants.hpp"
 #include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/node.hpp"
+#include "soccernoid/constants.hpp"
 #include "soccernoid/nodes/comet.hpp"
 #include "soccernoid/nodes/fire.hpp"
-#include "soccernoid/nodes/human.hpp"
+#include "soccernoid/nodes/fbx_character.hpp"
 #include "soccernoid/nodes/player.hpp"
+#include "soccernoid/nodes/wizard_goalkeeper.hpp"
 #include "soccernoid/nodes/projectile.hpp"
 #include "soccernoid/nodes/scene_lights.hpp"
 #include "soccernoid/nodes/skybox.hpp"
@@ -21,7 +25,7 @@ struct Level
 {
     std::function<void(LevelNode &)> configure;
 
-    static constexpr Level
+    static Level
     standard();
 };
 
@@ -48,7 +52,7 @@ class LevelNode : public ome::Node
     }
 };
 
-inline constexpr Level
+inline Level
 Level::standard()
 {
     return { [](LevelNode &level)
@@ -65,10 +69,48 @@ Level::standard()
             .rename("Terreno");
 
         level
-            .emplace_child<HumanNode>(HumanNode::Configuration{
-                .position = { 0.0f, 0.0f, -5.0f },
+            .emplace_child<WizardGoalkeeperNode>(WizardGoalkeeperNode::Configuration{
+                .position = wizard_spawn_position,
             })
-            .rename("Goalkeeper");
+            .rename("Wizard");
+
+        {
+            constexpr float flank_x               = 1.2f;
+            constexpr float toward_pitch_z        = 0.45f;
+            constexpr float side_character_y       = 1.0f;
+            constexpr float side_character_size    = 2.5f;
+            constexpr float side_character_yaw_rad = ome::pi * 0.5f;
+            const auto     &wiz                    = wizard_spawn_position;
+
+            static const std::vector<std::filesystem::path> textures_g{
+                "texture-g.png",
+            };
+            static const std::vector<std::filesystem::path> textures_h{
+                "texture-h.png",
+            };
+
+            level
+                .emplace_child<FbxCharacterNode>(FbxCharacterNode::Configuration{
+                    .position          = { wiz[0] - flank_x, side_character_y, wiz[2] + toward_pitch_z },
+                    .mesh_relative     = std::filesystem::path{ "characters" } / "character-g.fbx",
+                    .textures_relative = textures_g,
+                    .normalize_extent  = side_character_size,
+                    .yaw_pi            = false,
+                    .extra_yaw_rad     = side_character_yaw_rad,
+                })
+                .rename("G");
+
+            level
+                .emplace_child<FbxCharacterNode>(FbxCharacterNode::Configuration{
+                    .position          = { wiz[0] + flank_x, side_character_y, wiz[2] + toward_pitch_z },
+                    .mesh_relative     = std::filesystem::path{ "characters" } / "character-h.fbx",
+                    .textures_relative = textures_h,
+                    .normalize_extent  = side_character_size,
+                    .yaw_pi            = false,
+                    .extra_yaw_rad     = side_character_yaw_rad,
+                })
+                .rename("H");
+        }
 
         level.emplace_child<ProjectileNode>().rename("Projectile");
 

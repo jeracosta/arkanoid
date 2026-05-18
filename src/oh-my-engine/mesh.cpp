@@ -10,6 +10,30 @@
 
 namespace ome {
 
+Mesh::~Mesh()
+{
+    if (vbo_ != 0)
+    {
+        glDeleteBuffers(1, &vbo_);
+    }
+    if (ebo_ != 0)
+    {
+        glDeleteBuffers(1, &ebo_);
+    }
+}
+
+void
+Mesh::reupload_()
+{
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+    glBufferData(
+        GL_ARRAY_BUFFER,
+        static_cast<GLsizeiptr>(interleaved_.size() * sizeof(float)),
+        interleaved_.data(),
+        GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
 Mesh::Mesh(std::vector<float> interleaved, std::vector<unsigned> indices, bool has_uv)
     : interleaved_(std::move(interleaved)),
       indices_(std::move(indices)),
@@ -36,30 +60,6 @@ Mesh::Mesh(std::vector<float> interleaved, std::vector<unsigned> indices, bool h
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-}
-
-Mesh::~Mesh()
-{
-    if (vbo_ != 0)
-    {
-        glDeleteBuffers(1, &vbo_);
-    }
-    if (ebo_ != 0)
-    {
-        glDeleteBuffers(1, &ebo_);
-    }
-}
-
-void
-Mesh::reupload_()
-{
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        static_cast<GLsizeiptr>(interleaved_.size() * sizeof(float)),
-        interleaved_.data(),
-        GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void
@@ -240,6 +240,7 @@ Mesh::load(const std::filesystem::path &path)
                 throw std::runtime_error(std::format(
                     "Non-triangle face in mesh `{}` after triangulation.", path.string()));
             }
+
             indices.push_back(base_vertex + face.mIndices[0]);
             indices.push_back(base_vertex + face.mIndices[1]);
             indices.push_back(base_vertex + face.mIndices[2]);
@@ -252,4 +253,4 @@ Mesh::load(const std::filesystem::path &path)
         new Mesh(std::move(interleaved), std::move(indices), global_has_uv));
 }
 
-} 
+}

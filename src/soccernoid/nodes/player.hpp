@@ -1,9 +1,46 @@
+#pragma once
+
+#include <exception>
+#include <filesystem>
+#include <format>
+#include <memory>
+#include <optional>
+
+#include <GL/gl.h>
 #include <GL/glu.h>
 
 #include "oh-my-engine/constants.hpp"
+#include "oh-my-engine/mesh.hpp"
 #include "oh-my-engine/nodes/kinematic_node.hpp"
+#include "oh-my-engine/open_gl/render_mesh.hpp"
+#include "oh-my-engine/texture.hpp"
+#include "soccernoid/constants.hpp"
 #include "soccernoid/input.hpp"
 #include "soccernoid/nodes/projectile.hpp"
+
+// Player mesh: assets/meshes/dragon/Dragon.fbx (geometry via Mesh::load).
+// Optional PNG: assets/textures/dragon_texture.png or dragon.png
+//
+// Skeleton is baked to static pose via Assimp aiProcess_PreTransformVertices.
+// Missing dragon mesh → blue sphere fallback
+
+namespace {
+
+struct DragonPlayerDrawSlot
+{
+    bool                       tried_load = false;
+    std::shared_ptr<ome::Mesh> mesh{};
+    std::optional<ome::Sprite> sprite{};
+};
+
+inline DragonPlayerDrawSlot &
+dragon_player_slot()
+{
+    static DragonPlayerDrawSlot slot;
+    return slot;
+}
+
+} // namespace
 
 namespace soccernoid {
 
@@ -31,10 +68,96 @@ class PlayerNode : public ome::KinematicNode
     Configuration config_;
 
     void
+    ensure_dragon_mesh_loaded_()
+    {
+        auto &dr = dragon_player_slot();
+
+        if (dr.tried_load)
+        {
+            return;
+        }
+
+        dr.tried_load       = true;
+        const auto mesh_path = FilesystemPaths::meshes / "dragon" / "Dragon.fbx";
+
+        std::filesystem::path texture_png;
+        for (auto candidate : {
+                 FilesystemPaths::textures / "dragon_texture.png",
+                 FilesystemPaths::textures / "dragon.png",
+             })
+        {
+            if (std::filesystem::exists(candidate))
+            {
+                texture_png = std::move(candidate);
+                break;
+            }
+        }
+
+        if (!std::filesystem::exists(mesh_path))
+        {
+            log(std::format(
+                "Dragon mesh missing (expected `{}`). Using blue sphere fallback.", mesh_path.string()));
+
+            return;
+        }
+
+        try
+        {
+            dr.mesh = ome::Mesh::load(mesh_path);
+            dr.mesh->recenter_to_origin();
+            dr.mesh->normalize_to_max_extent(2.5f);
+
+            std::shared_ptr<ome::Texture> color_tex;
+            if (!texture_png.empty())
+            {
+                color_tex = ome::Texture::load(texture_png);
+            }
+
+            if (dr.mesh->has_uv() && color_tex)
+            {
+                color_tex->set_wrap({ GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE });
+                color_tex->set_filters(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+                dr.sprite.emplace(ome::Sprite{ .texture = std::move(color_tex) });
+            }
+        }
+        catch (const std::exception &e)
+        {
+            dr.mesh.reset();
+            dr.sprite.reset();
+
+            log(std::format(
+                "Failed loading dragon `{}`: {} — using blue sphere.", mesh_path.string(), e.what()));
+        }
+    }
+
+    void
     render_()
     {
         constexpr float         radius = 0.2f;
         static const ome::Color color  = ome::Color::hex(0x1486cc);
+
+        ensure_dragon_mesh_loaded_();
+
+        auto &dr = dragon_player_slot();
+
+        if (dr.mesh)
+        {
+            auto draw_tr = transform<ome::Space::World>();
+
+            ome::Orientation face_align = ome::Orientation::identity();
+            face_align.rotate(ome::pi, ome::up);
+            draw_tr.orientation = draw_tr.orientation * face_align;
+
+            ome::open_gl::MeshRenderTask{
+                .mesh             = *dr.mesh,
+                .transform        = draw_tr,
+                .sprite           = dr.sprite,
+                .modulate         = std::nullopt,
+                .texture_env_mode = GL_MODULATE,
+            }();
+
+            return;
+        }
 
         auto position = transform<ome::Space::World>().position;
 
@@ -88,6 +211,7 @@ class PlayerNode : public ome::KinematicNode
         update_kinematic<ome::Space::World>([&](auto &k)
         {
             k.velocity += direction * config_.movement_force * game()->time.delta();
+
             if (norm(k.velocity) > config_.max_speed)
             {
                 k.velocity = normalized(k.velocity) * config_.max_speed;

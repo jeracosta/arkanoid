@@ -3,6 +3,7 @@
 #include <filesystem>
 
 #include "oh-my-engine/color.hpp"
+#include "oh-my-engine/math/vector.hpp"
 #include "oh-my-engine/texture.hpp"
 
 namespace soccernoid {
@@ -16,6 +17,9 @@ static constexpr struct
     float start = 25.0f;
     float end   = 50.0f;
 } fog;
+
+/** World-space spawn for the wizard goalkeeper under Level. */
+inline constexpr ome::Vec3f wizard_spawn_position{ 0.0f, 1.15f, -4.0f };
 
 struct ColorPalette
 {
@@ -68,6 +72,8 @@ struct FilesystemPaths
         = executable / SOCCERNOID_ASSETS_DIRECTORY_RELATIVE_PATH;
 
     inline static const std::filesystem::path textures = assets / "textures";
+
+    inline static const std::filesystem::path meshes = assets / "meshes";
 };
 
 struct TexturePalette

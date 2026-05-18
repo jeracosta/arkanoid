@@ -6,24 +6,18 @@
 #include "oh-my-engine/math/vector.hpp"
 #include "oh-my-engine/node.hpp"
 #include "oh-my-engine/space.hpp"
+#include "oh-my-engine/transform.hpp"
 
 namespace ome {
 
-struct TransformComponent
-{
-    Vec3f       position    = { 0.0f };
-    Orientation orientation = Orientation::identity();
-    Vec3f       scale       = { 1.0f };
-};
-
 inline Vec3f
-operator*(const TransformComponent &transform, const Vec3f &vector)
+operator*(const Transform &transform, const Vec3f &vector)
 {
     return transform.position + transform.orientation * (transform.scale * vector);
 }
 
-inline TransformComponent
-operator*(const TransformComponent &lhs, const TransformComponent &rhs)
+inline Transform
+operator*(const Transform &lhs, const Transform &rhs)
 {
     return {
         .position    = lhs * rhs.position,
@@ -32,8 +26,8 @@ operator*(const TransformComponent &lhs, const TransformComponent &rhs)
     };
 }
 
-inline TransformComponent
-inverse_of(const TransformComponent &transform)
+inline Transform
+inverse_of(const Transform &transform)
 {
     auto inverse_orientation = inverse_of(transform.orientation);
     auto inverse_scale       = Vec3f{ 1 } / transform.scale;
@@ -49,7 +43,7 @@ inverse_of(const TransformComponent &transform)
 class TransformNode : public Node
 {
   public:
-    using Component = TransformComponent;
+    using Component = Transform;
 
     TransformNode() = default;
 
@@ -59,7 +53,7 @@ class TransformNode : public Node
     }
 
     template <Space space>
-    TransformComponent
+    Transform
     transform() const
     {
         if constexpr (space == Space::Local)
@@ -110,7 +104,7 @@ class TransformNode : public Node
   private:
     template <Space space>
     void
-    set_transform(const TransformComponent &transform)
+    set_transform(const Transform &transform)
     {
         if constexpr (space == Space::Local)
         {

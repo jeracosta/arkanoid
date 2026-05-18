@@ -14,16 +14,16 @@
 
 #include "oh-my-engine/color.hpp"
 #include "oh-my-engine/mesh.hpp"
-#include "oh-my-engine/nodes/transform_node.hpp"
 #include "oh-my-engine/open_gl/matrix_guard.hpp"
 #include "oh-my-engine/texture.hpp"
+#include "oh-my-engine/transform.hpp"
 
 namespace ome::open_gl {
 
 struct MeshRenderTask
 {
     const Mesh               &mesh;
-    TransformComponent        transform;
+    Transform                 transform;
     std::optional<Sprite>     sprite;
     std::optional<ome::Color> modulate;
     GLenum                    texture_env_mode = GL_MODULATE;

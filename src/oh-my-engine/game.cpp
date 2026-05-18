@@ -104,7 +104,7 @@ Game::Game(const Configuration &config)
         glEnable(GL_COLOR_MATERIAL);
         glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
 
-        auto [r, g, b, a]       = config_.lighting.global_ambient.rgba_f();
+        auto [r, g, b, a]        = config_.lighting.global_ambient.rgba_f();
         GLfloat global_ambient[] = { r, g, b, a };
         glLightModelfv(GL_LIGHT_MODEL_AMBIENT, global_ambient);
         glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);

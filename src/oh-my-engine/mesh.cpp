@@ -3,36 +3,53 @@
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
-#include <cmath>
 #include <format>
+#include <generator>
 #include <limits>
 #include <stdexcept>
 
 namespace ome {
 
-Mesh::Mesh(std::vector<float> interleaved, std::vector<unsigned> indices, bool has_uv)
-    : interleaved_(std::move(interleaved)),
-      indices_(std::move(indices)),
-      has_uv_(has_uv),
-      stride_bytes_(static_cast<GLsizei>((has_uv ? 8uz : 6uz) * sizeof(float))),
-      index_count_(static_cast<GLsizei>(indices_.size()))
+template <typename NodeT>
+static std::generator<NodeT &>
+nodes_view_(NodeT &root)
 {
-    glGenBuffers(1, &vbo_);
-    glGenBuffers(1, &ebo_);
+    co_yield root;
+    for (auto &child : root.children)
+    {
+        for (auto &node : nodes_view_(child))
+        {
+            co_yield node;
+        }
+    }
+}
 
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        static_cast<GLsizeiptr>(interleaved_.size() * sizeof(float)),
-        interleaved_.data(),
-        GL_STATIC_DRAW);
+Mesh::Mesh(Node root)
+    : root_(std::move(root)),
+      index_count_(0)
+{
+    for (auto &node : nodes_view_(root_))
+    {
+        if (!node.primitive.vertices.empty())
+        {
+            glGenBuffers(1, &node.gl_vertex_buffer_id_);
+            glGenBuffers(1, &node.gl_element_buffer_id_);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
-    glBufferData(
-        GL_ELEMENT_ARRAY_BUFFER,
-        static_cast<GLsizeiptr>(indices_.size() * sizeof(unsigned)),
-        indices_.data(),
-        GL_STATIC_DRAW);
+            glBindBuffer(GL_ARRAY_BUFFER, node.gl_vertex_buffer_id_);
+            glBufferData(GL_ARRAY_BUFFER,
+                         static_cast<GLsizeiptr>(node.primitive.vertices.size() * sizeof(Vertex)),
+                         node.primitive.vertices.data(),
+                         GL_STATIC_DRAW);
+
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, node.gl_element_buffer_id_);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                         static_cast<GLsizeiptr>(node.primitive.indices.size() * sizeof(unsigned)),
+                         node.primitive.indices.data(),
+                         GL_STATIC_DRAW);
+        }
+
+        index_count_ += static_cast<GLsizei>(node.primitive.indices.size());
+    }
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -40,120 +57,173 @@ Mesh::Mesh(std::vector<float> interleaved, std::vector<unsigned> indices, bool h
 
 Mesh::~Mesh()
 {
-    if (vbo_ != 0)
+    for (auto &node : nodes_view_(root_))
     {
-        glDeleteBuffers(1, &vbo_);
-    }
-    if (ebo_ != 0)
-    {
-        glDeleteBuffers(1, &ebo_);
+        if (node.gl_vertex_buffer_id_ != 0)
+        {
+            glDeleteBuffers(1, &node.gl_vertex_buffer_id_);
+        }
+        if (node.gl_element_buffer_id_ != 0)
+        {
+            glDeleteBuffers(1, &node.gl_element_buffer_id_);
+        }
     }
 }
 
-void
-Mesh::reupload_()
+namespace {
+
+std::pair<Vec3f, Vec3f>
+aabb_(const Mesh &mesh)
 {
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        static_cast<GLsizeiptr>(interleaved_.size() * sizeof(float)),
-        interleaved_.data(),
-        GL_STATIC_DRAW);
+    Vec3f min{ std::numeric_limits<float>::infinity() };
+    Vec3f max{ -std::numeric_limits<float>::infinity() };
+
+    for (const auto &node : nodes_view_(mesh.root()))
+    {
+        for (const auto &v : node.primitive.vertices)
+        {
+            min = math::zip_transform(std::ranges::min, min, v.position);
+            max = math::zip_transform(std::ranges::max, max, v.position);
+        }
+    }
+
+    return { min, max };
+}
+
+} // anonymous namespace
+
+void
+Mesh::recenter(Vec3f new_origin)
+{
+    if (index_count_ == 0)
+    {
+        return;
+    }
+
+    const Vec3f offset = new_origin - center();
+
+    for (auto &node : nodes_view_(root_))
+    {
+        if (node.primitive.vertices.empty())
+        {
+            continue;
+        }
+
+        for (auto &v : node.primitive.vertices)
+        {
+            v.position += offset;
+        }
+
+        glBindBuffer(GL_ARRAY_BUFFER, node.gl_vertex_buffer_id_);
+        glBufferSubData(GL_ARRAY_BUFFER,
+                        0,
+                        static_cast<GLsizeiptr>(node.primitive.vertices.size() * sizeof(Vertex)),
+                        node.primitive.vertices.data());
+    }
+
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void
-Mesh::recenter_to_origin()
+Vec3f
+Mesh::size() const
 {
-    if (interleaved_.empty())
+    if (index_count_ == 0)
     {
-        return;
+        return { 0 };
     }
 
-    const std::size_t floats_per_vertex = has_uv_ ? 8uz : 6uz;
-    float             min_x = std::numeric_limits<float>::infinity();
-    float             min_y = std::numeric_limits<float>::infinity();
-    float             min_z = std::numeric_limits<float>::infinity();
-    float             max_x = -std::numeric_limits<float>::infinity();
-    float             max_y = -std::numeric_limits<float>::infinity();
-    float             max_z = -std::numeric_limits<float>::infinity();
+    const auto [min, max] = aabb_(*this);
+    return max - min;
+}
 
-    for (std::size_t i = 0; i < interleaved_.size(); i += floats_per_vertex)
+Vec3f
+Mesh::center() const
+{
+    if (index_count_ == 0)
     {
-        const float x = interleaved_[i + 0];
-        const float y = interleaved_[i + 1];
-        const float z = interleaved_[i + 2];
-        min_x           = (std::min)(min_x, x);
-        min_y           = (std::min)(min_y, y);
-        min_z           = (std::min)(min_z, z);
-        max_x           = (std::max)(max_x, x);
-        max_y           = (std::max)(max_y, y);
-        max_z           = (std::max)(max_z, z);
+        return { 0 };
     }
 
-    const float cx = 0.5f * (min_x + max_x);
-    const float cy = 0.5f * (min_y + max_y);
-    const float cz = 0.5f * (min_z + max_z);
-
-    for (std::size_t i = 0; i < interleaved_.size(); i += floats_per_vertex)
-    {
-        interleaved_[i + 0] -= cx;
-        interleaved_[i + 1] -= cy;
-        interleaved_[i + 2] -= cz;
-    }
-
-    reupload_();
+    const auto [min, max] = aabb_(*this);
+    return (min + max) * 0.5f;
 }
 
 void
-Mesh::normalize_to_max_extent(float max_extent)
+Mesh::resize(const Vec3f &new_size)
 {
-    if (interleaved_.empty() || max_extent <= 0.0f)
+    if (index_count_ == 0)
     {
         return;
     }
 
-    const std::size_t floats_per_vertex = has_uv_ ? 8uz : 6uz;
-    float             min_x = std::numeric_limits<float>::infinity();
-    float             min_y = std::numeric_limits<float>::infinity();
-    float             min_z = std::numeric_limits<float>::infinity();
-    float             max_x = -std::numeric_limits<float>::infinity();
-    float             max_y = -std::numeric_limits<float>::infinity();
-    float             max_z = -std::numeric_limits<float>::infinity();
+    const Vec3f current = size();
+    Vec3f       scale{ 1.0f };
 
-    for (std::size_t i = 0; i < interleaved_.size(); i += floats_per_vertex)
+    for (auto &&[c, n, s] : std::views::zip(current, new_size, scale))
     {
-        const float x = interleaved_[i + 0];
-        const float y = interleaved_[i + 1];
-        const float z = interleaved_[i + 2];
-        min_x           = (std::min)(min_x, x);
-        min_y           = (std::min)(min_y, y);
-        min_z           = (std::min)(min_z, z);
-        max_x           = (std::max)(max_x, x);
-        max_y           = (std::max)(max_y, y);
-        max_z           = (std::max)(max_z, z);
+        if (c > 1e-8f)
+        {
+            s = n / c;
+        }
     }
 
-    const float extent_x = max_x - min_x;
-    const float extent_y = max_y - min_y;
-    const float extent_z = max_z - min_z;
-    const float current  = (std::max)((std::max)(extent_x, extent_y), extent_z);
-
-    if (current <= 1e-8f)
+    for (auto &node : nodes_view_(root_))
     {
-        return;
+        if (node.primitive.vertices.empty())
+        {
+            continue;
+        }
+
+        for (auto &v : node.primitive.vertices)
+        {
+            v.position *= scale;
+        }
+
+        glBindBuffer(GL_ARRAY_BUFFER, node.gl_vertex_buffer_id_);
+        glBufferSubData(GL_ARRAY_BUFFER,
+                        0,
+                        static_cast<GLsizeiptr>(node.primitive.vertices.size() * sizeof(Vertex)),
+                        node.primitive.vertices.data());
     }
 
-    const float scale = max_extent / current;
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
 
-    for (std::size_t i = 0; i < interleaved_.size(); i += floats_per_vertex)
+std::shared_ptr<Mesh>
+Mesh::unit_quad()
+{
+    static const std::shared_ptr<Mesh> quad = []()
     {
-        interleaved_[i + 0] *= scale;
-        interleaved_[i + 1] *= scale;
-        interleaved_[i + 2] *= scale;
-    }
+        Node root{Primitive{
+            .vertices = {
+                {
+                    .position       = { -0.5f, -0.5f, 0.0f },
+                    .normal         = { 0.0f, 0.0f, 1.0f },
+                    .texture_coords = { 0.0f, 0.0f },
+                },
+                {
+                    .position       = { 0.5f, -0.5f, 0.0f },
+                    .normal         = { 0.0f, 0.0f, 1.0f },
+                    .texture_coords = { 1.0f, 0.0f },
+                },
+                {
+                    .position       = { 0.5f, 0.5f, 0.0f },
+                    .normal         = { 0.0f, 0.0f, 1.0f },
+                    .texture_coords = { 1.0f, 1.0f },
+                },
+                {
+                    .position       = { -0.5f, 0.5f, 0.0f },
+                    .normal         = { 0.0f, 0.0f, 1.0f },
+                    .texture_coords = { 0.0f, 1.0f },
+                },
+            },
+            .indices = { 0, 1, 2, 0, 2, 3 },
+        }};
 
-    reupload_();
+        return std::shared_ptr<Mesh>(new Mesh(std::move(root)));
+    }();
+
+    return quad;
 }
 
 std::shared_ptr<Mesh>
@@ -162,94 +232,111 @@ Mesh::load(const std::filesystem::path &path)
     Assimp::Importer importer;
 
     constexpr unsigned import_flags = aiProcess_Triangulate | aiProcess_GenSmoothNormals
-        | aiProcess_ImproveCacheLocality | aiProcess_JoinIdenticalVertices
-        | aiProcess_PreTransformVertices | aiProcess_FlipUVs;
+                                      | aiProcess_ImproveCacheLocality
+                                      | aiProcess_JoinIdenticalVertices | aiProcess_FlipUVs;
 
     const aiScene *scene = importer.ReadFile(path.string(), import_flags);
 
     if (scene == nullptr || (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) != 0u
         || scene->mRootNode == nullptr)
     {
-        throw std::runtime_error(std::format(
-            "Failed to load mesh `{}`: {}", path.string(), importer.GetErrorString()));
+        throw std::runtime_error(
+            std::format("Failed to load mesh `{}`: {}", path.string(), importer.GetErrorString()));
     }
 
     if (scene->mNumMeshes == 0)
     {
-        throw std::runtime_error(
-            std::format("Mesh `{}` contains no geometry.", path.string()));
+        throw std::runtime_error(std::format("Mesh `{}` contains no geometry.", path.string()));
     }
 
-    bool global_has_uv = false;
+    bool any_texcoords = false;
     for (unsigned m = 0; m < scene->mNumMeshes; ++m)
     {
-        const aiMesh *amesh = scene->mMeshes[m];
-        if (amesh->HasTextureCoords(0))
+        if (scene->mMeshes[m]->HasTextureCoords(0))
         {
-            global_has_uv = true;
+            any_texcoords = true;
             break;
         }
     }
 
-    std::vector<float>    interleaved;
-    std::vector<unsigned> indices;
+    Node root{ Mesh::Primitive{} };
 
-    unsigned base_vertex = 0;
-
-    for (unsigned m = 0; m < scene->mNumMeshes; ++m)
+    auto process =
+        [&](const aiNode *a_node, const aiMatrix4x4 &parent_tfm, Node &out_node, auto &self) -> void
     {
-        const aiMesh *amesh = scene->mMeshes[m];
+        const aiMatrix4x4 transform = parent_tfm * a_node->mTransformation;
 
-        for (unsigned v = 0; v < amesh->mNumVertices; ++v)
+        aiMatrix4x4 normal_tfm = transform;
+        normal_tfm.a4 = normal_tfm.b4 = normal_tfm.c4 = 0.0f;
+
+        for (unsigned i = 0; i < a_node->mNumMeshes; ++i)
         {
-            const aiVector3D &p = amesh->mVertices[v];
-            interleaved.push_back(p.x);
-            interleaved.push_back(p.y);
-            interleaved.push_back(p.z);
+            const aiMesh *amesh = scene->mMeshes[a_node->mMeshes[i]];
 
-            aiVector3D n{ 0.0f, 1.0f, 0.0f };
-            if (amesh->HasNormals())
-            {
-                n = amesh->mNormals[v];
-            }
-            interleaved.push_back(n.x);
-            interleaved.push_back(n.y);
-            interleaved.push_back(n.z);
+            Node mesh_node{ Mesh::Primitive{} };
 
-            if (global_has_uv)
+            for (unsigned v = 0; v < amesh->mNumVertices; ++v)
             {
-                if (amesh->HasTextureCoords(0))
+                const aiVector3D tp = transform * amesh->mVertices[v];
+
+                aiVector3D tn{ 0.0f, 1.0f, 0.0f };
+                if (amesh->HasNormals())
                 {
-                    const aiVector3D &uv = amesh->mTextureCoords[0][v];
-                    interleaved.push_back(uv.x);
-                    interleaved.push_back(uv.y);
+                    tn = (normal_tfm * amesh->mNormals[v]).Normalize();
                 }
-                else
+
+                Vec2f uv{ 0.0f, 0.0f };
+                if (any_texcoords && amesh->HasTextureCoords(0))
                 {
-                    interleaved.push_back(0.0f);
-                    interleaved.push_back(0.0f);
+                    const aiVector3D &ai_uv = amesh->mTextureCoords[0][v];
+                    uv                      = Vec2f{ ai_uv.x, ai_uv.y };
                 }
+
+                mesh_node.primitive.vertices.push_back(
+                    Mesh::Vertex{ .position       = { tp.x, tp.y, tp.z },
+                                  .normal         = { tn.x, tn.y, tn.z },
+                                  .texture_coords = uv });
             }
+
+            for (unsigned f = 0; f < amesh->mNumFaces; ++f)
+            {
+                const aiFace &face = amesh->mFaces[f];
+
+                if (face.mNumIndices != 3U)
+                {
+                    throw std::runtime_error(std::format(
+                        "Non-triangle face in mesh `{}` after triangulation.", path.string()));
+                }
+
+                mesh_node.primitive.indices.push_back(face.mIndices[0]);
+                mesh_node.primitive.indices.push_back(face.mIndices[1]);
+                mesh_node.primitive.indices.push_back(face.mIndices[2]);
+            }
+
+            out_node.children.push_back(std::move(mesh_node));
         }
 
-        for (unsigned f = 0; f < amesh->mNumFaces; ++f)
+        for (unsigned i = 0; i < a_node->mNumChildren; ++i)
         {
-            const aiFace &face = amesh->mFaces[f];
-            if (face.mNumIndices != 3U)
-            {
-                throw std::runtime_error(std::format(
-                    "Non-triangle face in mesh `{}` after triangulation.", path.string()));
-            }
-            indices.push_back(base_vertex + face.mIndices[0]);
-            indices.push_back(base_vertex + face.mIndices[1]);
-            indices.push_back(base_vertex + face.mIndices[2]);
-        }
+            Node child_node{ Mesh::Primitive{} };
+            self(a_node->mChildren[i], transform, child_node, self);
 
-        base_vertex += amesh->mNumVertices;
+            if (!child_node.primitive.vertices.empty() || !child_node.children.empty())
+            {
+                out_node.children.push_back(std::move(child_node));
+            }
+        }
+    };
+
+    process(scene->mRootNode, aiMatrix4x4{}, root, process);
+
+    if (root.primitive.vertices.empty() && root.children.empty())
+    {
+        throw std::runtime_error(
+            std::format("No meshes found in `{}` after scene-graph traversal.", path.string()));
     }
 
-    return std::shared_ptr<Mesh>(
-        new Mesh(std::move(interleaved), std::move(indices), global_has_uv));
+    return std::shared_ptr<Mesh>(new Mesh(std::move(root)));
 }
 
-} 
+} // namespace ome

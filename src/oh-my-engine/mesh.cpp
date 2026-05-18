@@ -30,45 +30,11 @@ Mesh::Mesh(Node root)
 {
     for (auto &node : nodes_view_(root_))
     {
-        if (!node.primitive.vertices.empty())
-        {
-            glGenBuffers(1, &node.gl_vertex_buffer_id_);
-            glGenBuffers(1, &node.gl_element_buffer_id_);
-
-            glBindBuffer(GL_ARRAY_BUFFER, node.gl_vertex_buffer_id_);
-            glBufferData(GL_ARRAY_BUFFER,
-                         static_cast<GLsizeiptr>(node.primitive.vertices.size() * sizeof(Vertex)),
-                         node.primitive.vertices.data(),
-                         GL_STATIC_DRAW);
-
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, node.gl_element_buffer_id_);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                         static_cast<GLsizeiptr>(node.primitive.indices.size() * sizeof(unsigned)),
-                         node.primitive.indices.data(),
-                         GL_STATIC_DRAW);
-        }
-
         index_count_ += static_cast<GLsizei>(node.primitive.indices.size());
     }
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-Mesh::~Mesh()
-{
-    for (auto &node : nodes_view_(root_))
-    {
-        if (node.gl_vertex_buffer_id_ != 0)
-        {
-            glDeleteBuffers(1, &node.gl_vertex_buffer_id_);
-        }
-        if (node.gl_element_buffer_id_ != 0)
-        {
-            glDeleteBuffers(1, &node.gl_element_buffer_id_);
-        }
-    }
-}
+Mesh::~Mesh() = default;
 
 namespace {
 
@@ -104,24 +70,11 @@ Mesh::recenter(Vec3f new_origin)
 
     for (auto &node : nodes_view_(root_))
     {
-        if (node.primitive.vertices.empty())
-        {
-            continue;
-        }
-
         for (auto &v : node.primitive.vertices)
         {
             v.position += offset;
         }
-
-        glBindBuffer(GL_ARRAY_BUFFER, node.gl_vertex_buffer_id_);
-        glBufferSubData(GL_ARRAY_BUFFER,
-                        0,
-                        static_cast<GLsizeiptr>(node.primitive.vertices.size() * sizeof(Vertex)),
-                        node.primitive.vertices.data());
     }
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 Vec3f
@@ -169,24 +122,11 @@ Mesh::resize(const Vec3f &new_size)
 
     for (auto &node : nodes_view_(root_))
     {
-        if (node.primitive.vertices.empty())
-        {
-            continue;
-        }
-
         for (auto &v : node.primitive.vertices)
         {
             v.position *= scale;
         }
-
-        glBindBuffer(GL_ARRAY_BUFFER, node.gl_vertex_buffer_id_);
-        glBufferSubData(GL_ARRAY_BUFFER,
-                        0,
-                        static_cast<GLsizeiptr>(node.primitive.vertices.size() * sizeof(Vertex)),
-                        node.primitive.vertices.data());
     }
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 std::shared_ptr<Mesh>

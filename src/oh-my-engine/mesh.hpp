@@ -5,11 +5,7 @@
 #include <memory>
 #include <vector>
 
-#ifndef GL_GLEXT_PROTOTYPES
-#define GL_GLEXT_PROTOTYPES 1
-#endif
 #include <GL/gl.h>
-#include <GL/glext.h>
 
 #include "oh-my-engine/math/vector.hpp"
 
@@ -26,10 +22,10 @@ class Mesh
         Vec2f texture_coords;
     };
 
-    // #region static asserts for Vertex layout
+    // #region static asserts for Vertex layout (interleaved client-side arrays)
 
     static_assert(sizeof(Vertex) == 8 * sizeof(float),
-                  "Mesh::Vertex must be tightly packed (8 floats) for GL interleaved VBO upload");
+                  "Mesh::Vertex must be tightly packed (8 floats) for interleaved array stride");
     static_assert(offsetof(Vertex, position) == 0 * sizeof(float),
                   "Mesh::Vertex.position must be at offset 0");
     static_assert(offsetof(Vertex, normal) == 3 * sizeof(float),
@@ -55,24 +51,6 @@ class Mesh
               children(std::move(children))
         {
         }
-
-        GLuint
-        gl_vertex_buffer_id() const noexcept
-        {
-            return gl_vertex_buffer_id_;
-        }
-
-        GLuint
-        gl_element_buffer_id() const noexcept
-        {
-            return gl_element_buffer_id_;
-        }
-
-      private:
-        GLuint gl_vertex_buffer_id_  = 0;
-        GLuint gl_element_buffer_id_ = 0;
-
-        friend class Mesh;
     };
 
     Mesh() = delete;

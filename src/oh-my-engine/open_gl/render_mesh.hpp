@@ -2,12 +2,10 @@
 
 #include <cstdint>
 #include <optional>
+#include <vector>
 
-#ifndef GL_GLEXT_PROTOTYPES
-#define GL_GLEXT_PROTOTYPES 1
-#endif
 #include <GL/gl.h>
-#include <GL/glext.h>
+#include <cstddef>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/mat4x4.hpp>
@@ -31,7 +29,8 @@ struct MeshRenderTask
     void
     operator()() const
     {
-        if (mesh.index_count() <= 0)
+        [[unlikely]]
+        if (mesh.index_count() == 0)
         {
             return;
         }
@@ -45,16 +44,15 @@ struct MeshRenderTask
 
         const GLboolean prev_texture_2d = glIsEnabled(GL_TEXTURE_2D);
 
-        const bool use_texture
-            = sprite.has_value() && static_cast<bool>(sprite->texture) && mesh.has_uv();
+        const bool use_texture = sprite.has_value() && static_cast<bool>(sprite->texture);
 
-        glm::mat4 M = glm::translate(
-                          glm::mat4(1.0f),
-                          glm::vec3(transform.position[0], transform.position[1], transform.position[2]))
-                      * transform.orientation.matrix()
-                      * glm::scale(
-                          glm::mat4(1.0f),
-                          glm::vec3(transform.scale[0], transform.scale[1], transform.scale[2]));
+        glm::mat4 M
+            = glm::translate(
+                  glm::mat4(1.0f),
+                  glm::vec3(transform.position[0], transform.position[1], transform.position[2]))
+              * transform.orientation.matrix()
+              * glm::scale(glm::mat4(1.0f),
+                           glm::vec3(transform.scale[0], transform.scale[1], transform.scale[2]));
 
         auto model_guard = MatrixGuard(GL_MODELVIEW);
         glMultMatrixf(glm::value_ptr(M));
@@ -85,37 +83,42 @@ struct MeshRenderTask
             glColor(modulate.value_or(ome::Color::white()));
         }
 
-        glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo_);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.ebo_);
-
-        glVertexPointer(3, GL_FLOAT, mesh.stride_bytes_, nullptr);
-        glNormalPointer(GL_FLOAT, mesh.stride_bytes_, reinterpret_cast<const void *>(static_cast<std::uintptr_t>(3 * sizeof(float))));
-
         glEnableClientState(GL_VERTEX_ARRAY);
         glEnableClientState(GL_NORMAL_ARRAY);
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
-        if (mesh.has_uv())
         {
-            glTexCoordPointer(
-                2,
-                GL_FLOAT,
-                mesh.stride_bytes_,
-                reinterpret_cast<const void *>(static_cast<std::uintptr_t>(6 * sizeof(float))));
-            glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        }
+            std::vector<const Mesh::Node *> stack = { &mesh.root() };
+            while (!stack.empty())
+            {
+                const auto *node = stack.back();
+                stack.pop_back();
 
-        glDrawElements(GL_TRIANGLES, mesh.index_count_, GL_UNSIGNED_INT, nullptr);
+                if (!node->primitive.vertices.empty())
+                {
+                    glVertexPointer(3, GL_FLOAT, sizeof(Mesh::Vertex),
+                                    node->primitive.vertices.data());
+                    glNormalPointer(GL_FLOAT, sizeof(Mesh::Vertex),
+                                    &node->primitive.vertices[0].normal);
+                    glTexCoordPointer(2, GL_FLOAT, sizeof(Mesh::Vertex),
+                                      &node->primitive.vertices[0].texture_coords);
+
+                    glDrawElements(GL_TRIANGLES,
+                                   static_cast<GLsizei>(node->primitive.indices.size()),
+                                   GL_UNSIGNED_INT,
+                                   node->primitive.indices.data());
+                }
+
+                for (const auto &child : node->children)
+                {
+                    stack.push_back(&child);
+                }
+            }
+        }
 
         glDisableClientState(GL_VERTEX_ARRAY);
         glDisableClientState(GL_NORMAL_ARRAY);
-
-        if (mesh.has_uv())
-        {
-            glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-        }
-
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 
         if (use_texture)
         {
@@ -137,4 +140,4 @@ struct MeshRenderTask
     }
 };
 
-}
+} // namespace ome::open_gl

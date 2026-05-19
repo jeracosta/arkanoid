@@ -236,6 +236,12 @@ class Vector
         return self.components_.end();
     }
 
+    auto
+    data(this auto &&self) noexcept
+    {
+        return self.components_.data();
+    }
+
     friend void
     swap(Vector &lhs, Vector &rhs)
     {

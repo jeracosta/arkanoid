@@ -11,42 +11,36 @@ namespace ome {
 
 struct Material
 {
-    Color ambient;
-    Color diffuse;
-    Color specular;
-    Color emission;
-    float shininess;
-
-    Color                     color      = Color::white();
-    std::shared_ptr<Texture>  texture    = nullptr;
-    BlendMode                 blend_mode = BlendMode::opaque();
-
-    Material()
-        : ambient(Color::rgb(0.2f, 0.2f, 0.2f)),
-          diffuse(Color::rgb(0.8f, 0.8f, 0.8f)),
-          specular(Color::rgb(0.0f, 0.0f, 0.0f)),
-          emission(Color::rgb(0.0f, 0.0f, 0.0f)),
-          shininess(0.0f)
+    struct
     {
-    }
+        Color ambient  = Color::hex(0x333333FF);
+        Color diffuse  = Color::hex(0xCCCCCCFF);
+        Color specular = Color::hex(0x000000FF);
+        Color emission = Color::hex(0x000000FF);
+        Color base     = Color::hex(0xFFFFFFFF);
+    } color;
+
+    float shininess = 0.0f;
+
+    std::shared_ptr<Texture> texture    = nullptr;
+    BlendMode                blend_mode = BlendMode::opaque();
+
+    Material() = default;
 
     void
     apply() const
     {
-        auto [ar, ag, ab, aa] = ambient.rgba_f();
-        auto [dr, dg, db, da] = diffuse.rgba_f();
-        auto [sr, sg, sb, sa] = specular.rgba_f();
-        auto [er, eg, eb, ea] = emission.rgba_f();
+        auto gl_color = [&](auto &color) -> std::array<GLfloat, 4> { return color.rgba_f(); };
 
-        GLfloat ambient_color[]  = { ar, ag, ab, aa };
-        GLfloat diffuse_color[]  = { dr, dg, db, da };
-        GLfloat specular_color[] = { sr, sg, sb, sa };
-        GLfloat emission_color[] = { er, eg, eb, ea };
+        auto ambient_color  = gl_color(color.ambient);
+        auto diffuse_color  = gl_color(color.diffuse);
+        auto specular_color = gl_color(color.specular);
+        auto emission_color = gl_color(color.emission);
 
-        glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient_color);
-        glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse_color);
-        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular_color);
-        glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, emission_color);
+        glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient_color.data());
+        glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse_color.data());
+        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular_color.data());
+        glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, emission_color.data());
         glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
     }
 };
@@ -81,7 +75,8 @@ class MaterialGuard
 
     MaterialGuard(const MaterialGuard &) = delete;
     MaterialGuard &
-    operator=(const MaterialGuard &) = delete;
+    operator=(const MaterialGuard &)
+        = delete;
 };
 
 } // namespace ome

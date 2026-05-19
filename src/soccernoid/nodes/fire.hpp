@@ -20,9 +20,9 @@ class FireNode : public ome::TransformNode
         make_point_light_()
         {
             auto light                  = ome::PointLight{};
-            light.ambient               = ome::Color::rgb(0.0f, 0.0f, 0.0f);
-            light.diffuse               = ome::Color::rgb(1.0f, 0.55f, 0.12f);
-            light.specular              = ome::Color::rgb(1.0f, 0.75f, 0.35f);
+            light.color.ambient         = ome::Color::rgb(0.0f, 0.0f, 0.0f);
+            light.color.diffuse         = ome::Color::rgb(1.0f, 0.55f, 0.12f);
+            light.color.specular        = ome::Color::rgb(1.0f, 0.75f, 0.35f);
             light.constant_attenuation  = 1.0f;
             light.linear_attenuation    = 0.06f;
             light.quadratic_attenuation = 0.12f;
@@ -33,7 +33,8 @@ class FireNode : public ome::TransformNode
         FirePointLightNode_()
             : ome::LightNode(make_point_light_())
         {
-            update_transform<ome::Space::Local>([](auto &t) { t.position = { 0.0f, 0.55f, 0.0f }; });
+            update_transform<ome::Space::Local>([](auto &t)
+            { t.position = { 0.0f, 0.55f, 0.0f }; });
         }
     };
 

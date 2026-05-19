@@ -8,20 +8,23 @@
 
 namespace ome {
 
-struct DirectionalLight
+struct LightColor
 {
     Color ambient  = Color::rgb(0.0f, 0.0f, 0.0f);
     Color diffuse  = Color::rgb(1.0f, 1.0f, 1.0f);
     Color specular = Color::rgb(1.0f, 1.0f, 1.0f);
+};
+
+struct DirectionalLight
+{
+    LightColor color;
 
     Vec3f direction{ 0.0f, -1.0f, 0.0f };
 };
 
 struct PointLight
 {
-    Color ambient  = Color::rgb(0.0f, 0.0f, 0.0f);
-    Color diffuse  = Color::rgb(1.0f, 1.0f, 1.0f);
-    Color specular = Color::rgb(1.0f, 1.0f, 1.0f);
+    LightColor color;
 
     Vec3f position{ 0.0f, 0.0f, 0.0f };
 
@@ -32,9 +35,7 @@ struct PointLight
 
 struct SpotLight
 {
-    Color ambient  = Color::rgb(0.0f, 0.0f, 0.0f);
-    Color diffuse  = Color::rgb(1.0f, 1.0f, 1.0f);
-    Color specular = Color::rgb(1.0f, 1.0f, 1.0f);
+    LightColor color;
 
     Vec3f position{ 0.0f, 0.0f, 0.0f };
     Vec3f direction{ 0.0f, -1.0f, 0.0f };

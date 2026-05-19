@@ -94,9 +94,9 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
         make_point_light_()
         {
             auto light                  = ome::PointLight{};
-            light.ambient               = ome::Color::rgb(0.0f, 0.0f, 0.0f);
-            light.diffuse               = ome::Color::rgb(1.0f, 0.45f, 0.95f);
-            light.specular              = ome::Color::rgb(0.9f, 0.75f, 1.0f);
+            light.color.ambient         = ome::Color::rgb(0.0f, 0.0f, 0.0f);
+            light.color.diffuse         = ome::Color::rgb(1.0f, 0.45f, 0.95f);
+            light.color.specular        = ome::Color::rgb(0.9f, 0.75f, 1.0f);
             light.constant_attenuation  = 1.0f;
             light.linear_attenuation    = 0.12f;
             light.quadratic_attenuation = 0.28f;

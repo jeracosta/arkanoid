@@ -86,20 +86,20 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
         }
     };
 
-    // Point light parented to the projectile so a colored pool follows the ball (GL_LIGHT2).
+    // Point light parented to the projectile so a colored pool follows the ball.
     class ProjectilePointLightNode_ : public ome::LightNode
     {
       private:
-        static std::unique_ptr<ome::PointLight>
+        static ome::PointLight
         make_point_light_()
         {
-            auto light = std::make_unique<ome::PointLight>(GL_LIGHT2);
-            light->ambient              = ome::Color::rgb(0.0f, 0.0f, 0.0f);
-            light->diffuse              = ome::Color::rgb(1.0f, 0.45f, 0.95f);
-            light->specular             = ome::Color::rgb(0.9f, 0.75f, 1.0f);
-            light->constant_attenuation = 1.0f;
-            light->linear_attenuation   = 0.12f;
-            light->quadratic_attenuation = 0.28f;
+            auto light                  = ome::PointLight{};
+            light.ambient               = ome::Color::rgb(0.0f, 0.0f, 0.0f);
+            light.diffuse               = ome::Color::rgb(1.0f, 0.45f, 0.95f);
+            light.specular              = ome::Color::rgb(0.9f, 0.75f, 1.0f);
+            light.constant_attenuation  = 1.0f;
+            light.linear_attenuation    = 0.12f;
+            light.quadratic_attenuation = 0.28f;
             return light;
         }
 
@@ -155,8 +155,6 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
             .color = ome::Interpolation{ ome::Color::white(), colors.projectile },
 
             .scale = ome::Interpolation{ 0.075f, 0.0f },
-
-            .blend_mode = ome::BlendMode::additive(),
         };
 
         static inline const ome::ParticleEmitterNode::Settings settings_ = {

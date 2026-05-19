@@ -1,11 +1,18 @@
 #pragma once
 
-#include <memory>
+#include <type_traits>
+#include <variant>
 
 #include "oh-my-engine/constants.hpp"
 #include "oh-my-engine/light.hpp"
 #include "oh-my-engine/math/vector.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
+
+#include <GL/gl.h>
+
+namespace ome::open_gl {
+void bind(const Light &light, GLenum slot);
+}
 
 namespace ome {
 
@@ -28,11 +35,26 @@ unit_light_direction_from_transform(const TransformNode::Component &transform)
 class LightNode : public TransformNode
 {
   private:
-    std::unique_ptr<Light> light_;
+    Light light_;
 
   public:
-    explicit LightNode(std::unique_ptr<Light> light)
+    explicit LightNode(Light light)
         : light_(std::move(light))
+    {
+    }
+
+    explicit LightNode(const PointLight &light)
+        : light_(light)
+    {
+    }
+
+    explicit LightNode(const SpotLight &light)
+        : light_(light)
+    {
+    }
+
+    explicit LightNode(const DirectionalLight &light)
+        : light_(light)
     {
     }
 
@@ -41,33 +63,42 @@ class LightNode : public TransformNode
     {
         const auto world = transform<Space::World>();
 
-        if (auto *point = dynamic_cast<PointLight *>(light_.get()))
-        {
-            point->position = world.position;
-        }
-        else if (auto *spot = dynamic_cast<SpotLight *>(light_.get()))
-        {
-            spot->position  = world.position;
-            spot->direction = light_node_detail::unit_light_direction_from_transform(world);
-        }
-        else if (auto *dir = dynamic_cast<DirectionalLight *>(light_.get()))
-        {
-            dir->direction = light_node_detail::unit_light_direction_from_transform(world);
-        }
+        // Light is a std::variant; update fields via std::visit.
+        std::visit(
+            [&](auto &light)
+            {
+                using T = std::remove_cvref_t<decltype(light)>;
+                if constexpr (std::is_same_v<T, PointLight>)
+                {
+                    light.position = world.position;
+                }
+                else if constexpr (std::is_same_v<T, SpotLight>)
+                {
+                    light.position  = world.position;
+                    light.direction = light_node_detail::unit_light_direction_from_transform(world);
+                }
+                else if constexpr (std::is_same_v<T, DirectionalLight>)
+                {
+                    light.direction = light_node_detail::unit_light_direction_from_transform(world);
+                }
+            },
+            light_);
 
-        light_->apply();
+        // Bind to the first slot every tick.
+        ome::open_gl::bind(light_, GL_LIGHT0);
+        glEnable(GL_LIGHT0);
     }
 
-    Light *
+    Light &
     light()
     {
-        return light_.get();
+        return light_;
     }
 
-    const Light *
+    const Light &
     light() const
     {
-        return light_.get();
+        return light_;
     }
 };
 

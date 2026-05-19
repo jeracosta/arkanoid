@@ -1,116 +1,71 @@
 #pragma once
 
 #include <GL/gl.h>
+#include <variant>
 
 #include "oh-my-engine/color.hpp"
 #include "oh-my-engine/math/vector.hpp"
 
 namespace ome {
 
-class Light
+struct DirectionalLight
 {
-  protected:
-    GLenum gl_light_id_;
+    Color ambient  = Color::rgb(0.0f, 0.0f, 0.0f);
+    Color diffuse  = Color::rgb(1.0f, 1.0f, 1.0f);
+    Color specular = Color::rgb(1.0f, 1.0f, 1.0f);
 
-  public:
-    Color ambient;
-    Color diffuse;
-    Color specular;
-
-    explicit Light(GLenum gl_light_id)
-        : gl_light_id_(gl_light_id),
-          ambient(Color::rgb(0.0f, 0.0f, 0.0f)),
-          diffuse(Color::rgb(1.0f, 1.0f, 1.0f)),
-          specular(Color::rgb(1.0f, 1.0f, 1.0f))
-    {
-    }
-
-    virtual ~Light() = default;
-
-    virtual void
-    apply() const = 0;
-
-    GLenum
-    gl_id() const
-    {
-        return gl_light_id_;
-    }
+    Vec3f direction{ 0.0f, -1.0f, 0.0f };
 };
 
-class DirectionalLight : public Light
+struct PointLight
 {
-  public:
-    math::Vector<3> direction;
+    Color ambient  = Color::rgb(0.0f, 0.0f, 0.0f);
+    Color diffuse  = Color::rgb(1.0f, 1.0f, 1.0f);
+    Color specular = Color::rgb(1.0f, 1.0f, 1.0f);
 
-    DirectionalLight(GLenum gl_light_id, const math::Vector<3> &dir)
-        : Light(gl_light_id),
-          direction(
-              [&dir]
-              {
-                  using math::norm;
-                  const auto n = norm(dir);
-                  if (n < 1e-8f)
-                  {
-                      return math::Vector<3>{ 0.0f, -1.0f, 0.0f };
-                  }
-                  return dir / n;
-              }())
-    {
-    }
+    Vec3f position{ 0.0f, 0.0f, 0.0f };
 
-    void
-    apply() const override;
+    float constant_attenuation  = 1.0f;
+    float linear_attenuation    = 0.0f;
+    float quadratic_attenuation = 0.0f;
 };
 
-class PointLight : public Light
+struct SpotLight
 {
-  public:
-    math::Vector<3> position;
+    Color ambient  = Color::rgb(0.0f, 0.0f, 0.0f);
+    Color diffuse  = Color::rgb(1.0f, 1.0f, 1.0f);
+    Color specular = Color::rgb(1.0f, 1.0f, 1.0f);
 
-    float constant_attenuation;
-    float linear_attenuation;
-    float quadratic_attenuation;
+    Vec3f position{ 0.0f, 0.0f, 0.0f };
+    Vec3f direction{ 0.0f, -1.0f, 0.0f };
 
-    explicit PointLight(GLenum gl_light_id)
-        : Light(gl_light_id),
-          position({ 0.0f, 0.0f, 0.0f }),
-          constant_attenuation(1.0f),
-          linear_attenuation(0.0f),
-          quadratic_attenuation(0.0f)
-    {
-    }
+    float cutoff_angle = 45.0f;
+    float exponent     = 0.0f;
 
-    void
-    apply() const override;
+    float constant_attenuation  = 1.0f;
+    float linear_attenuation    = 0.0f;
+    float quadratic_attenuation = 0.0f;
 };
 
-class SpotLight : public Light
+using Light = std::variant<DirectionalLight, PointLight, SpotLight>;
+
+} // namespace ome
+
+namespace ome::open_gl {
+
+void
+bind(const DirectionalLight &light, GLenum slot);
+
+void
+bind(const PointLight &light, GLenum slot);
+
+void
+bind(const SpotLight &light, GLenum slot);
+
+inline void
+bind(const Light &light, GLenum slot)
 {
-  public:
-    math::Vector<3> position;
-    math::Vector<3> direction;
-
-    float cutoff_angle;
-    float exponent;
-
-    float constant_attenuation;
-    float linear_attenuation;
-    float quadratic_attenuation;
-
-    SpotLight(GLenum gl_light_id, float cutoff = 45.0f)
-        : Light(gl_light_id),
-          position({ 0.0f, 0.0f, 0.0f }),
-          direction({ 0.0f, -1.0f, 0.0f }),
-          cutoff_angle(cutoff),
-          exponent(0.0f),
-          constant_attenuation(1.0f),
-          linear_attenuation(0.0f),
-          quadratic_attenuation(0.0f)
-    {
-    }
-
-    void
-    apply() const override;
-};
-
+    std::visit([&](auto const &light) { bind(light, slot); }, light);
 }
+
+} // namespace ome::open_gl

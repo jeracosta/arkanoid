@@ -16,16 +16,16 @@ class FireNode : public ome::TransformNode
     class FirePointLightNode_ : public ome::LightNode
     {
       private:
-        static std::unique_ptr<ome::PointLight>
+        static ome::PointLight
         make_point_light_()
         {
-            auto light                   = std::make_unique<ome::PointLight>(GL_LIGHT3);
-            light->ambient               = ome::Color::rgb(0.0f, 0.0f, 0.0f);
-            light->diffuse               = ome::Color::rgb(1.0f, 0.55f, 0.12f);
-            light->specular              = ome::Color::rgb(1.0f, 0.75f, 0.35f);
-            light->constant_attenuation  = 1.0f;
-            light->linear_attenuation    = 0.06f;
-            light->quadratic_attenuation = 0.12f;
+            auto light                  = ome::PointLight{};
+            light.ambient               = ome::Color::rgb(0.0f, 0.0f, 0.0f);
+            light.diffuse               = ome::Color::rgb(1.0f, 0.55f, 0.12f);
+            light.specular              = ome::Color::rgb(1.0f, 0.75f, 0.35f);
+            light.constant_attenuation  = 1.0f;
+            light.linear_attenuation    = 0.06f;
+            light.quadratic_attenuation = 0.12f;
             return light;
         }
 

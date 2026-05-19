@@ -12,11 +12,6 @@ namespace ome {
 
 class Texture;
 
-namespace open_gl {
-void
-glBindTexture(const Texture &);
-}
-
 struct Sprite
 {
     std::shared_ptr<Texture> texture;
@@ -105,9 +100,6 @@ class Texture
 
     static std::shared_ptr<Texture>
     placeholder();
-
-    friend void
-    open_gl::glBindTexture(const Texture &texture);
 
   private:
     GLuint id_ = 0;

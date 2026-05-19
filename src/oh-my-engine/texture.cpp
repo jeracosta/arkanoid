@@ -159,13 +159,3 @@ Texture::set_blend_mode(GLenum mode)
 }
 
 } // namespace ome
-
-namespace ome::open_gl {
-
-void
-glBindTexture(const Texture &texture)
-{
-    ::glBindTexture(GL_TEXTURE_2D, texture.id_);
-}
-
-} // namespace ome::open_gl

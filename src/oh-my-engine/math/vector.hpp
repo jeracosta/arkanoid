@@ -289,6 +289,12 @@ class Vector
         return Vector<TDimension, T>((components_));
     }
 
+    constexpr
+    operator const std::array<TComponent, TDimension> &() const
+    {
+        return components_;
+    }
+
 #ifdef GLM_VERSION
     template <typename Component>
     constexpr Vector(const glm::vec<TDimension, Component> &v)

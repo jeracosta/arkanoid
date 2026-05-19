@@ -85,6 +85,12 @@ class Texture
 
     Texture(Primitive image);
 
+    GLuint
+    id()
+    {
+        return id_;
+    }
+
     static std::shared_ptr<Texture>
     load(const std::filesystem::path &path);
 

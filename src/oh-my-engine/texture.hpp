@@ -113,6 +113,12 @@ class Texture
     GLuint id_ = 0;
 };
 
-// #endregion
+enum class TextureEnvironmentMode
+{
+    Modulate = GL_MODULATE,
+    Decal    = GL_DECAL,
+    Blend    = GL_BLEND,
+    Replace  = GL_REPLACE,
+};
 
 } // namespace ome

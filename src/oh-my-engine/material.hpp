@@ -23,6 +23,7 @@ struct Material
     float shininess = 0.0f;
 
     std::shared_ptr<Texture> texture    = nullptr;
+    TextureEnvironmentMode   env_mode   = TextureEnvironmentMode::Modulate;
     BlendMode                blend_mode = BlendMode::opaque();
 
     Material() = default;

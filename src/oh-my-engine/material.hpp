@@ -27,23 +27,6 @@ struct Material
     BlendMode                blend_mode = BlendMode::opaque();
 
     Material() = default;
-
-    void
-    apply() const
-    {
-        auto gl_color = [&](auto &color) -> std::array<GLfloat, 4> { return color.rgba_f(); };
-
-        auto ambient_color  = gl_color(color.ambient);
-        auto diffuse_color  = gl_color(color.diffuse);
-        auto specular_color = gl_color(color.specular);
-        auto emission_color = gl_color(color.emission);
-
-        glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient_color.data());
-        glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse_color.data());
-        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular_color.data());
-        glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, emission_color.data());
-        glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
-    }
 };
 
 class MaterialGuard
@@ -81,3 +64,10 @@ class MaterialGuard
 };
 
 } // namespace ome
+
+namespace ome::open_gl {
+
+void
+bind(const Material &material);
+
+}

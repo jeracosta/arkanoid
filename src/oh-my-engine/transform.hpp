@@ -3,11 +3,19 @@
 
 namespace ome {
 
+// TODO: Turn struct into a class with glm::mat4 storage?
+
 struct Transform
 {
     Vec3f       position    = { 0.0f };
     Orientation orientation = Orientation::identity();
     Vec3f       scale       = { 1.0f };
+
+    operator glm::mat4() const
+    {
+        return glm::translate(glm::mat4(1.0f), glm::vec3(position)) * orientation.matrix()
+               * glm::scale(glm::mat4(1.0f), glm::vec3(scale));
+    }
 };
 
 inline Vec3f

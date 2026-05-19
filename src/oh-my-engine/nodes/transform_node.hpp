@@ -10,36 +10,6 @@
 
 namespace ome {
 
-inline Vec3f
-operator*(const Transform &transform, const Vec3f &vector)
-{
-    return transform.position + transform.orientation * (transform.scale * vector);
-}
-
-inline Transform
-operator*(const Transform &lhs, const Transform &rhs)
-{
-    return {
-        .position    = lhs * rhs.position,
-        .orientation = lhs.orientation * rhs.orientation,
-        .scale       = lhs.scale * rhs.scale,
-    };
-}
-
-inline Transform
-inverse_of(const Transform &transform)
-{
-    auto inverse_orientation = inverse_of(transform.orientation);
-    auto inverse_scale       = Vec3f{ 1 } / transform.scale;
-    auto inverse_position    = inverse_orientation * (inverse_scale * -transform.position);
-
-    return {
-        .position    = inverse_position,
-        .orientation = inverse_orientation,
-        .scale       = inverse_scale,
-    };
-}
-
 class TransformNode : public Node
 {
   public:

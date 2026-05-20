@@ -2,16 +2,15 @@
 
 #include <format>
 
-#include "oh-my-engine/node.hpp"
 #include "soccernoid/events.hpp"
-#include "soccernoid/soccernoid.hpp"
+#include "soccernoid/nodes/soccernoid_node.hpp"
 
 namespace soccernoid {
 
 // Tracks game-wide state. Currently: counts live projectiles and emits
 // PlayerDefeated when the count drops to zero. Intended to live alongside the
 // LevelNode under the root so it survives level swaps.
-class GameControlNode : public ome::Node
+class GameControlNode : public SoccernoidNode<>
 {
   private:
     int projectile_count_ = 0;
@@ -32,7 +31,7 @@ class GameControlNode : public ome::Node
         if (projectile_count_ == 0)
         {
             log("No projectiles left — player defeated");
-            Soccernoid::from(*this).Events.emit(PlayerDefeated{});
+            game()->Events.emit(PlayerDefeated{});
         }
     }
 
@@ -40,7 +39,7 @@ class GameControlNode : public ome::Node
     void
     on_mount_() override
     {
-        auto &events = Soccernoid::from(*this).Events;
+        auto &events = game()->Events;
         hold(events.bind(&GameControlNode::on_projectile_spawned_, this));
         hold(events.bind(&GameControlNode::on_projectile_despawned_, this));
     }

@@ -18,15 +18,12 @@ struct Material
         Color specular = Color::hex(0x000000FF);
         Color emission = Color::hex(0x000000FF);
         Color base     = Color::hex(0xFFFFFFFF);
-    } color;
-
-    float shininess = 0.0f;
+    } color = {};
 
     std::shared_ptr<Texture> texture    = nullptr;
+    float                    shininess  = 0.0f;
     TextureEnvironmentMode   env_mode   = TextureEnvironmentMode::Modulate;
     BlendMode                blend_mode = BlendMode::opaque();
-
-    Material() = default;
 };
 
 } // namespace ome

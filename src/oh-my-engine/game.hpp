@@ -93,18 +93,7 @@ class Game : public EventConnectionHolder
     mount_(std::shared_ptr<Node> node);
 
     void
-    update_();
-
-    void
-    run_()
-    {
-        running_ = true;
-
-        while (running_)
-        {
-            update_();
-        }
-    }
+    run_();
 
     void
     on_projection_update_(const ProjectionUpdated &projection);

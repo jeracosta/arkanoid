@@ -135,34 +135,39 @@ Game::mount_(std::shared_ptr<Node> node_owner)
 }
 
 void
-Game::update_()
+Game::run_()
 {
-    time.update_();
+    running_ = true;
 
-    process_sdl_events_();
-
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-
-    ome::open_gl::look_at(camera);
-
-    config_.on_update ? config_.on_update(*this) : void();
-
-    [[likely]]
-    if (root_node_)
+    while (running_)
     {
-        visit_dfs(*root_node_, &Node::tick, [](Node &) {});
+        time.update_();
+
+        process_sdl_events_();
+
+        config_.on_update ? config_.on_update(*this) : void();
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+
+        ome::open_gl::look_at(camera);
+
+        [[likely]]
+        if (root_node_)
+        {
+            visit_dfs(*root_node_, &Node::tick, [](Node &) {});
+        }
+
+        collision_server.process_collisions();
+
+        resolve_tasks_();
+
+        SDL_GL_SwapWindow(window);
+
+        frame_count_++;
     }
-
-    collision_server.process_collisions();
-
-    resolve_tasks_();
-
-    SDL_GL_SwapWindow(window);
-
-    frame_count_++;
 }
 
 void

@@ -1,11 +1,14 @@
 #include "oh-my-engine/mesh.hpp"
 
 #include <assimp/Importer.hpp>
+#include <assimp/matrix3x3.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#include <cmath>
 #include <format>
 #include <generator>
 #include <limits>
+#include <ranges>
 #include <stdexcept>
 
 namespace ome {
@@ -26,19 +29,19 @@ nodes_view_(NodeT &root)
 
 Mesh::Mesh(Node root)
     : root_(std::move(root)),
-      index_count_(0)
+      index_count_(0),
+      vertex_count_(0)
 {
     for (auto &node : nodes_view_(root_))
     {
-        index_count_ += static_cast<GLsizei>(node.primitive.indices.size());
+        index_count_ += node.primitive.indices.size();
+        vertex_count_ += node.primitive.vertices.size();
     }
 }
 
 Mesh::~Mesh() = default;
 
-namespace {
-
-std::pair<Vec3f, Vec3f>
+static std::pair<Vec3f, Vec3f>
 aabb_(const Mesh &mesh)
 {
     Vec3f min{ std::numeric_limits<float>::infinity() };
@@ -46,22 +49,20 @@ aabb_(const Mesh &mesh)
 
     for (const auto &node : nodes_view_(mesh.root()))
     {
-        for (const auto &v : node.primitive.vertices)
+        for (const auto &vertice : node.primitive.vertices)
         {
-            min = math::zip_transform(std::ranges::min, min, v.position);
-            max = math::zip_transform(std::ranges::max, max, v.position);
+            min = math::zip_transform(std::ranges::min, min, vertice.position);
+            max = math::zip_transform(std::ranges::max, max, vertice.position);
         }
     }
 
     return { min, max };
 }
 
-} // anonymous namespace
-
 void
 Mesh::recenter(Vec3f new_origin)
 {
-    if (index_count_ == 0)
+    if (vertex_count_ == 0)
     {
         return;
     }
@@ -80,9 +81,9 @@ Mesh::recenter(Vec3f new_origin)
 Vec3f
 Mesh::size() const
 {
-    if (index_count_ == 0)
+    if (vertex_count_ == 0)
     {
-        return { 0 };
+        return { 0.0f };
     }
 
     const auto [min, max] = aabb_(*this);
@@ -92,9 +93,9 @@ Mesh::size() const
 Vec3f
 Mesh::center() const
 {
-    if (index_count_ == 0)
+    if (vertex_count_ == 0)
     {
-        return { 0 };
+        return { 0.0f };
     }
 
     const auto [min, max] = aabb_(*this);
@@ -104,7 +105,7 @@ Mesh::center() const
 void
 Mesh::resize(const Vec3f &new_size)
 {
-    if (index_count_ == 0)
+    if (vertex_count_ == 0)
     {
         return;
     }
@@ -114,7 +115,7 @@ Mesh::resize(const Vec3f &new_size)
 
     for (auto &&[c, n, s] : std::views::zip(current, new_size, scale))
     {
-        if (c > 1e-8f)
+        if (std::abs(c) > 1e-8f)
         {
             s = n / c;
         }
@@ -122,19 +123,29 @@ Mesh::resize(const Vec3f &new_size)
 
     for (auto &node : nodes_view_(root_))
     {
-        for (auto &v : node.primitive.vertices)
+        for (auto &vertice : node.primitive.vertices)
         {
-            v.position *= scale;
+            vertice.position *= scale;
+
+            for (auto &&[component, axis_scale] : std::views::zip(vertice.normal, scale))
+            {
+                if (std::abs(axis_scale) > 1e-8f)
+                {
+                    component /= axis_scale;
+                }
+            }
+
+            vertice.normal = normalized(vertice.normal);
         }
     }
 }
 
-std::shared_ptr<Mesh>
+std::shared_ptr<const Mesh>
 Mesh::unit_quad()
 {
-    static const std::shared_ptr<Mesh> quad = []()
+    static const std::shared_ptr<const Mesh> quad = []()
     {
-        Node root{Primitive{
+        Node root{ Primitive{
             .vertices = {
                 {
                     .position       = { -0.5f, -0.5f, 0.0f },
@@ -160,7 +171,7 @@ Mesh::unit_quad()
             .indices = { 0, 1, 2, 0, 2, 3 },
         }};
 
-        return std::shared_ptr<Mesh>(new Mesh(std::move(root)));
+        return std::shared_ptr<const Mesh>(new Mesh(std::move(root)));
     }();
 
     return quad;
@@ -189,31 +200,19 @@ Mesh::load(const std::filesystem::path &path)
         throw std::runtime_error(std::format("Mesh `{}` contains no geometry.", path.string()));
     }
 
-    bool any_texcoords = false;
-    for (unsigned m = 0; m < scene->mNumMeshes; ++m)
-    {
-        if (scene->mMeshes[m]->HasTextureCoords(0))
-        {
-            any_texcoords = true;
-            break;
-        }
-    }
-
-    Node root{ Mesh::Primitive{} };
+    Node root{ Primitive{} };
 
     auto process =
         [&](const aiNode *a_node, const aiMatrix4x4 &parent_tfm, Node &out_node, auto &self) -> void
     {
         const aiMatrix4x4 transform = parent_tfm * a_node->mTransformation;
 
-        aiMatrix4x4 normal_tfm = transform;
-        normal_tfm.a4 = normal_tfm.b4 = normal_tfm.c4 = 0.0f;
-
         for (unsigned i = 0; i < a_node->mNumMeshes; ++i)
         {
             const aiMesh *amesh = scene->mMeshes[a_node->mMeshes[i]];
 
-            Node mesh_node{ Mesh::Primitive{} };
+            Node mesh_node{ Primitive{} };
+            mesh_node.primitive.material_index = static_cast<std::size_t>(amesh->mMaterialIndex);
 
             for (unsigned v = 0; v < amesh->mNumVertices; ++v)
             {
@@ -222,11 +221,14 @@ Mesh::load(const std::filesystem::path &path)
                 aiVector3D tn{ 0.0f, 1.0f, 0.0f };
                 if (amesh->HasNormals())
                 {
+                    aiMatrix3x3 normal_tfm(transform);
+                    normal_tfm.Inverse();
+                    normal_tfm.Transpose();
                     tn = (normal_tfm * amesh->mNormals[v]).Normalize();
                 }
 
                 Vec2f uv{ 0.0f, 0.0f };
-                if (any_texcoords && amesh->HasTextureCoords(0))
+                if (amesh->HasTextureCoords(0))
                 {
                     const aiVector3D &ai_uv = amesh->mTextureCoords[0][v];
                     uv                      = Vec2f{ ai_uv.x, ai_uv.y };
@@ -258,7 +260,7 @@ Mesh::load(const std::filesystem::path &path)
 
         for (unsigned i = 0; i < a_node->mNumChildren; ++i)
         {
-            Node child_node{ Mesh::Primitive{} };
+            Node child_node{ Primitive{} };
             self(a_node->mChildren[i], transform, child_node, self);
 
             if (!child_node.primitive.vertices.empty() || !child_node.children.empty())
@@ -268,7 +270,8 @@ Mesh::load(const std::filesystem::path &path)
         }
     };
 
-    process(scene->mRootNode, aiMatrix4x4{}, root, process);
+    aiMatrix4x4 identity;
+    process(scene->mRootNode, identity, root, process);
 
     if (root.primitive.vertices.empty() && root.children.empty())
     {

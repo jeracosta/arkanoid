@@ -3,10 +3,9 @@
 #include <memory>
 #include <optional>
 
-#include "oh-my-engine/mesh.hpp"
 #include "oh-my-engine/color.hpp"
+#include "oh-my-engine/mesh.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
-#include "oh-my-engine/open_gl/render_mesh.hpp"
 #include "oh-my-engine/texture.hpp"
 
 namespace ome {
@@ -14,8 +13,9 @@ namespace ome {
 class MeshNode : public TransformNode
 {
   public:
-    MeshNode(std::shared_ptr<Mesh> mesh, std::optional<Sprite> sprite = std::nullopt,
-        std::optional<Color> modulate = std::nullopt)
+    MeshNode(std::shared_ptr<Mesh> mesh,
+             std::optional<Sprite> sprite   = std::nullopt,
+             std::optional<Color>  modulate = std::nullopt)
         : mesh_(std::move(mesh)),
           sprite_(std::move(sprite)),
           modulate_(std::move(modulate))
@@ -48,19 +48,13 @@ class MeshNode : public TransformNode
             return;
         }
 
-        open_gl::MeshRenderTask{
-            .mesh             = *mesh_,
-            .transform        = transform<Space::World>(),
-            .sprite           = sprite_,
-            .modulate         = modulate_,
-            .texture_env_mode = GL_MODULATE,
-        }();
+        // TODO: render mesh
     }
 
   private:
-    std::shared_ptr<Mesh>    mesh_;
-    std::optional<Sprite>    sprite_;
+    std::shared_ptr<Mesh>     mesh_;
+    std::optional<Sprite>     sprite_;
     std::optional<ome::Color> modulate_;
 };
 
-}
+} // namespace ome

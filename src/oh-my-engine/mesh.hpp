@@ -1,11 +1,12 @@
 #pragma once
 
+#include <GL/gl.h>
 #include <cstddef>
 #include <filesystem>
 #include <memory>
+#include <optional>
+#include <utility>
 #include <vector>
-
-#include <GL/gl.h>
 
 #include "oh-my-engine/math/vector.hpp"
 
@@ -13,7 +14,6 @@ namespace ome {
 
 class Mesh
 {
-
   public:
     struct Vertex
     {
@@ -21,8 +21,6 @@ class Mesh
         Vec3f normal;
         Vec2f texture_coords;
     };
-
-    // #region static asserts for Vertex layout (interleaved client-side arrays)
 
     static_assert(sizeof(Vertex) == 8 * sizeof(float),
                   "Mesh::Vertex must be tightly packed (8 floats) for interleaved array stride");
@@ -33,12 +31,11 @@ class Mesh
     static_assert(offsetof(Vertex, texture_coords) == 6 * sizeof(float),
                   "Mesh::Vertex.texture_coords must be at offset 6 floats");
 
-    // #endregion
-
     struct Primitive
     {
-        std::vector<Vertex>   vertices;
-        std::vector<unsigned> indices;
+        std::vector<Vertex>        vertices;
+        std::vector<unsigned int>   indices;
+        std::optional<std::size_t> material_index = std::nullopt;
     };
 
     struct Node
@@ -46,7 +43,7 @@ class Mesh
         Primitive         primitive;
         std::vector<Node> children = {};
 
-        Node(auto primitive, std::vector<Node> children = {})
+        Node(Primitive primitive, std::vector<Node> children = {})
             : primitive(std::move(primitive)),
               children(std::move(children))
         {
@@ -54,20 +51,24 @@ class Mesh
     };
 
     Mesh() = delete;
-
     ~Mesh();
 
-    // clang-format off
-    Mesh(const Mesh &)            = delete;
-    Mesh &operator=(const Mesh &) = delete;
-    Mesh(Mesh &&)                 = delete;
-    Mesh &operator=(Mesh &&)      = delete;
-    // clang-format on
+    Mesh(const Mesh &) = delete;
+
+    Mesh &
+    operator=(const Mesh &)
+        = delete;
+
+    Mesh(Mesh &&) = delete;
+
+    Mesh &
+    operator=(Mesh &&)
+        = delete;
 
     static std::shared_ptr<Mesh>
     load(const std::filesystem::path &path);
 
-    static std::shared_ptr<Mesh>
+    static std::shared_ptr<const Mesh>
     unit_quad();
 
     Vec3f
@@ -85,6 +86,12 @@ class Mesh
         return index_count_;
     }
 
+    GLsizei
+    vertex_count() const noexcept
+    {
+        return vertex_count_;
+    }
+
     const Node &
     root() const noexcept
     {
@@ -95,10 +102,11 @@ class Mesh
     recenter(Vec3f new_origin = { 0.0f });
 
   private:
-    Mesh(Node root);
+    explicit Mesh(Node root);
 
     Node    root_;
     GLsizei index_count_;
+    GLsizei vertex_count_;
 };
 
 } // namespace ome

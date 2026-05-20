@@ -167,16 +167,22 @@ Game::update_()
 
     collision_server.process_collisions();
 
+    resolve_tasks_();
+
+    SDL_GL_SwapWindow(window);
+
+    frame_count_++;
+}
+
+void
+Game::resolve_tasks_()
+{
     for (auto &task : tasks_)
     {
         task();
     }
 
     tasks_.clear();
-
-    SDL_GL_SwapWindow(window);
-
-    frame_count_++;
 }
 
 std::shared_ptr<Node>

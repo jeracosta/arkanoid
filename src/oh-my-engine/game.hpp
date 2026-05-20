@@ -114,6 +114,9 @@ class Game : public EventConnectionHolder
 
     // #endregion
 
+    void
+    resolve_tasks_();
+
     // #region Game interface
 
   public:

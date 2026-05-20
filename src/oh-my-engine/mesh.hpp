@@ -51,6 +51,9 @@ class Mesh
     };
 
     Mesh() = delete;
+
+    explicit Mesh(Node root);
+
     ~Mesh();
 
     Mesh(const Mesh &) = delete;
@@ -102,8 +105,6 @@ class Mesh
     recenter(Vec3f new_origin = { 0.0f });
 
   private:
-    explicit Mesh(Node root);
-
     Node    root_;
     GLsizei index_count_;
     GLsizei vertex_count_;

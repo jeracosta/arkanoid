@@ -171,7 +171,7 @@ Mesh::unit_quad()
             .indices = { 0, 1, 2, 0, 2, 3 },
         }};
 
-        return std::shared_ptr<const Mesh>(new Mesh(std::move(root)));
+        return std::make_shared<Mesh>(std::move(root));
     }();
 
     return quad;

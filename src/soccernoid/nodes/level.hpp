@@ -118,7 +118,7 @@ Level::standard()
 
         level
             .emplace_child<TerrainNode>(ome::Box::from_bounds(
-                ome::Vec3f{ -map_half_extent, -fog.end, -map_half_extent },
+                ome::Vec3f{ -map_half_extent, -fog.end, -map_half_extent - wall_thickness },
                 ome::Vec3f{ map_half_extent, 0.0f, map_half_extent }))
             .rename("Terreno");
 

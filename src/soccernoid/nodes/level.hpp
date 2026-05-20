@@ -21,6 +21,7 @@
 #include "soccernoid/nodes/skybox.hpp"
 #include "soccernoid/nodes/snail.hpp"
 #include "soccernoid/nodes/terrain.hpp"
+#include "soccernoid/nodes/wall.hpp"
 
 namespace soccernoid {
 
@@ -135,17 +136,17 @@ Level::standard()
             const float y = H * 0.5f;
 
             level
-                .emplace_child<TerrainNode>(ome::Box::from_size_location(
+                .emplace_child<WallNode>(ome::Box::from_size_location(
                     ome::Vec3f{ t, H, 2.0f * h }, ome::Vec3f{ -h - t / 2, y, 0 }))
                 .rename("WallLeft");
 
             level
-                .emplace_child<TerrainNode>(ome::Box::from_size_location(
+                .emplace_child<WallNode>(ome::Box::from_size_location(
                     ome::Vec3f{ t, H, 2.0f * h }, ome::Vec3f{ h + t / 2, y, 0 }))
                 .rename("WallRight");
 
             level
-                .emplace_child<TerrainNode>(ome::Box::from_size_location(
+                .emplace_child<WallNode>(ome::Box::from_size_location(
                     ome::Vec3f{ 2.0f * h + 2.0f * t, H, t },
                     ome::Vec3f{ 0, y, -h - t / 2 }))
                 .rename("WallForward");

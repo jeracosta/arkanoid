@@ -181,6 +181,7 @@ struct TexturePalette
 
     Item          dirt;
     Item          floor;
+    Item          wall;
     Item          snail;
     SkyboxPalette skybox;
 };
@@ -188,6 +189,7 @@ struct TexturePalette
 static const inline TexturePalette textures = {
     .dirt = { "dirt.png" },
     .floor = { "floor.jpg" },
+    .wall = { "wall.jpg" },
     .snail = { "snail.webp" },
     .skybox = { //TODO: Generate faces from cubemap
         .ablaze = TexturePalette::SkyboxFaces::from_directory("skybox/ablaze"),

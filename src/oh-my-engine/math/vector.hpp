@@ -411,7 +411,6 @@ norm(const is_vector auto &vector)
     return std::sqrt(std::accumulate(std::begin(vector), std::end(vector), 0.0f, sum_square));
 }
 
-// TODO: Consider renaming to "normalize" for consistency with common terminology.
 template <class Vector>
 Vector
 normalized(const Vector &vector)

@@ -6,6 +6,8 @@
 
 namespace ome {
 
+// TODO: use a cube-map texture approach
+
 struct Skybox
 {
     float size;

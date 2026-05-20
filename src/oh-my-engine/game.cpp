@@ -139,16 +139,7 @@ Game::update_()
 {
     time.update_();
 
-    auto event = SDL_Event{};
-    while (SDL_PollEvent(&event))
-    {
-        if (event.type == SDL_QUIT)
-        {
-            running_ = false;
-        }
-
-        event | input | window; // piped to chain of handlers
-    }
+    process_sdl_events_();
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -172,6 +163,21 @@ Game::update_()
     SDL_GL_SwapWindow(window);
 
     frame_count_++;
+}
+
+void
+Game::process_sdl_events_()
+{
+    auto event = SDL_Event{};
+    while (SDL_PollEvent(&event))
+    {
+        if (event.type == SDL_QUIT)
+        {
+            running_ = false;
+        }
+
+        event | input | window; // piped to chain of handlers
+    }
 }
 
 void

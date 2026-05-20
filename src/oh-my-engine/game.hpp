@@ -117,6 +117,9 @@ class Game : public EventConnectionHolder
     void
     resolve_tasks_();
 
+    void
+    process_sdl_events_();
+
     // #region Game interface
 
   public:

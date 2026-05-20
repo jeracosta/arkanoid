@@ -1,5 +1,6 @@
 #include <filesystem>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "oh-my-engine/constants.hpp"
@@ -7,10 +8,13 @@
 #include "oh-my-engine/node.hpp"
 #include "oh-my-engine/nodes/hitbox_node.hpp"
 #include "soccernoid/constants.hpp"
+#include "soccernoid/events.hpp"
 #include "soccernoid/nodes/comet.hpp"
+#include "soccernoid/nodes/defeat_screen.hpp"
 #include "soccernoid/nodes/fire.hpp"
 #include "soccernoid/nodes/fbx_character.hpp"
 #include "soccernoid/nodes/player.hpp"
+#include "soccernoid/nodes/soccernoid_node.hpp"
 #include "soccernoid/nodes/wizard_goalkeeper.hpp"
 #include "soccernoid/nodes/projectile.hpp"
 #include "soccernoid/nodes/scene_lights.hpp"
@@ -28,28 +32,76 @@ struct Level
 
     static Level
     standard();
+
+    static Level
+    defeat();
 };
 
-class LevelNode : public ome::Node
+class LevelNode : public SoccernoidNode<>
 {
   private:
-    std::vector<Level> levels_;
+    Level standard_level_ = Level::standard();
+    Level defeat_level_   = Level::defeat();
 
-  public:
-    LevelNode()
+    bool swap_pending_ = false;
+    bool is_defeated_  = false;
+
+    void
+    configure_(const Level &level)
     {
-        levels_.push_back(Level::standard());
+        if (level.configure)
+        {
+            std::invoke(level.configure, std::ref(*this));
+        }
     }
 
     void
+    swap_to_(const Level &level)
+    {
+        // We're in on_tick_ here, so the LevelNode is Mounted (not in
+        // transition). remove_child runs synchronously; the new children added
+        // by configure_ also mount synchronously.
+        std::vector<std::string> names;
+        for (auto *child : children())
+        {
+            names.emplace_back(child->name());
+        }
+
+        for (const auto &name : names)
+        {
+            remove_child(name);
+        }
+
+        configure_(level);
+    }
+
+  public:
+    void
     on_mount_() override
     {
-        if (levels_.empty())
+        configure_(standard_level_);
+
+        hold(game()->Events.bind([this](const PlayerDefeated &)
         {
-            throw std::runtime_error(
-                std::format("'{}' node was mounted without any levels.", name()));
+            if (is_defeated_)
+            {
+                return;
+            }
+            is_defeated_  = true;
+            swap_pending_ = true;
+        }));
+    }
+
+    void
+    on_tick_() override
+    {
+        if (!swap_pending_)
+        {
+            return;
         }
-        std::invoke(levels_.front().configure, std::ref(*this));
+
+        swap_pending_ = false;
+        swap_to_(defeat_level_);
     }
 };
 
@@ -166,6 +218,18 @@ Level::standard()
 
             terrain.emplace_child<FireNode>().position(ome::up * size / 2).rename("Fire");
         }
+    } };
+}
+
+inline Level
+Level::defeat()
+{
+    return { [](LevelNode &level)
+    {
+        level.emplace_child<SceneLightsNode>().rename("Lights");
+        level.emplace_child<SkyboxNode>(textures.skybox.blood).rename("Skybox");
+        level.emplace_child<CometNode>().rename("Comet");
+        level.emplace_child<DefeatScreenNode>().rename("DefeatScreen");
     } };
 }
 

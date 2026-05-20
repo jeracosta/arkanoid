@@ -91,13 +91,30 @@ class Game : public EventConnectionHolder
     std::vector<std::function<void()>> tasks_;
     std::unique_ptr<Logger>            logger_;
 
-    Game(const Configuration &config);
-
     void
     mount_(std::shared_ptr<Node> node);
 
     void
     update_();
+
+    void
+    on_projection_update_(const ProjectionUpdated &projection);
+
+    void
+    on_window_resize_(const WindowResized &projection);
+
+  protected:
+    // Constructor only initializes engine subsystems (logger, window, camera).
+    // Derived classes' members are not yet constructed when this runs, so it
+    // must not invoke user-provided callbacks or mount the node tree.
+    Game(const Configuration &config);
+
+    // Runs the user-provided callbacks that may observe the derived object:
+    // input mapper, root node mount (and its on_mount_ hooks), on_init, and
+    // global GL state (fog, lighting). Must be called after construction and
+    // before run_().
+    void
+    init_();
 
     void
     run_()
@@ -109,12 +126,6 @@ class Game : public EventConnectionHolder
             update_();
         }
     }
-
-    void
-    on_projection_update_(const ProjectionUpdated &projection);
-
-    void
-    on_window_resize_(const WindowResized &projection);
 
     // #endregion
 
@@ -173,7 +184,9 @@ class Game : public EventConnectionHolder
     static void
     run(const Configuration &config)
     {
-        Game(config).run_();
+        Game game(config);
+        game.init_();
+        game.run_();
     }
 
     // At the end of the frame, tasks get executed in the order they were scheduled,

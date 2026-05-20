@@ -13,8 +13,10 @@
 #include "oh-my-engine/nodes/light_node.hpp"
 #include "oh-my-engine/nodes/particle_emitter_node.hpp"
 #include "oh-my-engine/spline.hpp"
+#include "soccernoid/events.hpp"
 #include "soccernoid/nodes/mixins/distance_culled.hpp"
 #include "soccernoid/nodes/mixins/falling.hpp"
+#include "soccernoid/soccernoid.hpp"
 
 namespace soccernoid {
 
@@ -186,6 +188,20 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
     on_tick_() override
     {
         Base_::on_tick_();
+    }
+
+    void
+    on_mount_() override
+    {
+        Base_::on_mount_();
+        Soccernoid::from(*this).Events.emit(ProjectileSpawned{});
+    }
+
+    void
+    on_unmount_() override
+    {
+        Soccernoid::from(*this).Events.emit(ProjectileDespawned{});
+        Base_::on_unmount_();
     }
 };
 

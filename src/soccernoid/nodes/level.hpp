@@ -5,6 +5,7 @@
 #include "oh-my-engine/constants.hpp"
 #include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/node.hpp"
+#include "oh-my-engine/nodes/hitbox_node.hpp"
 #include "soccernoid/constants.hpp"
 #include "soccernoid/nodes/comet.hpp"
 #include "soccernoid/nodes/fire.hpp"
@@ -65,8 +66,34 @@ Level::standard()
 
         level
             .emplace_child<TerrainNode>(ome::Box::from_bounds(
-                ome::Vec3f{ -5.0f, -fog.end, -5.0f }, ome::Vec3f{ 5.0f, 0.0f, 5.0f }))
+                ome::Vec3f{ -map_half_extent, -fog.end, -map_half_extent },
+                ome::Vec3f{ map_half_extent, 0.0f, map_half_extent }))
             .rename("Terreno");
+
+        // Invisible boundary walls. The floor catches the ball from below;
+        // these catch it on the sides so it bounces back into play instead of
+        // flying off into the fog. The player is clamped to the same bounds
+        // in PlayerNode (not collision-based, to avoid bouncing off projectiles).
+        {
+            const float h = map_half_extent;
+            const float t = wall_thickness;
+            const float H = wall_height;
+            const float y = H * 0.5f;
+            const float span = 2.0f * h + 2.0f * t;
+
+            level.emplace_child<ome::HitboxNode>(ome::Vec3f{ t, H, span },
+                                                  ome::Vec3f{ -h - t / 2, y, 0 })
+                .rename("WallLeft");
+            level.emplace_child<ome::HitboxNode>(ome::Vec3f{ t, H, span },
+                                                  ome::Vec3f{ h + t / 2, y, 0 })
+                .rename("WallRight");
+            level.emplace_child<ome::HitboxNode>(ome::Vec3f{ 2.0f * h, H, t },
+                                                  ome::Vec3f{ 0, y, -h - t / 2 })
+                .rename("WallBack");
+            level.emplace_child<ome::HitboxNode>(ome::Vec3f{ 2.0f * h, H, t },
+                                                  ome::Vec3f{ 0, y, h + t / 2 })
+                .rename("WallFront");
+        }
 
         level
             .emplace_child<WizardGoalkeeperNode>(WizardGoalkeeperNode::Configuration{

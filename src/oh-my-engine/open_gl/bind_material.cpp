@@ -18,16 +18,11 @@ bind(const Material &material)
     glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, emission.data());
     glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, material.shininess);
 
-    if (material.texture)
-    {
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, material.texture->id());
-        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, static_cast<GLint>(material.env_mode));
-    }
-    else
-    {
-        glDisable(GL_TEXTURE_2D);
-    }
+    auto texture = material.texture != nullptr ? material.texture : Texture::placeholder();
+
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, texture->id());
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, static_cast<GLint>(material.env_mode));
 
     glEnable(GL_BLEND);
     glBlendFunc(material.blend_mode.source_factor, material.blend_mode.destination_factor);

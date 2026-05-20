@@ -31,7 +31,7 @@ class Mesh
     static_assert(offsetof(Vertex, texture_coords) == 6 * sizeof(float),
                   "Mesh::Vertex.texture_coords must be at offset 6 floats");
 
-    struct Primitive
+    struct Surface
     {
         std::vector<Vertex>        vertices;
         std::vector<unsigned int>   indices;
@@ -40,11 +40,13 @@ class Mesh
 
     struct Node
     {
-        Primitive         primitive;
-        std::vector<Node> children = {};
+        // TODO: add .transform
 
-        Node(Primitive primitive, std::vector<Node> children = {})
-            : primitive(std::move(primitive)),
+        std::vector<std::size_t> surface_indices;
+        std::vector<Node>        children = {};
+
+        Node(std::vector<std::size_t> primitive_indices = {}, std::vector<Node> children = {})
+            : surface_indices(std::move(primitive_indices)),
               children(std::move(children))
         {
         }
@@ -52,7 +54,7 @@ class Mesh
 
     Mesh() = delete;
 
-    explicit Mesh(Node root);
+    Mesh(std::vector<Surface> primitives, Node root);
 
     ~Mesh();
 
@@ -83,6 +85,9 @@ class Mesh
     void
     resize(const Vec3f &new_size);
 
+    void
+    recenter(Vec3f new_origin = { 0.0f });
+
     GLsizei
     index_count() const noexcept
     {
@@ -101,13 +106,23 @@ class Mesh
         return root_;
     }
 
-    void
-    recenter(Vec3f new_origin = { 0.0f });
+    const std::vector<Surface> &
+    surfaces() const noexcept
+    {
+        return primitives_;
+    }
+
+    const Surface &
+    surface(std::size_t index) const
+    {
+        return primitives_.at(index);
+    }
 
   private:
-    Node    root_;
-    GLsizei index_count_;
-    GLsizei vertex_count_;
+    std::vector<Surface> primitives_;
+    Node                 root_;
+    GLsizei              index_count_;
+    GLsizei              vertex_count_;
 };
 
 } // namespace ome

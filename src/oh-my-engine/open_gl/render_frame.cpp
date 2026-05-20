@@ -13,58 +13,43 @@
 namespace ome::open_gl {
 
 static void
-render_(const Mesh::Node         &mesh_node,
-        std::span<const Material> materials,
-        const Transform          &transform = {})
+render_(const Mesh &mesh, const Mesh::Node &node, std::span<const Material> materials)
 {
     auto model_guard = MatrixGuard(GL_MODELVIEW);
+    // glMultMatrixf(glm::value_ptr(static_cast<glm::mat4>(node.transform)));
 
-    glMultMatrixf(glm::value_ptr(static_cast<glm::mat4>(transform)));
-
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_NORMAL_ARRAY);
-    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-
+    for (std::size_t surface_index : node.surface_indices)
     {
-        std::vector<const Mesh::Node *> stack = { &mesh_node };
-        while (!stack.empty())
+        const auto &surface = mesh.surface(surface_index);
+
+        if (surface.vertices.empty() || surface.indices.empty())
         {
-            const auto *node = stack.back();
-            stack.pop_back();
-
-            if (!node->primitive.vertices.empty())
-            {
-
-                bool has_material = node->primitive.material_index.has_value()
-                                    && node->primitive.material_index.value() < materials.size();
-
-                auto material
-                    = has_material ? materials[*node->primitive.material_index] : Material{};
-
-                bind(material);
-
-                glVertexPointer(3, GL_FLOAT, sizeof(Mesh::Vertex), node->primitive.vertices.data());
-                glNormalPointer(
-                    GL_FLOAT, sizeof(Mesh::Vertex), &node->primitive.vertices[0].normal);
-                glTexCoordPointer(
-                    2, GL_FLOAT, sizeof(Mesh::Vertex), &node->primitive.vertices[0].texture_coords);
-
-                glDrawElements(GL_TRIANGLES,
-                               static_cast<GLsizei>(node->primitive.indices.size()),
-                               GL_UNSIGNED_INT,
-                               node->primitive.indices.data());
-            }
-
-            for (const auto &child : node->children)
-            {
-                stack.push_back(&child);
-            }
+            continue;
         }
+
+        const Material *material = nullptr;
+        if (surface.material_index.has_value() && *surface.material_index < materials.size())
+        {
+            material = &materials[*surface.material_index];
+        }
+
+        bind(material != nullptr ? *material : Material{});
+
+        glVertexPointer(3, GL_FLOAT, sizeof(Mesh::Vertex), surface.vertices.data());
+        glNormalPointer(GL_FLOAT, sizeof(Mesh::Vertex), &surface.vertices.front().normal);
+        glTexCoordPointer(
+            2, GL_FLOAT, sizeof(Mesh::Vertex), &surface.vertices.front().texture_coords);
+
+        glDrawElements(GL_TRIANGLES,
+                       static_cast<GLsizei>(surface.indices.size()),
+                       GL_UNSIGNED_INT,
+                       surface.indices.data());
     }
 
-    glDisableClientState(GL_VERTEX_ARRAY);
-    glDisableClientState(GL_NORMAL_ARRAY);
-    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    for (const auto &child : node.children)
+    {
+        render_(mesh, child, materials);
+    }
 }
 
 void
@@ -76,19 +61,26 @@ render(const RenderFrame &frame)
     }
 
     auto renders_first = [](const DrawCommand &lhs, const DrawCommand &rhs)
-    {
-        auto lhs_layer = static_cast<unsigned>(lhs.layer);
-        auto rhs_layer = static_cast<unsigned>(rhs.layer);
-        return lhs_layer < rhs_layer;
-    };
+    { return static_cast<unsigned>(lhs.layer) < static_cast<unsigned>(rhs.layer); };
 
-    auto sorted_draw_commands = frame.draw_commands; // unnecesary copy?
+    auto sorted_draw_commands = frame.draw_commands;
     std::ranges::sort(sorted_draw_commands, renders_first);
+
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_NORMAL_ARRAY);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
     for (const auto &draw_command : sorted_draw_commands)
     {
-        render_(draw_command.mesh->root(), draw_command.materials, draw_command.transform);
+        auto model_guard = MatrixGuard(GL_MODELVIEW);
+        glMultMatrixf(glm::value_ptr(static_cast<glm::mat4>(draw_command.transform)));
+
+        render_(*draw_command.mesh, draw_command.mesh->root(), draw_command.materials);
     }
+
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_NORMAL_ARRAY);
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 }
 
 } // namespace ome::open_gl

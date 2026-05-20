@@ -12,10 +12,12 @@ static constexpr float gravity_strength = 9.81f;
 
 static constexpr float despawn_distance = 60.0f;
 
-// Play area half-extent on the x/z axes. Boundaries are at |x| = |z| = map_half_extent.
+// Play area half-extent on the x/z axes. Lateral and forward boundaries are
+// at |x| = map_half_extent and z = -map_half_extent. The +z side (behind the
+// player) is left open so projectiles can fall out of play.
 static constexpr float map_half_extent = 5.0f;
 static constexpr float wall_thickness  = 1.0f;
-static constexpr float wall_height     = 20.0f;
+static constexpr float wall_height     = 6.0f;
 
 static constexpr struct
 {

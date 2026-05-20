@@ -82,8 +82,20 @@ class ParticleEmitterNode : public TransformNode
 
         origin_ = origin;
 
-        auto &camera = Node::game()->camera;
-        game()->schedule([this, &camera] { particles_.render(camera); });
+        // Rendering is deferred to the end-of-frame task drain so particles
+        // compose on top of all opaque geometry. The schedule must not capture
+        // a raw `this`: the emitter can be unmounted and destroyed earlier in
+        // the same drain (e.g. when its parent despawns this frame). Using a
+        // weak reference lets the task safely no-op in that case.
+        auto self_weak = this->weak_from_this();
+        auto &camera   = Node::game()->camera;
+        game()->schedule([self_weak, &camera]
+        {
+            if (auto self = self_weak.lock())
+            {
+                static_cast<ParticleEmitterNode *>(self.get())->particles_.render(camera);
+            }
+        });
     }
 
     std::size_t

@@ -46,4 +46,5 @@ practicos/
 .sisyphus/
 
 # Claude files
+.CLAUDE
 CLAUDE.md

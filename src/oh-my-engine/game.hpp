@@ -105,6 +105,11 @@ class Game : public EventConnectionHolder
     update_();
 
   protected:
+    // Constructor only initializes engine subsystems (logger, window, camera).
+    // Derived classes' members are not yet constructed when this runs, so it
+    // must not invoke user-provided callbacks or mount the node tree -- that
+    // work happens in initialize_(), which run_() calls before entering the
+    // main loop, by which point the derived object is fully constructed.
     Game(const Configuration &config);
 
     void

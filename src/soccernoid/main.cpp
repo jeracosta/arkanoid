@@ -13,7 +13,6 @@
 #include <glm/gtc/quaternion.hpp>
 #include <memory>
 
-#include "oh-my-engine/game.hpp"
 #include "oh-my-engine/input.hpp"
 #include "soccernoid/constants.hpp"
 #include "soccernoid/input.hpp"

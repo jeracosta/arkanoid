@@ -26,10 +26,10 @@
 #include <ranges>
 #include <string>
 #include <string_view>
-#include <type_traits>
 
-#include "copy_const.hpp"
-#include "game.hpp"
+#include "oh-my-engine/copy_const.hpp"
+#include "oh-my-engine/game.hpp"
+#include "oh-my-engine/render_frame.hpp"
 
 // #endregion
 
@@ -294,6 +294,18 @@ class Node : public std::enable_shared_from_this<Node>,
         emit(NodeTicked{});
     }
 
+    void
+    render_to(RenderFrame &frame)
+    {
+        [[unlikely]]
+        if (!is_ready())
+        {
+            return;
+        }
+
+        on_render_(frame);
+    }
+
     // Schedules the node for unmounting at the end of the current frame. The node will stop ticking
     void
     schedule_unmount()
@@ -351,6 +363,7 @@ class Node : public std::enable_shared_from_this<Node>,
     virtual void  on_mount_   (){} // Can safely modify tree structure. Changes will be scheduled.
     virtual void  on_ready_   (){} // WARN: Do NOT modify tree structure in this hook (SIGSEV risk).
     virtual void  on_tick_    (){}
+    virtual void  on_render_  (RenderFrame &){}
     virtual void  on_unmount_ (){}
 
     // #endregion

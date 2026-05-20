@@ -1,8 +1,5 @@
 #pragma once
 
-#include <cstdlib>
-#include <memory>
-
 #include "oh-my-engine/color.hpp"
 #include "oh-my-engine/light.hpp"
 #include "oh-my-engine/math/interval.hpp"

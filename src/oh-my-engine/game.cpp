@@ -147,6 +147,9 @@ Game::run_()
 
         config_.on_update ? config_.on_update(*this) : void();
 
+        // Render and logic update are intertwined, as some nodes use OpenGL directly in on_tick_.
+        // TODO: Make all nodes render thru the render_to method, and extract a render_ method here.
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glMatrixMode(GL_MODELVIEW);
@@ -161,6 +164,18 @@ Game::run_()
         }
 
         collision_server.process_collisions();
+
+        auto render_frame = RenderFrame{};
+
+        [[likely]]
+        if (root_node_)
+        {
+            visit_dfs(*root_node_,
+                      [&render_frame](Node &node) { node.render_to(render_frame); },
+                      [](Node &) {});
+        }
+
+        ome::open_gl::render(render_frame);
 
         resolve_tasks_();
 

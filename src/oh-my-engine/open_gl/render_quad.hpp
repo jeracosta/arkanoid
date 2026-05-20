@@ -25,10 +25,10 @@ render_quad(const std::array<Vec3f, 4> &vertices, const Material &material)
     if (material.texture)
     {
         glEnable(GL_TEXTURE_2D);
-        open_gl::glBindTexture(*material.texture);
+        ::glBindTexture(GL_TEXTURE_2D, material.texture->id());
     }
 
-    glColor(material.color);
+    glColor(material.color.base);
 
     glBegin(GL_QUADS);
     {

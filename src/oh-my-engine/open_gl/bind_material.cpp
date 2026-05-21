@@ -24,8 +24,15 @@ bind(const Material &material)
     glBindTexture(GL_TEXTURE_2D, texture->id());
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, static_cast<GLint>(material.env_mode));
 
-    glEnable(GL_BLEND);
-    glBlendFunc(material.blend_mode.source_factor, material.blend_mode.destination_factor);
+    if (material.blend_mode.has_value())
+    {
+        glEnable(GL_BLEND);
+        glBlendFunc(material.blend_mode->source_factor, material.blend_mode->destination_factor);
+    }
+    else
+    {
+        glDisable(GL_BLEND);
+    }
 }
 
 } // namespace ome::open_gl

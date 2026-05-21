@@ -22,7 +22,7 @@ struct Material
     std::shared_ptr<Texture> texture    = nullptr;
     float                    shininess  = 0.0f;
     TextureEnvironmentMode   env_mode   = TextureEnvironmentMode::Modulate;
-    BlendMode                blend_mode = BlendMode::opaque();
+    std::optional<BlendMode> blend_mode = std::nullopt;
 };
 
 } // namespace ome

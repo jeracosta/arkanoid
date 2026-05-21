@@ -74,7 +74,7 @@ configure_default_controls(ome::input::InputMapper *input_mapper)
         { PlayerRight,      SDLK_RIGHT,   { Press }         },
         { PlayerJump,       SDLK_UP,      { Press }         },
         { PlayerShoot,      SDLK_UP,      { Press, Repeat } },
-        { ToggleHud,        SDLK_TAB,     { Press }         },
+        { ToggleHud,        SDLK_ESCAPE,  { Press }         },
     });
 
     // clang-format on

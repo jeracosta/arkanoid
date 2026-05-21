@@ -40,6 +40,12 @@ class CurveProcess
         progress_ = 0.0f;
     }
 
+    void
+    complete()
+    {
+        progress_ = 1.0f;
+    }
+
     float
     speed() const
     {

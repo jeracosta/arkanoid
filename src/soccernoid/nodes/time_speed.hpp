@@ -43,6 +43,12 @@ class TimeSpeedNode : public SoccernoidNode<>
 
         speed_interpolation_.reverse();
 
+        // Pause snaps to 0 instantly; unpause keeps the curve and ramps back up.
+        if (paused)
+        {
+            speed_interpolation_.complete();
+        }
+
         log(paused ? "Paused" : "Resumed");
     }
 

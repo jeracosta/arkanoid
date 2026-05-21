@@ -14,7 +14,7 @@
 namespace ome::open_gl {
 
 static void
-render_(std::span<const Mesh::Vertex> vertices, std::span<const unsigned int> indices)
+render_(std::span<const Mesh::Vertex> vertices, std::span<const unsigned int> indices, GLenum mode)
 {
     [[unlikely]]
     if (vertices.empty() || indices.empty())
@@ -31,7 +31,7 @@ render_(std::span<const Mesh::Vertex> vertices, std::span<const unsigned int> in
 
     auto index_count = static_cast<GLsizei>(indices.size());
 
-    glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, indices.data());
+    glDrawElements(mode, index_count, GL_UNSIGNED_INT, indices.data());
 }
 
 static void
@@ -203,7 +203,7 @@ render(const RenderFrame &frame)
 
                     bind(material);
 
-                    render_(surface.vertices, surface.indices);
+                    render_(surface.vertices, surface.indices, surface.primitive_type);
                 }
             };
 

@@ -35,7 +35,7 @@ class TerrainNode : public ome::HitboxNode
             .bottom = 2,
         };
 
-        frame.draw_commands.push_back(ome::DrawCommand::box(region, materials, material_indices, 8));
+        frame.draw_commands.push_back(ome::DrawCommand::box(region, materials, material_indices));
     }
 };
 

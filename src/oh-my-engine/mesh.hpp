@@ -34,7 +34,8 @@ class Mesh
     struct Surface
     {
         std::vector<Vertex>        vertices;
-        std::vector<unsigned int>   indices;
+        std::vector<unsigned int>  indices;
+        GLenum                     primitive_type = GL_TRIANGLES;
         std::optional<std::size_t> material_index = std::nullopt;
     };
 

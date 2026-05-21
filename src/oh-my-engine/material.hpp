@@ -17,7 +17,6 @@ struct Material
         Color diffuse  = Color::hex(0xCCCCCCFF);
         Color specular = Color::hex(0x000000FF);
         Color emission = Color::hex(0x000000FF);
-        Color base     = Color::hex(0xFFFFFFFF);
     } color = {};
 
     std::shared_ptr<Texture> texture    = nullptr;

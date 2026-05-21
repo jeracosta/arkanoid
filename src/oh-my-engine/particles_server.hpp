@@ -3,9 +3,9 @@
 #include "oh-my-engine/camera.hpp"
 #include "oh-my-engine/color.hpp"
 #include "oh-my-engine/curve.hpp"
+#include "oh-my-engine/material.hpp"
 #include "oh-my-engine/math/region.hpp"
 #include "oh-my-engine/math/vector.hpp"
-#include "oh-my-engine/material.hpp"
 #include "oh-my-engine/open_gl/render_billboard.hpp"
 
 namespace ome {
@@ -273,8 +273,8 @@ class ParticleServer
             const auto &particle = particles_[i];
 
             Material material;
-            material.color.base  = particle.color;
-            material.blend_mode  = scheme_.blend_mode;
+            material.color.emission = particle.color;
+            material.blend_mode     = scheme_.blend_mode;
 
             open_gl::render_billboard(particle.position, { particle.scale }, material, camera);
         }

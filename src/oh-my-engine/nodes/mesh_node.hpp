@@ -1,60 +1,40 @@
 #pragma once
 
 #include <memory>
-#include <optional>
 
-#include "oh-my-engine/color.hpp"
+#include "oh-my-engine/material.hpp"
 #include "oh-my-engine/mesh.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
-#include "oh-my-engine/texture.hpp"
 
 namespace ome {
 
 class MeshNode : public TransformNode
 {
   public:
-    MeshNode(std::shared_ptr<Mesh> mesh,
-             std::optional<Sprite> sprite   = std::nullopt,
-             std::optional<Color>  modulate = std::nullopt)
+    MeshNode(std::shared_ptr<Mesh> mesh, Material material)
+
         : mesh_(std::move(mesh)),
-          sprite_(std::move(sprite)),
-          modulate_(std::move(modulate))
+          material_(std::move(material))
     {
     }
 
     void
-    set_sprite(std::optional<Sprite> sprite)
+    on_render_(RenderFrame &frame) override
     {
-        sprite_ = std::move(sprite);
-    }
-
-    void
-    set_modulate(std::optional<Color> modulate)
-    {
-        modulate_ = std::move(modulate);
-    }
-
-    const std::shared_ptr<Mesh> &
-    mesh() const noexcept
-    {
-        return mesh_;
-    }
-
-    void
-    on_tick_() override
-    {
-        if (!mesh_)
+        if (mesh_ == nullptr)
         {
             return;
         }
 
-        // TODO: render mesh
+        frame.draw_commands.push_back(DrawCommand{
+            .mesh      = mesh_,
+            .materials = { material_ },
+            .transform = transform<Space::World>(),
+        });
     }
 
   private:
-    std::shared_ptr<Mesh>     mesh_;
-    std::optional<Sprite>     sprite_;
-    std::optional<ome::Color> modulate_;
+    std::shared_ptr<Mesh> mesh_;
+    Material              material_;
 };
-
 } // namespace ome

@@ -8,7 +8,6 @@
 #include "soccernoid/nodes/human.hpp"
 #include "soccernoid/nodes/player.hpp"
 #include "soccernoid/nodes/projectile.hpp"
-#include "soccernoid/nodes/scene_lights.hpp"
 #include "soccernoid/nodes/skybox.hpp"
 #include "soccernoid/nodes/snail.hpp"
 #include "soccernoid/nodes/terrain.hpp"
@@ -53,15 +52,13 @@ Level::standard()
 {
     return { [](LevelNode &level)
     {
-        level.emplace_child<SceneLightsNode>().rename("Lights");
-
         level.emplace_child<SkyboxNode>().rename("Skybox");
 
         level.emplace_child<CometNode>().rename("Comet");
 
         level
-            .emplace_child<TerrainNode>(ome::Box::from_bounds(
-                ome::Vec3f{ -5.0f, -fog.end, -5.0f }, ome::Vec3f{ 5.0f, 0.0f, 5.0f }))
+            .emplace_child<TerrainNode>(ome::Box::from_bounds(ome::Vec3f{ -5.0f, -fog.end, -5.0f },
+                                                              ome::Vec3f{ 5.0f, 0.0f, 5.0f }))
             .rename("Terreno");
 
         level

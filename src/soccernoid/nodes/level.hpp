@@ -70,8 +70,6 @@ Level::standard()
             })
             .rename("Goalkeeper");
 
-        level.emplace_child<ProjectileNode>().rename("Projectile");
-
         level.emplace_child<PlayerNode>(PlayerNode::Configuration::make_harry()).rename("Harry");
 
         level.emplace_child<SnailNode>().position({ -3.0f, 0.0f, -3.0f }).rename("Snail");

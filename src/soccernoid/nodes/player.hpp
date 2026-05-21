@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <exception>
 #include <filesystem>
@@ -68,6 +69,8 @@ class PlayerNode : public ome::KinematicNode
     };
 
   private:
+    static constexpr float player_radius_ = 0.2f;
+
     Configuration config_;
     bool          can_move_ = true;
 
@@ -258,8 +261,7 @@ class PlayerNode : public ome::KinematicNode
     void
     render_()
     {
-        constexpr float         radius = 0.2f;
-        static const ome::Color color  = ome::Color::hex(0x1486cc);
+        static const ome::Color color = ome::Color::hex(0x1486cc);
 
         ensure_dragon_mesh_loaded_();
 
@@ -292,7 +294,7 @@ class PlayerNode : public ome::KinematicNode
             GLUquadric *q = gluNewQuadric();
             gluQuadricNormals(q, GLU_SMOOTH);
             glTranslatef(position[0], position[1], position[2]);
-            gluSphere(q, radius, 32, 32);
+            gluSphere(q, player_radius_, 32, 32);
             gluDeleteQuadric(q);
         }
         glPopMatrix();
@@ -349,6 +351,18 @@ class PlayerNode : public ome::KinematicNode
         });
     }
 
+    void
+    clamp_to_bounds_()
+    {
+        update_transform<ome::Space::Local>([](auto &t)
+        {
+            const float min = -map_half_extent + player_radius_;
+            const float max =  map_half_extent - player_radius_;
+            t.position[0] = std::clamp(t.position[0], min, max);
+            t.position[2] = std::clamp(t.position[2], min, max);
+        });
+    }
+
   public:
     PlayerNode(const Configuration &config)
         : config_(config)
@@ -378,6 +392,7 @@ class PlayerNode : public ome::KinematicNode
     {
         process_movement_();
         ome::KinematicNode::on_tick_();
+        clamp_to_bounds_();
         render_();
     }
 

@@ -12,6 +12,13 @@ namespace soccernoid {
 class SkyboxNode : public ome::Node
 {
   public:
+    SkyboxNode() = default;
+
+    explicit SkyboxNode(TexturePalette::SkyboxFaces skybox)
+        : skybox_(std::move(skybox))
+    {
+    }
+
     void
     on_tick_() override
     {

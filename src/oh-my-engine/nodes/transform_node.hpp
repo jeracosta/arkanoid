@@ -42,12 +42,12 @@ class TransformNode : public Node
         }
     };
 
-    template <Space space>
+    template <Space space, typename F>
     void
-    update_transform(const std::function<void(Component &)> &fn)
+    update_transform(const F &&function)
     {
         static_assert(space == Space::Local, "Only updates of the local transform are supported.");
-        fn(local_transform_);
+        function(local_transform_);
     }
 
     TransformNode &

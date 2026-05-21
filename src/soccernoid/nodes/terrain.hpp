@@ -21,9 +21,9 @@ class TerrainNode : public ome::HitboxNode
         auto region = hitbox<ome::Space::World>();
 
         auto materials = std::vector<ome::Material>{
-            { .texture = textures.dirt },                      // 0
-            { .texture = textures.floor, .shininess = 0.75f }, // 1
-            {},                                                // 2
+            { .texture = textures.dirt },                     // 0
+            { .texture = textures.floor, .shininess = 0.0f }, // 1
+            {},                                               // 2
         };
 
         auto material_indices = ome::BoxFaces<std::size_t>{
@@ -35,7 +35,7 @@ class TerrainNode : public ome::HitboxNode
             .bottom = 2,
         };
 
-        frame.draw_commands.push_back(ome::DrawCommand::box(region, materials, material_indices));
+        frame.draw_commands.push_back(ome::DrawCommand::box(region, materials, material_indices, 8));
     }
 };
 

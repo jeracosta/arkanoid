@@ -2,8 +2,6 @@
 
 #include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/nodes/hitbox_node.hpp"
-#include "oh-my-engine/open_gl/render_box.hpp"
-#include "oh-my-engine/texture.hpp"
 #include "soccernoid/constants.hpp"
 
 namespace soccernoid {
@@ -18,37 +16,26 @@ class TerrainNode : public ome::HitboxNode
     }
 
     void
-    on_tick_() override
-    {
-        render_tower_();
-    }
-
-  private:
-    void
-    render_tower_()
+    on_render_(ome::RenderFrame &frame) override
     {
         auto region = hitbox<ome::Space::World>();
 
-        const float width  = region.width();
-        const float height = region.height();
-        const float length = region.length();
+        auto materials = std::vector<ome::Material>{
+            { .texture = textures.dirt },                      // 0
+            { .texture = textures.floor, .shininess = 0.75f }, // 1
+            {},                                                // 2
+        };
 
-        using Bounds = ome::Rect::Bounds;
+        auto material_indices = ome::BoxFaces<std::size_t>{
+            .front  = 0,
+            .back   = 0,
+            .left   = 0,
+            .right  = 0,
+            .top    = 1,
+            .bottom = 2,
+        };
 
-        ome::open_gl::BoxRenderTask{
-            .world_region = region,
-            .top_subdiv_x = 24,
-            .top_subdiv_z = 24,
-            .sprites =
-                {
-                    .front  = { textures.dirt,               Bounds{ { 0.0f, 0.0f }, { width,  height } } },
-                    .back   = { textures.dirt,               Bounds{ { 0.0f, 0.0f }, { width,  height } } },
-                    .left   = { textures.dirt,               Bounds{ { 0.0f, 0.0f }, { length, height } } },
-                    .right  = { textures.dirt,               Bounds{ { 0.0f, 0.0f }, { length, height } } },
-                    .top    = { textures.floor,              Bounds{ { 0.0f, 0.0f }, { 1.0f,   1.0f   } } },
-                    .bottom = { ome::Texture::placeholder(), Bounds{ { 0.0f, 0.0f }, { width,  length } } },
-                },
-        }();
+        frame.draw_commands.push_back(ome::DrawCommand::box(region, materials, material_indices));
     }
 };
 

@@ -83,28 +83,25 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
         }
     };
 
-    // Point light parented to the projectile so a colored pool follows the ball.
-    class ProjectilePointLightNode_ : public ome::LightNode
+    class LightNode_ : public ome::LightNode
     {
-      private:
-        static ome::PointLight
-        make_point_light_()
-        {
-            auto light                  = ome::PointLight{};
-            light.color.ambient         = ome::Color::rgb(0.0f, 0.0f, 0.0f);
-            light.color.diffuse         = ome::Color::rgb(1.0f, 0.45f, 0.95f);
-            light.color.specular        = ome::Color::rgb(0.9f, 0.75f, 1.0f);
-            light.constant_attenuation  = 1.0f;
-            light.linear_attenuation    = 0.12f;
-            light.quadratic_attenuation = 0.28f;
-            return light;
-        }
-
       public:
-        ProjectilePointLightNode_()
-            : ome::LightNode(make_point_light_())
+        static const inline auto light = ome::PointLight {
+            .color = {
+                .ambient  = ome::Color::rgb(0.0f, 0.1f, 0.0f),
+                .diffuse  = ome::Color::rgb(0.5f, 2.5f, 0.5f),
+                .specular = ome::Color::rgb(0.5f, 2.5f, 0.5f),
+            },
+
+            .constant_attenuation  = 1.00f,
+            .linear_attenuation    = 0.06f,
+            .quadratic_attenuation = 0.15f,
+        };
+
+        LightNode_()
+            : ome::LightNode(light)
         {
-            update_transform<ome::Space::Local>([](auto &t) { t.position = { 0.0f, 0.2f, 0.0f }; });
+            position({ 0.0f, 0.05f, 0.0f });
         }
     };
 
@@ -171,7 +168,7 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
     {
         update_transform<ome::Space::Local>([&](auto &t) { t.position = spawn_position; });
 
-        emplace_child<ProjectilePointLightNode_>().rename("GlowLight");
+        emplace_child<LightNode_>().rename("GlowLight");
         emplace_child<GlowParticlesNode_>().rename("GlowParticles");
         emplace_child<TraceParticlesNode_>().rename("TraceParticles");
         emplace_child<HitboxNode_>().rename("Hitbox");

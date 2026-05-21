@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cmath>
 #include <exception>
 #include <filesystem>
 #include <format>
@@ -11,9 +12,11 @@
 #include <GL/glu.h>
 
 #include "oh-my-engine/constants.hpp"
+#include "oh-my-engine/material.hpp"
 #include "oh-my-engine/mesh.hpp"
 #include "oh-my-engine/nodes/kinematic_node.hpp"
 #include "oh-my-engine/open_gl/render_mesh.hpp"
+#include "oh-my-engine/open_gl/render_quad.hpp"
 #include "oh-my-engine/texture.hpp"
 #include "soccernoid/constants.hpp"
 #include "soccernoid/input.hpp"
@@ -69,6 +72,128 @@ class PlayerNode : public ome::KinematicNode
     static constexpr float player_radius_ = 0.2f;
 
     Configuration config_;
+    bool          can_move_ = true;
+
+    static constexpr float aim_sweep_speed_     = 2.0f;
+    static constexpr float aim_sweep_amplitude_ = 0.7f;
+    static constexpr float shoot_force_         = 5.0f;
+
+    class AimArrowNode : public ome::Node
+    {
+      private:
+        float         current_angle_ = 0.0f;
+        ome::Material material_;
+
+        static constexpr float shaft_length_ = 1.2f;
+        static constexpr float shaft_width_  = 0.15f;
+        static constexpr float head_length_  = 0.5f;
+        static constexpr float head_width_   = 0.35f;
+        static constexpr float arrow_offset_ = 0.8f;
+        static constexpr float arrow_height_ = 0.05f;
+
+        void
+        render_arrow_()
+        {
+            auto *player     = static_cast<PlayerNode *>(parent());
+            auto  player_pos = player->transform<ome::Space::World>().position;
+
+            ome::Orientation rotation;
+            rotation.rotate(current_angle_, ome::up);
+            auto dir = rotation * ome::forward;
+
+            ome::Vec3f perp = { dir[2], 0.0f, -dir[0] };
+
+            auto base = player_pos + dir * arrow_offset_ + ome::up * arrow_height_;
+
+            // Shaft (rectangle)
+            auto shaft_start = base;
+            auto shaft_end   = base + dir * shaft_length_;
+
+            std::array<ome::Vec3f, 4> shaft = {
+                shaft_start - perp * shaft_width_,
+                shaft_start + perp * shaft_width_,
+                shaft_end + perp * shaft_width_,
+                shaft_end - perp * shaft_width_,
+            };
+            ome::open_gl::render_quad(shaft, material_);
+
+            // Arrowhead (triangle)
+            auto head_base = shaft_end;
+            auto head_tip  = head_base + dir * head_length_;
+
+            // Left half of triangle
+            std::array<ome::Vec3f, 4> left_head = {
+                head_base - perp * shaft_width_,
+                head_base - perp * head_width_,
+                head_tip,
+                head_tip,
+            };
+            ome::open_gl::render_quad(left_head, material_);
+
+            // Right half of triangle
+            std::array<ome::Vec3f, 4> right_head = {
+                head_base + perp * shaft_width_,
+                head_base + perp * head_width_,
+                head_tip,
+                head_tip,
+            };
+            ome::open_gl::render_quad(right_head, material_);
+
+            // Center of triangle (fills gap between left and right)
+            std::array<ome::Vec3f, 4> center_head = {
+                head_base - perp * shaft_width_,
+                head_base + perp * shaft_width_,
+                head_tip,
+                head_tip,
+            };
+            ome::open_gl::render_quad(center_head, material_);
+        }
+
+        void
+        on_shoot_()
+        {
+            auto *player = static_cast<PlayerNode *>(parent());
+
+            auto &projectile = game()->root_node()->emplace_child<ProjectileNode>();
+
+            auto player_pos = player->transform<ome::Space::World>().position;
+            projectile.position(player_pos + ome::up * 0.5f);
+
+            ome::Orientation rotation;
+            rotation.rotate(current_angle_, ome::up);
+            auto shoot_direction = rotation * ome::forward;
+            auto velocity        = shoot_direction * shoot_force_ + ome::up * 0.2f;
+
+            projectile.update_kinematic<ome::Space::World>(
+                [&](auto &k) { k.velocity = velocity; });
+
+            player->enable_movement();
+            schedule_unmount();
+        }
+
+      public:
+        AimArrowNode()
+        {
+            material_.color      = ome::Color::white();
+            material_.blend_mode = ome::BlendMode::alpha();
+        }
+
+        void
+        on_mount_() override
+        {
+            auto *player      = static_cast<PlayerNode *>(parent());
+            player->can_move_ = false;
+
+            hold(game()->input.bind(Action::PlayerShoot, &AimArrowNode::on_shoot_, this));
+        }
+
+        void
+        on_tick_() override
+        {
+            current_angle_ = std::sin(game()->time.elapsed() * aim_sweep_speed_) * aim_sweep_amplitude_;
+            render_arrow_();
+        }
+    };
 
     void
     ensure_dragon_mesh_loaded_()
@@ -178,6 +303,11 @@ class PlayerNode : public ome::KinematicNode
     void
     process_movement_()
     {
+        if (!can_move_)
+        {
+            return;
+        }
+
         velocity(kinematic().velocity * std::exp(-config_.speed_decay * game()->time.delta()));
 
         struct MoveSpecification
@@ -233,19 +363,28 @@ class PlayerNode : public ome::KinematicNode
         });
     }
 
-    void
-    shoot_()
-    {
-        auto &projectile = game()->root_node()->emplace_child<ProjectileNode>();
-
-        projectile.position(transform<ome::Space::World>().position);
-        projectile.velocity(0.2 * ome::up + 5.0 * ome::forward);
-    }
-
   public:
     PlayerNode(const Configuration &config)
         : config_(config)
     {
+        emplace_child<AimArrowNode>().rename("AimArrow");
+    }
+
+    void
+    enable_movement()
+    {
+        can_move_ = true;
+    }
+
+    void
+    start_aiming()
+    {
+        if (!can_move_)
+        {
+            return;
+        }
+
+        emplace_child<AimArrowNode>().rename("AimArrow");
     }
 
     void
@@ -261,9 +400,7 @@ class PlayerNode : public ome::KinematicNode
     on_mount_() override
     {
         update_transform<ome::Space::Local>([&](auto &t) { t.position = ome::up * 1.5f; });
-        log("Hola");
-
-        hold(game()->input.bind(Action::PlayerShoot, &PlayerNode::shoot_, this));
+        log("Player mounted");
     }
 };
 

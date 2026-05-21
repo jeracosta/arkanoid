@@ -16,7 +16,7 @@ class SnailNode : public ome::TransformNode
     {
         auto &camera = game()->camera;
 
-        auto position = transform<ome::Space::World>().position + ome::up * size_;
+        auto position = transform<ome::Space::World>().position + ome::up * size_ / 2;
 
         static const ome::Material material = []
         {
@@ -26,7 +26,7 @@ class SnailNode : public ome::TransformNode
             return m;
         }();
 
-        game()->schedule([&]
+        game()->schedule([position, &camera]
         { ome::open_gl::render_billboard(position, { size_ }, material, camera); });
 
         TransformNode::on_tick_();

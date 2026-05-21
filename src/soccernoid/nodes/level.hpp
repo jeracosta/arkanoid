@@ -74,7 +74,7 @@ Level::standard()
 
         level.emplace_child<PlayerNode>(PlayerNode::Configuration::make_harry()).rename("Harry");
 
-        level.emplace_child<SnailNode>().position({ -3.0f, 1.0f, -3.0f }).rename("Snail");
+        level.emplace_child<SnailNode>().position({ -3.0f, 0.0f, -3.0f }).rename("Snail");
 
         static constexpr uint pilars         = 7;
         static constexpr uint pilar_distance = 13;

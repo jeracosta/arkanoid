@@ -7,13 +7,16 @@ namespace ome::open_gl {
 void
 bind(const DirectionalLight &light, GLenum slot)
 {
-    auto dir = Vec4<GLfloat>{ light.direction, 0 };
+    // GL_POSITION with w=0 specifies direction FROM vertex TOWARD light source.
+    // DirectionalLight::direction convention is direction the light POINTS,
+    // so we negate to give OpenGL what it expects.
+    auto direction = Vec4<GLfloat>{ -light.direction, 0 };
 
     auto ambient  = light.color.ambient.rgba_f();
     auto diffuse  = light.color.diffuse.rgba_f();
     auto specular = light.color.specular.rgba_f();
 
-    glLightfv(slot, GL_POSITION, dir.data());
+    glLightfv(slot, GL_POSITION, direction.data());
     glLightfv(slot, GL_AMBIENT, ambient.data());
     glLightfv(slot, GL_DIFFUSE, diffuse.data());
     glLightfv(slot, GL_SPECULAR, specular.data());

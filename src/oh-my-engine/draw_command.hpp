@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "oh-my-engine/material.hpp"
+#include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/mesh.hpp"
 #include "oh-my-engine/transform.hpp"
 
@@ -21,6 +22,11 @@ struct DrawCommand
     std::vector<Material> materials;
     Transform             transform;
     Layer                 layer = Layer::Opaque;
+
+    static DrawCommand
+    box(const Box                  &box,
+        std::vector<Material>       materials,
+        const BoxFaces<std::size_t> material_indices);
 };
 
 } // namespace ome

@@ -4,6 +4,7 @@
 
 #include "oh-my-engine/color.hpp"
 #include "oh-my-engine/math/vector.hpp"
+#include "oh-my-engine/mesh.hpp"
 #include "oh-my-engine/texture.hpp"
 
 namespace soccernoid {
@@ -203,4 +204,58 @@ static const inline TexturePalette textures = {
     },
 };
 
-}; // namespace soccernoid
+struct MeshPalette
+{
+    class Item
+    {
+      private:
+        std::filesystem::path                file_name_;
+        mutable std::shared_ptr<ome::Mesh>   mesh_;
+
+        std::shared_ptr<ome::Mesh>
+        load_() const
+        {
+            if (!mesh_)
+            {
+                mesh_ = ome::Mesh::load(FilesystemPaths::meshes / file_name_);
+            }
+            return mesh_;
+        }
+
+      public:
+        Item(std::filesystem::path file_name)
+            : file_name_(std::move(file_name))
+        {
+        }
+
+        ome::Mesh &
+        get() const
+        {
+            return *load_();
+        }
+
+        operator const ome::Mesh &() const
+        {
+            return get();
+        }
+
+        operator std::shared_ptr<ome::Mesh>() const
+        {
+            return load_();
+        }
+    };
+
+    Item characters_g;
+    Item characters_h;
+    Item dragon;
+    Item wizard;
+};
+
+static const inline MeshPalette meshes = {
+    .characters_g = { "characters/character-g.fbx" },
+    .characters_h = { "characters/character-h.fbx" },
+    .dragon       = { "dragon/Dragon.fbx" },
+    .wizard       = { "wizard/PolyArtWizardMesh.fbx" },
+};
+
+} // namespace soccernoid

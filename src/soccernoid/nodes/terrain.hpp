@@ -22,7 +22,7 @@ class TerrainNode : public ome::HitboxNode
 
         auto materials = std::vector<ome::Material>{
             { .texture = textures.dirt },                     // 0
-            { .texture = textures.floor, .shininess = 0.0f }, // 1
+            { .texture = textures.floor, .shininess = 1.0f }, // 1
             {},                                               // 2
         };
 
@@ -35,7 +35,8 @@ class TerrainNode : public ome::HitboxNode
             .bottom = 2,
         };
 
-        frame.draw_commands.push_back(ome::DrawCommand::box(region, materials, material_indices));
+        frame.draw_commands.push_back(
+            ome::DrawCommand::box(region, materials, material_indices, 24));
     }
 };
 

@@ -7,18 +7,18 @@ namespace ome {
 class Window; // forward declaration
 
 // Owns the Dear ImGui context and its SDL2 + fixed-function OpenGL2 backends.
-class DebugUi : public ome::sdl::EventHandler
+class Imgui : public ome::sdl::EventHandler
 {
   public:
-    explicit DebugUi(Window &window);
+    explicit Imgui(Window &window);
 
-    DebugUi(const DebugUi &) = delete;
+    Imgui(const Imgui &) = delete;
 
-    DebugUi &
-    operator=(const DebugUi &)
+    Imgui &
+    operator=(const Imgui &)
         = delete;
 
-    ~DebugUi();
+    ~Imgui();
 
     // Begins a new ImGui frame. Call once per frame, after events are pumped
     // and before any node builds its UI.

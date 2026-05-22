@@ -10,7 +10,7 @@
 namespace ome {
 
 // Owns the ImGui context/backends; needs the raw SDL window and GL context.
-class DebugUi; // forward declaration
+class Imgui; // forward declaration
 
 struct WindowResized
 {
@@ -32,7 +32,7 @@ class Window : EventBus<WindowResized>, public ome::sdl::EventHandler
     SDL_GLContext gl_context_;
 
     // DebugUi initializes the ImGui SDL2/OpenGL2 backends from these handles.
-    friend class DebugUi;
+    friend class Imgui;
 
     void
     resize_viewport_(Vec2u new_size)
@@ -85,11 +85,13 @@ class Window : EventBus<WindowResized>, public ome::sdl::EventHandler
     Window(const Window &) = delete;
 
     Window &
-    operator=(const Window &) = delete;
+    operator=(const Window &)
+        = delete;
 
     Window(Window &&) = default;
     Window &
-    operator=(Window &&) = default;
+    operator=(Window &&)
+        = default;
 
     ~Window()
     {

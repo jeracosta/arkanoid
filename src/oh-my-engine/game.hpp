@@ -8,7 +8,7 @@
 #include "camera.hpp"
 #include "collision_server.hpp"
 #include "color.hpp"
-#include "debug_ui.hpp"
+#include "imgui.hpp"
 #include "input.hpp"
 #include "logger.hpp"
 #include "time.hpp"
@@ -92,7 +92,7 @@ class Game : public EventConnectionHolder
     std::shared_ptr<Node>              root_node_;
     std::vector<std::function<void()>> tasks_;
     std::unique_ptr<Logger>            logger_;
-    std::optional<DebugUi>             debug_ui_;
+    std::optional<Imgui>               imgui_;
 
     void
     mount_(std::shared_ptr<Node> node);

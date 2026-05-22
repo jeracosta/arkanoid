@@ -1,4 +1,4 @@
-#include "oh-my-engine/debug_ui.hpp"
+#include "oh-my-engine/imgui.hpp"
 
 #include <SDL2/SDL.h>
 #include <imgui.h>
@@ -9,7 +9,7 @@
 
 namespace ome {
 
-DebugUi::DebugUi(Window &window)
+Imgui::Imgui(Window &window)
 {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -23,7 +23,7 @@ DebugUi::DebugUi(Window &window)
     ImGui_ImplOpenGL2_Init();
 }
 
-DebugUi::~DebugUi()
+Imgui::~Imgui()
 {
     ImGui_ImplOpenGL2_Shutdown();
     ImGui_ImplSDL2_Shutdown();
@@ -31,7 +31,7 @@ DebugUi::~DebugUi()
 }
 
 void
-DebugUi::begin_frame()
+Imgui::begin_frame()
 {
     ImGui_ImplOpenGL2_NewFrame();
     ImGui_ImplSDL2_NewFrame();
@@ -39,14 +39,14 @@ DebugUi::begin_frame()
 }
 
 void
-DebugUi::end_frame()
+Imgui::end_frame()
 {
     ImGui::Render();
     ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
 }
 
 std::optional<SDL_Event>
-DebugUi::handle(const SDL_Event &event)
+Imgui::handle(const SDL_Event &event)
 {
     ImGui_ImplSDL2_ProcessEvent(&event);
 

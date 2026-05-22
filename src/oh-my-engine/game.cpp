@@ -58,13 +58,13 @@ Game::Game(const Configuration &config)
 Game::~Game()
 {
     // Shut ImGui down while the SDL GL context (owned by `window`) is alive.
-    debug_ui_.reset();
+    imgui_.reset();
 }
 
 void
 Game::initialize_()
 {
-    debug_ui_.emplace(window);
+    imgui_.emplace(window);
 
     if (config_.make_logger)
     {
@@ -158,7 +158,7 @@ Game::run_()
 
         process_sdl_events_();
 
-        debug_ui_->begin_frame();
+        imgui_->begin_frame();
 
         config_.on_update ? config_.on_update(*this) : void();
 
@@ -194,7 +194,7 @@ Game::run_()
 
         resolve_tasks_();
 
-        debug_ui_->end_frame();
+        imgui_->end_frame();
 
         SDL_GL_SwapWindow(window);
 
@@ -213,7 +213,7 @@ Game::process_sdl_events_()
             running_ = false;
         }
 
-        event | *debug_ui_ | input | window; // piped to chain of handlers
+        event | *imgui_ | input | window; // piped to chain of handlers
     }
 }
 

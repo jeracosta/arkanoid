@@ -2,6 +2,7 @@
 
 #include <GL/gl.h>
 #include <GL/glu.h>
+#include <cmath>
 #include <cstdint>
 #include <glm/ext/vector_float3.hpp>
 #include <limits>
@@ -97,6 +98,50 @@ class Color
         uint8_t blue  = ((hex_value >> 8) & 0xFF);
 
         return rgb(red, green, blue);
+    }
+
+    static Color
+    hsv(float hue, float saturation, float value, float alpha = 1.0f)
+    {
+        auto wrap = [](float x) { return x - std::floor(x / 360.0f) * 360.0f; };
+        float h   = wrap(hue) / 60.0f;
+        float c   = value * saturation;
+        float x   = c * (1.0f - std::abs(std::fmod(h, 2.0f) - 1.0f));
+        float m   = value - c;
+
+        float r, g, b;
+        if (h < 1.0f)
+        {
+            r = c; g = x; b = 0.0f;
+        }
+        else if (h < 2.0f)
+        {
+            r = x; g = c; b = 0.0f;
+        }
+        else if (h < 3.0f)
+        {
+            r = 0.0f; g = c; b = x;
+        }
+        else if (h < 4.0f)
+        {
+            r = 0.0f; g = x; b = c;
+        }
+        else if (h < 5.0f)
+        {
+            r = x; g = 0.0f; b = c;
+        }
+        else
+        {
+            r = c; g = 0.0f; b = x;
+        }
+
+        return rgba(r + m, g + m, b + m, alpha);
+    }
+
+    static Color
+    hsv(Vec3f v, float alpha = 1.0f)
+    {
+        return hsv(v[0], v[1], v[2], alpha);
     }
 
     // #endregion

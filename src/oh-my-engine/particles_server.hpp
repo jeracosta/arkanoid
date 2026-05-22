@@ -276,6 +276,8 @@ class ParticleServer
             material.color.emission = particle.color;
             material.blend_mode     = scheme_.blend_mode;
 
+            // TODO: migrate to RenderFrame approach
+
             open_gl::render_billboard(particle.position, { particle.scale }, material, camera);
         }
 

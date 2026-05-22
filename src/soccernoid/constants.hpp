@@ -209,8 +209,8 @@ struct MeshPalette
     class Item
     {
       private:
-        std::filesystem::path                file_name_;
-        mutable std::shared_ptr<ome::Mesh>   mesh_;
+        std::filesystem::path              file_name_;
+        mutable std::shared_ptr<ome::Mesh> mesh_;
 
         std::shared_ptr<ome::Mesh>
         load_() const
@@ -249,6 +249,7 @@ struct MeshPalette
     Item characters_h;
     Item dragon;
     Item wizard;
+    Item teapot;
 };
 
 static const inline MeshPalette meshes = {
@@ -256,6 +257,7 @@ static const inline MeshPalette meshes = {
     .characters_h = { "characters/character-h.fbx" },
     .dragon       = { "dragon/Dragon.fbx" },
     .wizard       = { "wizard/PolyArtWizardMesh.fbx" },
+    .teapot       = { "teapot/teapot.obj" },
 };
 
 } // namespace soccernoid

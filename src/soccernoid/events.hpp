@@ -16,6 +16,25 @@ struct PlayerDefeated
 {
 };
 
-using EventBus = ome::EventBus<ProjectileSpawned, ProjectileDespawned, PlayerDefeated>;
+struct ObstacleDestroyed
+{
+    int projectiles_spawned;
+};
+
+struct GoalHit
+{
+};
+
+struct PlayerVictorious
+{
+};
+
+using EventBus = ome::EventBus<
+    ProjectileSpawned,
+    ProjectileDespawned,
+    PlayerDefeated,
+    ObstacleDestroyed,
+    GoalHit,
+    PlayerVictorious>;
 
 } // namespace soccernoid

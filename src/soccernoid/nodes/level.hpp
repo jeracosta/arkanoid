@@ -13,6 +13,8 @@
 #include "soccernoid/nodes/defeat_screen.hpp"
 #include "soccernoid/nodes/fire.hpp"
 #include "soccernoid/nodes/fbx_character.hpp"
+#include "soccernoid/nodes/goal.hpp"
+#include "soccernoid/nodes/obstacle.hpp"
 #include "soccernoid/nodes/player.hpp"
 #include "soccernoid/nodes/soccernoid_node.hpp"
 #include "soccernoid/nodes/wizard_goalkeeper.hpp"
@@ -21,6 +23,7 @@
 #include "soccernoid/nodes/skybox.hpp"
 #include "soccernoid/nodes/snail.hpp"
 #include "soccernoid/nodes/terrain.hpp"
+#include "soccernoid/nodes/victory_screen.hpp"
 #include "soccernoid/nodes/wall.hpp"
 
 namespace soccernoid {
@@ -36,6 +39,9 @@ struct Level
 
     static Level
     defeat();
+
+    static Level
+    victory();
 };
 
 class LevelNode : public SoccernoidNode<>
@@ -43,9 +49,17 @@ class LevelNode : public SoccernoidNode<>
   private:
     Level standard_level_ = Level::standard();
     Level defeat_level_   = Level::defeat();
+    Level victory_level_  = Level::victory();
 
-    bool swap_pending_ = false;
-    bool is_defeated_  = false;
+    enum class PendingSwap
+    {
+        None,
+        Defeat,
+        Victory,
+    };
+
+    PendingSwap pending_swap_ = PendingSwap::None;
+    bool        game_over_    = false;
 
     void
     configure_(const Level &level)
@@ -59,9 +73,6 @@ class LevelNode : public SoccernoidNode<>
     void
     swap_to_(const Level &level)
     {
-        // We're in on_tick_ here, so the LevelNode is Mounted (not in
-        // transition). remove_child runs synchronously; the new children added
-        // by configure_ also mount synchronously.
         std::vector<std::string> names;
         for (auto *child : children())
         {
@@ -84,25 +95,44 @@ class LevelNode : public SoccernoidNode<>
 
         hold(game()->Events.bind([this](const PlayerDefeated &)
         {
-            if (is_defeated_)
+            if (game_over_)
             {
                 return;
             }
-            is_defeated_  = true;
-            swap_pending_ = true;
+            game_over_    = true;
+            pending_swap_ = PendingSwap::Defeat;
+        }));
+
+        hold(game()->Events.bind([this](const PlayerVictorious &)
+        {
+            if (game_over_)
+            {
+                return;
+            }
+            game_over_    = true;
+            pending_swap_ = PendingSwap::Victory;
         }));
     }
 
     void
     on_tick_() override
     {
-        if (!swap_pending_)
+        if (pending_swap_ == PendingSwap::None)
         {
             return;
         }
 
-        swap_pending_ = false;
-        swap_to_(defeat_level_);
+        auto swap = pending_swap_;
+        pending_swap_ = PendingSwap::None;
+
+        if (swap == PendingSwap::Defeat)
+        {
+            swap_to_(defeat_level_);
+        }
+        else if (swap == PendingSwap::Victory)
+        {
+            swap_to_(victory_level_);
+        }
     }
 };
 
@@ -196,7 +226,33 @@ Level::standard()
                 .rename("H");
         }
 
-        level.emplace_child<ProjectileNode>().rename("Projectile");
+        level
+            .emplace_child<GoalNode>(GoalNode::Configuration{
+                .position = { 0.0f, 1.5f, -4.8f },
+                .size     = { 2.5f, 2.0f, 0.2f },
+                .color    = ome::Color::rgb(230, 242, 217),
+            })
+            .rename("Goal");
+
+        level
+            .emplace_child<ObstacleNode>(ObstacleNode::Configuration{
+                .position               = { -1.2f, 0.8f, -2.5f },
+                .size                   = { 0.6f, 0.6f, 0.6f },
+                .life                   = 3,
+                .projectile_spawn_count = 2,
+                .color                  = ome::Color::rgb(180, 80, 80),
+            })
+            .rename("Obstacle1");
+
+        level
+            .emplace_child<ObstacleNode>(ObstacleNode::Configuration{
+                .position               = { 1.2f, 0.8f, -2.5f },
+                .size                   = { 0.6f, 0.6f, 0.6f },
+                .life                   = 2,
+                .projectile_spawn_count = 2,
+                .color                  = ome::Color::rgb(180, 80, 80),
+            })
+            .rename("Obstacle2");
 
         level.emplace_child<PlayerNode>(PlayerNode::Configuration::make_harry()).rename("Harry");
 
@@ -235,6 +291,18 @@ Level::defeat()
         level.emplace_child<SkyboxNode>(textures.skybox.blood).rename("Skybox");
         level.emplace_child<CometNode>().rename("Comet");
         level.emplace_child<DefeatScreenNode>().rename("DefeatScreen");
+    } };
+}
+
+inline Level
+Level::victory()
+{
+    return { [](LevelNode &level)
+    {
+        level.emplace_child<SceneLightsNode>().rename("Lights");
+        level.emplace_child<SkyboxNode>(textures.skybox.dawn).rename("Skybox");
+        level.emplace_child<CometNode>().rename("Comet");
+        level.emplace_child<VictoryScreenNode>().rename("VictoryScreen");
     } };
 }
 

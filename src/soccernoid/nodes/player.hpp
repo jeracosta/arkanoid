@@ -43,7 +43,8 @@ class PlayerNode : public ome::KinematicNode
     static auto
     mesh_() -> std::shared_ptr<ome::Mesh>
     {
-        static auto mesh = [] {
+        static auto mesh = []
+        {
             auto m = static_cast<std::shared_ptr<ome::Mesh>>(meshes.dragon);
             m->recenter();
             constexpr float target_extent = 2.5f;
@@ -58,7 +59,8 @@ class PlayerNode : public ome::KinematicNode
     static auto
     material_() -> ome::Material
     {
-        static auto mat = [] {
+        static auto mat = []
+        {
             auto m = ome::Material{};
             for (auto candidate : {
                      FilesystemPaths::textures / "dragon_texture.png",
@@ -178,7 +180,7 @@ class PlayerNode : public ome::KinematicNode
             projectile.update_kinematic<ome::Space::World>([&](auto &k) { k.velocity = velocity; });
 
             player->enable_movement();
-            schedule_unmount();
+            request_unmount();
         }
 
       public:

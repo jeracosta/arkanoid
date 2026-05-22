@@ -14,7 +14,14 @@ class MeshNode : public TransformNode
     MeshNode(std::shared_ptr<Mesh> mesh, Material material)
 
         : mesh_(std::move(mesh)),
-          material_(std::move(material))
+          materials_(std::vector{ std::move(material) })
+    {
+    }
+
+    MeshNode(std::shared_ptr<Mesh> mesh, std::vector<Material> materials)
+
+        : mesh_(std::move(mesh)),
+          materials_(std::move(materials))
     {
     }
 
@@ -29,7 +36,7 @@ class MeshNode : public TransformNode
     void
     update_material(const F &&function)
     {
-        function(material_);
+        function(materials_.front());
     }
 
     void
@@ -42,13 +49,13 @@ class MeshNode : public TransformNode
 
         frame.draw_commands.push_back(DrawCommand{
             .mesh      = mesh_,
-            .materials = { material_ },
+            .materials = materials_,
             .transform = transform<Space::World>(),
         });
     }
 
   private:
     std::shared_ptr<Mesh> mesh_;
-    Material              material_;
+    std::vector<Material> materials_;
 };
 } // namespace ome

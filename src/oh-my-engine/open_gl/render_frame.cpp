@@ -58,39 +58,6 @@ sorted_(auto draw_commands)
     return draw_commands;
 }
 
-struct LightBatch_
-{
-    static std::size_t
-    capacity()
-    {
-        GLint value = 0;
-        glGetIntegerv(GL_MAX_LIGHTS, &value);
-        return static_cast<std::size_t>(value);
-    }
-
-    std::span<const Light> lights;
-};
-
-static auto
-batch_view_(std::span<const Light> lights)
-{
-    using namespace std::views;
-
-    const auto n = LightBatch_::capacity();
-
-    auto indices = iota(std::size_t{ 0 }, (lights.size() + n - 1) / n);
-
-    auto make_batch = [lights, n](std::size_t index) -> LightBatch_
-    {
-        std::size_t offset = index * n;
-        std::size_t count  = std::min(n, lights.size() - offset);
-
-        return { lights.subspan(offset, count) };
-    };
-
-    return indices | transform(make_batch);
-}
-
 struct RenderStateGuard_
 {
     RenderStateGuard_()
@@ -130,85 +97,76 @@ render(const RenderFrame &frame)
     auto &lights        = frame.lights;
     auto  draw_commands = sorted_(frame.draw_commands);
 
-    auto light_slots
-        = std::views::iota(GLenum(GL_LIGHT0), GLenum(GL_LIGHT0 + LightBatch_::capacity()));
-
     RenderStateGuard_ render_state_guard;
 
-    for (auto [light_batch_index, light_batch] : std::views::enumerate(batch_view_(lights)))
+    for (const auto &draw_command : draw_commands)
     {
-        auto is_first_light_pass = light_batch_index == 0;
-
-        for (auto slot : light_slots)
+        [[unlikely]]
+        if (draw_command.mesh == nullptr)
         {
-            glDisable(slot);
+            continue;
         }
 
-        for (auto [light, slot] : std::views::zip(light_batch.lights, light_slots))
+        auto &mesh      = *draw_command.mesh;
+        auto &materials = draw_command.materials;
+
+        auto mesh_node_visitor = [&](const Mesh::Node &node)
         {
-            bind(light, slot);
-            glEnable(slot);
-        }
+            auto surfaces = node.surface_indices
+                            | std::views::transform([&](auto i) -> const Mesh::Surface &
+            { return mesh.surfaces()[i]; });
 
-        for (const auto &draw_command : draw_commands)
-        {
-            auto model_guard = MatrixGuard(GL_MODELVIEW);
-
-            glMultMatrixf(glm::value_ptr(static_cast<glm::mat4>(draw_command.transform)));
-
-            [[unlikely]]
-            if (draw_command.mesh == nullptr)
+            for (auto &surface : surfaces)
             {
-                continue;
-            }
-
-            auto &mesh      = *draw_command.mesh;
-            auto &materials = draw_command.materials;
-
-            auto mesh_node_visitor = [&](const Mesh::Node &node)
-            {
-                auto model_guard = MatrixGuard(GL_MODELVIEW);
-
-                // TODO: Apply node transforms when implemented
-                // glMultMatrixf(glm::value_ptr(static_cast<glm::mat4>(node.transform)));
-
-                auto surfaces = node.surface_indices
-                                | std::views::transform([&](auto i) -> const Mesh::Surface &
-                { return mesh.surfaces()[i]; });
-
-                for (auto &surface : surfaces)
+                auto render_surface = [&]
                 {
-                    auto material = Material{}; // configured next
+                    auto model_matrix_guard = MatrixGuard(GL_MODELVIEW);
 
-                    if (surface.material_index.has_value()
-                        && *surface.material_index < materials.size())
-                    {
-                        material = materials[*surface.material_index];
-                    }
+                    glMultMatrixf(glm::value_ptr(static_cast<glm::mat4>(draw_command.transform)));
 
-                    if (!is_first_light_pass)
-                    {
-                        glDepthMask(GL_FALSE);
-                        glDepthFunc(GL_LEQUAL);
-
-                        material.color.ambient = Color::black();
-                        material.blend_mode    = { GL_ONE, GL_ONE };
-                    }
-                    else
-                    {
-
-                        glDepthFunc(GL_LESS);
-                        glDepthMask(GL_TRUE);
-                    }
-
-                    bind(material);
+                    // TODO: Apply node transforms when implemented
+                    // glMultMatrixf(glm::value_ptr(static_cast<glm::mat4>(node.transform)));
 
                     render_(surface.vertices, surface.indices, surface.primitive_type);
-                }
-            };
+                };
 
-            visit_dfs_(mesh.root(), mesh_node_visitor);
-        }
+                Material material;
+
+                if (surface.material_index.has_value()
+                    && *surface.material_index < materials.size())
+                {
+                    material = materials[*surface.material_index];
+                }
+
+                bind(material);
+
+                glDepthFunc(GL_LESS);
+                glDepthMask(GL_TRUE);
+
+                render_surface();
+
+                glDepthMask(GL_FALSE);
+                glDepthFunc(GL_LEQUAL);
+
+                material.color.ambient = Color::black();
+                material.blend_mode    = { GL_ONE, GL_ONE };
+                bind(material);
+
+                constexpr auto light_slot = GL_LIGHT1;
+
+                glEnable(light_slot);
+
+                for (auto &light : lights)
+                {
+                    open_gl::bind(light, light_slot);
+                    render_surface();
+                }
+
+                glDisable(light_slot);
+            }
+        };
+
+        visit_dfs_(mesh.root(), mesh_node_visitor);
     }
 }
 

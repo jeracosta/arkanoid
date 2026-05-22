@@ -16,6 +16,15 @@ class FireNode : public ome::TransformNode
     class LightNode_ : public ome::LightNode<ome::PointLight>
     {
       private:
+        static inline std::minstd_rand rng_{ std::random_device{}() };
+
+        static inline std::uniform_real_distribution<float> phase_distribution_{
+            0.0f, 2.0f * std::numbers::pi_v<float>
+        };
+
+        // used to prevent different fire lights from flickering in sync
+        float flicker_phase_offset_ = phase_distribution_(rng_);
+
         void
         update_light_()
         {
@@ -39,7 +48,7 @@ class FireNode : public ome::TransformNode
         float
         flicker_()
         {
-            const float time = this->game()->time.elapsed();
+            const float time = this->game()->time.elapsed() + flicker_phase_offset_;
 
             float flicker = 0.0f;
 

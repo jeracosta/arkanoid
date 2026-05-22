@@ -4,14 +4,17 @@
 #include <vector>
 
 #include "oh-my-engine/constants.hpp"
+#include "oh-my-engine/material.hpp"
 #include "oh-my-engine/math/interval.hpp"
+#include "oh-my-engine/mesh.hpp"
 #include "oh-my-engine/node.hpp"
 #include "oh-my-engine/nodes/hitbox_node.hpp"
+#include "oh-my-engine/nodes/mesh_node.hpp"
+#include "oh-my-engine/texture.hpp"
 #include "soccernoid/constants.hpp"
 #include "soccernoid/events.hpp"
 #include "soccernoid/nodes/comet.hpp"
 #include "soccernoid/nodes/defeat_screen.hpp"
-#include "soccernoid/nodes/fbx_character.hpp"
 #include "soccernoid/nodes/fire.hpp"
 #include "soccernoid/nodes/player.hpp"
 #include "soccernoid/nodes/projectile.hpp"
@@ -170,27 +173,51 @@ Level::standard()
                 "texture-h.png",
             };
 
-            level
-                .emplace_child<FbxCharacterNode>(FbxCharacterNode::Configuration{
-                    .position = { wiz[0] - flank_x, side_character_y, wiz[2] + toward_pitch_z },
-                    .mesh_relative     = std::filesystem::path{ "characters" } / "character-g.fbx",
-                    .textures_relative = textures_g,
-                    .normalize_extent  = side_character_size,
-                    .yaw_pi            = false,
-                    .extra_yaw_rad     = side_character_yaw_rad,
-                })
-                .rename("G");
+            auto add_side_character = [&](const std::string &name,
+                                          const auto        &textures,
+                                          float              x_sign,
+                                          auto              &mesh_item)
+            {
+                auto mesh = static_cast<std::shared_ptr<ome::Mesh>>(mesh_item);
+                mesh->recenter();
+                {
+                    auto  sz      = mesh->size();
+                    float max_dim = std::max({ sz[0], sz[1], sz[2] });
+                    mesh->resize(sz * (side_character_size / max_dim));
+                }
 
-            level
-                .emplace_child<FbxCharacterNode>(FbxCharacterNode::Configuration{
-                    .position = { wiz[0] + flank_x, side_character_y, wiz[2] + toward_pitch_z },
-                    .mesh_relative     = std::filesystem::path{ "characters" } / "character-h.fbx",
-                    .textures_relative = textures_h,
-                    .normalize_extent  = side_character_size,
-                    .yaw_pi            = false,
-                    .extra_yaw_rad     = side_character_yaw_rad,
-                })
-                .rename("H");
+                ome::Material material;
+                for (const auto &rel : textures)
+                {
+                    auto candidate = FilesystemPaths::textures / rel;
+                    if (std::filesystem::exists(candidate))
+                    {
+                        auto tex = ome::Texture::load(candidate);
+                        tex->set_wrap({ GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE });
+                        tex->set_filters(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+                        material.texture = std::move(tex);
+                        break;
+                    }
+                }
+
+                ome::Orientation orient;
+                orient.rotate(side_character_yaw_rad, ome::up);
+
+                auto &group = level.emplace_child<ome::TransformNode>();
+                group.update_transform<ome::Space::Local>([&](auto &t)
+                {
+                    t.position
+                        = { wiz[0] + x_sign * flank_x, side_character_y, wiz[2] + toward_pitch_z };
+                    t.orientation = orient;
+                });
+                group.emplace_child<ome::HitboxNode>(ome::Vec3f{ 1.0f, 3.4f, 1.0f },
+                                                     ome::Vec3f{ 0.0f, 0.24f, 0.0f });
+                group.emplace_child<ome::MeshNode>(std::move(mesh), std::move(material));
+                group.rename(name);
+            };
+
+            add_side_character("G", textures_g, -1.0f, meshes.characters_g);
+            add_side_character("H", textures_h, +1.0f, meshes.characters_h);
         }
 
         level.emplace_child<PlayerNode>(PlayerNode::Configuration::make_harry()).rename("Harry");

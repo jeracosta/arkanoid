@@ -69,32 +69,11 @@ class WizardGoalkeeperNode : public ome::HitboxNode
             return;
         }
 
-        gk.tried_load       = true;
-        const auto mesh_fbx = FilesystemPaths::meshes / "wizard" / "PolyArtWizardMesh.fbx";
-
-        std::filesystem::path texture_path;
-        for (auto candidate : {
-                 FilesystemPaths::textures / "polyArtTex.png",
-                 FilesystemPaths::textures / "poly_art_wizard.png",
-             })
-        {
-            if (std::filesystem::exists(candidate))
-            {
-                texture_path = std::move(candidate);
-                break;
-            }
-        }
-
-        if (!std::filesystem::exists(mesh_fbx))
-        {
-            log(std::format(
-                "Wizard mesh missing (`{}`). No mesh drawn.", mesh_fbx.string()));
-            return;
-        }
+        gk.tried_load = true;
 
         try
         {
-            gk.mesh = ome::Mesh::load(mesh_fbx);
+            gk.mesh = static_cast<std::shared_ptr<ome::Mesh>>(meshes.wizard);
             gk.mesh->recenter();
 
             {
@@ -102,6 +81,19 @@ class WizardGoalkeeperNode : public ome::HitboxNode
                 auto            sz           = gk.mesh->size();
                 float           max_dim      = std::max({ sz[0], sz[1], sz[2] });
                 gk.mesh->resize(sz * (goalie_scale / max_dim));
+            }
+
+            std::filesystem::path texture_path;
+            for (auto candidate : {
+                     FilesystemPaths::textures / "polyArtTex.png",
+                     FilesystemPaths::textures / "poly_art_wizard.png",
+                 })
+            {
+                if (std::filesystem::exists(candidate))
+                {
+                    texture_path = std::move(candidate);
+                    break;
+                }
             }
 
             if (!texture_path.empty())
@@ -117,8 +109,7 @@ class WizardGoalkeeperNode : public ome::HitboxNode
             gk.mesh.reset();
             gk.material = {};
 
-            log(std::format(
-                "Failed loading wizard `{}`: {}.", mesh_fbx.string(), e.what()));
+            log(std::format("Failed loading wizard mesh: {}", e.what()));
         }
     }
 

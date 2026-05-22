@@ -44,10 +44,10 @@ class Mesh
         // TODO: add .transform
 
         std::vector<std::size_t> surface_indices;
-        std::vector<Node>        children = {};
+        std::vector<Node>        children;
 
-        Node(std::vector<std::size_t> primitive_indices = {}, std::vector<Node> children = {})
-            : surface_indices(std::move(primitive_indices)),
+        Node(std::vector<std::size_t> surface_indices = { 0 }, std::vector<Node> children = {})
+            : surface_indices(std::move(surface_indices)),
               children(std::move(children))
         {
         }
@@ -55,7 +55,7 @@ class Mesh
 
     Mesh() = delete;
 
-    Mesh(std::vector<Surface> primitives, Node root);
+    Mesh(std::vector<Surface> surfaces, Node root = {});
 
     ~Mesh();
 

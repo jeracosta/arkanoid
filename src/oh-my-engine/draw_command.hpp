@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "oh-my-engine/camera.hpp"
 #include "oh-my-engine/material.hpp"
 #include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/mesh.hpp"
@@ -28,6 +29,9 @@ struct DrawCommand
         std::vector<Material>       materials,
         const BoxFaces<std::size_t> material_indices,
         std::size_t                 subdivisions = 1);
+
+    static DrawCommand
+    billboard(Vec3f position, Vec2f size, const Material &material, const Camera &camera);
 };
 
 } // namespace ome

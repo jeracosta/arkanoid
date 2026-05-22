@@ -110,12 +110,10 @@ DrawCommand::box(const Box                  &box,
     surfaces.push_back(make_surface(faces.top, material_indices.top));
     surfaces.push_back(make_surface(faces.bottom, material_indices.bottom));
 
-    // Build mesh (single-node flat mesh)
-    Mesh::Node root{};
-    for (std::size_t i = 0; i < surfaces.size(); ++i)
-    {
-        root.surface_indices.push_back(i);
-    }
+    Mesh::Node root;
+    root.surface_indices = { 0, 1, 2, 3, 4, 5 };
+
+    assert(surfaces.size() == 6);
 
     auto mesh = std::make_shared<Mesh>(std::move(surfaces), std::move(root));
 
@@ -123,6 +121,50 @@ DrawCommand::box(const Box                  &box,
                         .materials = materials,
                         .transform = Transform{},
                         .layer     = DrawCommand::Layer::Opaque };
+}
+
+DrawCommand
+DrawCommand::billboard(Vec3f position, Vec2f size, const Material &material, const Camera &camera)
+{
+    Vec3f right    = camera.right() * (size[0] * 0.5f);
+    Vec3f up       = camera.up() * (size[1] * 0.5f);
+    Vec3f backward = camera.forward();
+
+    auto surfaces = std::vector<Mesh::Surface>{{
+        .vertices = {
+            {
+                .position       = position - right - up,
+                .normal         = backward,
+                .texture_coords = { 0.0f, 0.0f },
+            },
+            {
+                .position       = position + right - up,
+                .normal         = backward,
+                .texture_coords = { 1.0f, 0.0f },
+            },
+            {
+                .position       = position + right + up,
+                .normal         = backward,
+                .texture_coords = { 1.0f, 1.0f },
+            },
+            {
+                .position       = position - right + up,
+                .normal         = backward,
+                .texture_coords = { 0.0f, 1.0f },
+            },
+        },
+
+        .indices        = { 0, 1, 2, 3 },
+
+        .primitive_type = GL_QUADS,
+
+        .material_index = 0
+    }};
+
+    return DrawCommand{ .mesh      = std::make_shared<Mesh>(surfaces),
+                        .materials = { material },
+                        .transform = Transform{},
+                        .layer     = DrawCommand::Layer::Transparent };
 }
 
 } // namespace ome

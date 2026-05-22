@@ -167,11 +167,15 @@ class Node : public std::enable_shared_from_this<Node>,
 
     // #region Tree-related methods
 
+    template <class T = Node>
+        requires std::derived_from<T, Node>
     auto
     children(this auto &&self)
     {
         return self.children_ // view over its stored pointers:
-               | std::views::values | std::views::transform(&std::shared_ptr<Node>::get);
+               | std::views::values | std::views::transform(&std::shared_ptr<Node>::get)
+               | std::views::filter([](Node *n) { return dynamic_cast<T *>(n) != nullptr; })
+               | std::views::transform([](Node *n) { return static_cast<T *>(n); });
     }
 
     template <class TChild>

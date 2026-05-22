@@ -83,7 +83,7 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
         }
     };
 
-    class LightNode_ : public ome::LightNode
+    class LightNode_ : public ome::LightNode<ome::PointLight>
     {
       public:
         static const inline auto light = ome::PointLight {
@@ -99,7 +99,7 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
         };
 
         LightNode_()
-            : ome::LightNode(light, 2)
+            : ome::LightNode<ome::PointLight>(light, 2)
         {
             position({ 0.0f, 0.05f, 0.0f });
         }

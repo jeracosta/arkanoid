@@ -13,13 +13,6 @@ static constexpr float gravity_strength = 9.81f;
 
 static constexpr float despawn_distance = 60.0f;
 
-// Play area half-extent on the x/z axes. Lateral and forward boundaries are
-// at |x| = map_half_extent and z = -map_half_extent. The +z side (behind the
-// player) is left open so projectiles can fall out of play.
-static constexpr float map_half_extent = 5.0f;
-static constexpr float wall_thickness  = 1.0f;
-static constexpr float wall_height     = 6.0f;
-
 static constexpr struct
 {
     float start = 25.0f;
@@ -180,6 +173,7 @@ struct TexturePalette
         SkyboxFaces space2;
     };
 
+    Item          column;
     Item          dirt;
     Item          floor;
     Item          wall;
@@ -188,6 +182,7 @@ struct TexturePalette
 };
 
 static const inline TexturePalette textures = {
+    .column = { "column.tga.png" },
     .dirt = { "dirt.png" },
     .floor = { "floor.jpg" },
     .wall = { "wall.jpg" },
@@ -247,6 +242,7 @@ struct MeshPalette
 
     Item characters_g;
     Item characters_h;
+    Item column;
     Item dragon;
     Item wizard;
     Item teapot;
@@ -255,6 +251,7 @@ struct MeshPalette
 static const inline MeshPalette meshes = {
     .characters_g = { "characters/character-g.fbx" },
     .characters_h = { "characters/character-h.fbx" },
+    .column       = { "column.fbx" },
     .dragon       = { "dragon/Dragon.fbx" },
     .wizard       = { "wizard/PolyArtWizardMesh.fbx" },
     .teapot       = { "teapot/teapot.obj" },

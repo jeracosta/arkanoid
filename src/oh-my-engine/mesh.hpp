@@ -8,9 +8,12 @@
 #include <utility>
 #include <vector>
 
+#include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/math/vector.hpp"
 
 namespace ome {
+
+struct Camera; // forward declaration
 
 class Mesh
 {
@@ -76,6 +79,18 @@ class Mesh
 
     static std::shared_ptr<const Mesh>
     unit_quad();
+
+    static std::shared_ptr<Mesh>
+    box(const Box &box, std::size_t subdivisions = 1);
+
+    static std::shared_ptr<Mesh>
+    quad(Vec3f a, Vec3f b, Vec3f c, Vec3f d);
+
+    static std::shared_ptr<Mesh>
+    billboard(Vec3f position, Vec2f size, const Camera &camera);
+
+    static std::shared_ptr<Mesh>
+    pyramid(Vec3f apex, Vec3f direction, float height, Vec2f base_half_extents);
 
     Vec3f
     size() const;

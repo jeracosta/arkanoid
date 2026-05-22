@@ -124,6 +124,25 @@ DrawCommand::box(const Box                  &box,
 }
 
 DrawCommand
+DrawCommand::quad(Material material)
+{
+    return DrawCommand{ .mesh      = std::const_pointer_cast<Mesh>(Mesh::unit_quad()),
+                        .materials = { std::move(material) },
+                        .transform = Transform{},
+                        .layer     = DrawCommand::Layer::Opaque };
+}
+
+DrawCommand
+DrawCommand::pyramid(Vec3f apex, Vec3f direction, float height, Vec2f base_half_extents,
+                     std::vector<Material> materials)
+{
+    return DrawCommand{ .mesh      = Mesh::pyramid(apex, direction, height, base_half_extents),
+                        .materials = std::move(materials),
+                        .transform = Transform{},
+                        .layer     = DrawCommand::Layer::Opaque };
+}
+
+DrawCommand
 DrawCommand::billboard(Vec3f position, Vec2f size, const Material &material, const Camera &camera)
 {
     Vec3f right    = camera.right() * (size[0] * 0.5f);

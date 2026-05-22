@@ -31,7 +31,14 @@ struct DrawCommand
         std::size_t                 subdivisions = 1);
 
     static DrawCommand
+    quad(Material material);
+
+    static DrawCommand
     billboard(Vec3f position, Vec2f size, const Material &material, const Camera &camera);
+
+    static DrawCommand
+    pyramid(Vec3f apex, Vec3f direction, float height, Vec2f base_half_extents,
+            std::vector<Material> materials);
 };
 
 } // namespace ome

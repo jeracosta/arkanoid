@@ -1,3 +1,4 @@
+#include <cmath>
 #include <memory>
 
 #include "oh-my-engine/light.hpp"
@@ -12,29 +13,55 @@ namespace soccernoid {
 class FireNode : public ome::TransformNode
 {
   private:
-    // Point light at the fire pit lights nearby ground and characters
-    class FirePointLightNode_ : public ome::LightNode
+    class LightNode_ : public ome::LightNode<ome::PointLight>
     {
       private:
-        static ome::PointLight
-        make_point_light_()
+        void
+        update_light_()
         {
-            auto light                  = ome::PointLight{};
-            light.color.ambient         = ome::Color::rgb(0.0f, 0.0f, 0.0f);
-            light.color.diffuse         = ome::Color::rgb(1.0f, 0.55f, 0.12f);
-            light.color.specular        = ome::Color::rgb(1.0f, 0.75f, 0.35f);
-            light.constant_attenuation  = 1.0f;
-            light.linear_attenuation    = 0.06f;
-            light.quadratic_attenuation = 0.12f;
-            return light;
+            light_.constant_attenuation  = 1.0f;
+            light_.linear_attenuation    = 0.06f;
+            light_.quadratic_attenuation = 0.12f;
+
+            constexpr auto flicker_depth = 0.5f; // %
+
+            const auto intensity = ome::Vec3f{ (1 - flicker_depth) + flicker_depth * flicker_() };
+
+            auto diffuse  = ome::Vec3f(1.00f, 0.35f, 0.12f) * intensity;
+            auto specular = ome::Vec3f(1.00f, 0.35f, 0.35f) * intensity;
+
+            light_.color.diffuse  = ome::Color::rgb(diffuse);
+            light_.color.specular = ome::Color::rgb(specular);
+        }
+
+        float
+        flicker_()
+        {
+            const float time = this->game()->time.elapsed();
+
+            float flicker = 0.0f;
+
+            flicker += std::sin(time * 14.6f);
+            flicker += std::sin(time * 23.4f);
+            flicker += std::sin(time * 38.2f);
+            flicker += std::sin(time * 11.8f);
+
+            flicker *= 0.25f;                // [-1,1]
+            flicker = flicker * 0.5f + 0.5f; // [0,1]
+
+            return flicker;
         }
 
       public:
-        FirePointLightNode_()
-            : ome::LightNode(make_point_light_())
+        LightNode_()
         {
-            update_transform<ome::Space::Local>([](auto &t)
-            { t.position = { 0.0f, 0.55f, 0.0f }; });
+            position({ 0.0f, 0.5f, 0.0f });
+        }
+
+        void
+        on_tick_() override
+        {
+            update_light_();
         }
     };
 
@@ -93,7 +120,7 @@ class FireNode : public ome::TransformNode
         : TransformNode()
     {
         update_transform<ome::Space::Local>([&](auto &t) { t.position = position; });
-        emplace_child<FirePointLightNode_>().rename("FireLight");
+        emplace_child<LightNode_>().rename("FireLight");
         add_child(particles_).rename("FireParticles");
     }
 };

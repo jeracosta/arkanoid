@@ -19,20 +19,36 @@ namespace soccernoid {
 
 class ProjectileNode : public SoccernoidNode<DistanceCulled<Falling<ome::KinematicNode>>>
 {
+  public:
+    struct Configuration
+    {
+        float radius;
+        float elasticity;
+        float speed_threshold;
+
+        Configuration()
+            : radius(0.10f)
+            , elasticity(0.98f)
+            , speed_threshold(0.1f)
+        {
+        }
+    };
+
   private:
     using Base_ = SoccernoidNode<DistanceCulled<Falling<ome::KinematicNode>>>;
 
-    static constexpr float radius_          = 0.10f;
-    static constexpr float elasticity_      = 0.98f; // 1.0f = perfectly elastic, 0.0f = inelastic
-    static constexpr float speed_threshold_ = 0.1f;
+    Configuration config_;
 
     static constexpr ome::Vec3f spawn_position = { 0.0f, 7.0f, -3.0f };
 
     class HitboxNode_ : public ome::HitboxNode
     {
+        Configuration config_;
+
       public:
-        HitboxNode_()
-            : ome::HitboxNode(ome::Vec3f{ radius_ * 2, radius_ * 2, radius_ * 2 })
+        HitboxNode_(const Configuration &config)
+            : ome::HitboxNode(ome::Vec3f{ config.radius * 2, config.radius * 2, config.radius * 2 })
+            , config_(config)
         {
         }
 
@@ -68,13 +84,13 @@ class ProjectileNode : public SoccernoidNode<DistanceCulled<Falling<ome::Kinemat
                 auto normal_velocity = projection(kinematic.velocity, normal);
                 auto normal_speed    = norm(normal_velocity);
 
-                if (normal_speed < speed_threshold_)
+                if (normal_speed < config_.speed_threshold)
                 {
                     kinematic.velocity -= normal_velocity;
                 }
                 else
                 {
-                    kinematic.velocity -= (1.0f + elasticity_) * normal_velocity;
+                    kinematic.velocity -= (1.0f + config_.elasticity) * normal_velocity;
                 }
 
                 auto correction = normal * (overlap[penetration_axis] + epsilon);
@@ -167,14 +183,15 @@ class ProjectileNode : public SoccernoidNode<DistanceCulled<Falling<ome::Kinemat
     };
 
   public:
-    ProjectileNode()
+    ProjectileNode(Configuration config = {})
+        : config_(std::move(config))
     {
         update_transform<ome::Space::Local>([&](auto &t) { t.position = spawn_position; });
 
         emplace_child<LightNode_>().rename("GlowLight");
         emplace_child<GlowParticlesNode_>().rename("GlowParticles");
         emplace_child<TraceParticlesNode_>().rename("TraceParticles");
-        emplace_child<HitboxNode_>().rename("Hitbox");
+        emplace_child<HitboxNode_>(config_).rename("Hitbox");
     }
 
     void

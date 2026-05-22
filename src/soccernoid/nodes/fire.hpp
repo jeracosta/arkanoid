@@ -81,10 +81,10 @@ class FireNode : public ome::TransformNode
       private:
         static inline const ome::ParticleScheme scheme_ = {
 
-            .initial_position = { ome::Box::from_size({ 0.5f, 0.0f, 0.5f }), rng },
+            .initial_position = { ome::Box::from_size({ 0.3f, 0.0f, 0.3f }), rng },
 
             .initial_velocity
-            = { ome::Box::from_bounds({ -0.5f, 1.2f, -0.5f }, { 0.5f, 2.8f, 0.5f }), rng },
+            = { ome::Box::from_bounds({ -0.3f, 0.6f, -0.3f }, { 0.3f, 1.4f, 0.3f }), rng },
 
             .time_to_live = 2.0f,
 
@@ -101,11 +101,11 @@ class FireNode : public ome::TransformNode
             }),
 
             .scale = ome::Spline<float>::catmull_rom({
-                { 0.00f, 0.05f },
-                { 0.10f, 0.20f },
-                { 0.30f, 0.35f },
-                { 0.50f, 0.30f },
-                { 0.70f, 0.20f },
+                { 0.00f, 0.02f },
+                { 0.10f, 0.08f },
+                { 0.30f, 0.15f },
+                { 0.50f, 0.12f },
+                { 0.70f, 0.07f },
                 { 1.00f, 0.00f },
             }),
 

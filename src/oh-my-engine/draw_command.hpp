@@ -26,7 +26,8 @@ struct DrawCommand
     static DrawCommand
     box(const Box                  &box,
         std::vector<Material>       materials,
-        const BoxFaces<std::size_t> material_indices);
+        const BoxFaces<std::size_t> material_indices,
+        std::size_t                 subdivisions = 1);
 };
 
 } // namespace ome

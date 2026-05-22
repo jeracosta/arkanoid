@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 #include "oh-my-engine/color.hpp"
 #include "oh-my-engine/light.hpp"
 #include "oh-my-engine/math/interval.hpp"
@@ -25,6 +27,8 @@ class ProjectileNode : public SoccernoidNode<DistanceCulled<Falling<ome::Kinemat
         float radius;
         float elasticity;
         float speed_threshold;
+
+        std::function<ome::Vec3f(const ProjectileNode &)> force;
 
         Configuration()
             : radius(0.10f)
@@ -198,6 +202,15 @@ class ProjectileNode : public SoccernoidNode<DistanceCulled<Falling<ome::Kinemat
     on_tick_() override
     {
         Base_::on_tick_();
+
+        if (config_.force)
+        {
+            auto f = config_.force(*this);
+            update_kinematic<ome::Space::World>([&](auto &k)
+            {
+                k.velocity += f * game()->time.delta();
+            });
+        }
     }
 
     void

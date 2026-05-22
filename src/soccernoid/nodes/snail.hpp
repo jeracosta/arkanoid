@@ -1,7 +1,7 @@
 #pragma once
 
+#include "oh-my-engine/draw_command.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
-#include "oh-my-engine/open_gl/render_billboard.hpp"
 #include "soccernoid/constants.hpp"
 
 namespace soccernoid {
@@ -12,24 +12,17 @@ class SnailNode : public ome::TransformNode
     static constexpr float size_ = 0.2f;
 
     void
-    on_tick_() override
+    on_render_(ome::RenderFrame &frame) override
     {
-        auto &camera = game()->camera;
-
         auto position = transform<ome::Space::World>().position + ome::up * size_ / 2;
 
-        static const ome::Material material = []
-        {
-            ome::Material m;
-            m.texture    = textures.snail;
-            m.blend_mode = ome::BlendMode::alpha();
-            return m;
-        }();
+        auto material = ome::Material{
+            .texture    = textures.snail,
+            .blend_mode = ome::BlendMode::alpha(),
+        };
 
-        game()->schedule([position, &camera]
-        { ome::open_gl::render_billboard(position, { size_ }, material, camera); });
-
-        TransformNode::on_tick_();
+        frame.draw_commands.push_back(
+            ome::DrawCommand::billboard(position, { size_ }, material, game()->camera));
     }
 };
 

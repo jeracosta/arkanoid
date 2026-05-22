@@ -23,7 +23,7 @@ class ProjectileNode : public SoccernoidNode<DistanceCulled<Falling<ome::Kinemat
     using Base_ = SoccernoidNode<DistanceCulled<Falling<ome::KinematicNode>>>;
 
     static constexpr float radius_          = 0.10f;
-    static constexpr float elasticity_      = 0.90f; // 1.0f = perfectly elastic, 0.0f = inelastic
+    static constexpr float elasticity_      = 0.98f; // 1.0f = perfectly elastic, 0.0f = inelastic
     static constexpr float speed_threshold_ = 0.1f;
 
     static constexpr ome::Vec3f spawn_position = { 0.0f, 7.0f, -3.0f };

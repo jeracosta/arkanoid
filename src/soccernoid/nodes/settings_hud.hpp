@@ -1,0 +1,101 @@
+#pragma once
+
+#include <imgui.h>
+
+#include "soccernoid/input.hpp"
+#include "soccernoid/nodes/soccernoid_node.hpp"
+#include "soccernoid/settings.hpp"
+
+namespace soccernoid {
+
+// In-game overlay for inspecting and editing game settings
+class SettingsHudNode : public SoccernoidNode<>
+{
+  private:
+    bool visible_ = false;
+
+    void
+    toggle_()
+    {
+        visible_ = !visible_;
+        game()->window.set_relative_mouse_mode(!visible_);
+        game()->settings.set(settings::time::Paused{ visible_ });
+    }
+
+    template <class T>
+    void
+    checkbox_(const char *label)
+    {
+        auto &settings = game()->settings;
+
+        bool value = settings.get<T>().value;
+        if (ImGui::Checkbox(label, &value))
+        {
+            settings.set(T{ value });
+        }
+    }
+
+    template <class T>
+    void
+    slider_(const char *label, float min, float max, const char *format = "%.3f")
+    {
+        auto &settings = game()->settings;
+
+        float value = settings.get<T>().value;
+        if (ImGui::SliderFloat(label, &value, min, max, format))
+        {
+            settings.set(T{ value });
+        }
+    }
+
+    void
+    view_combo_()
+    {
+        auto &settings = game()->settings;
+
+        const char *views[] = { "First person", "Third person" };
+
+        int current = static_cast<int>(settings.get<settings::camera::View>().value);
+        if (ImGui::Combo("View", &current, views, IM_ARRAYSIZE(views)))
+        {
+            settings.set(settings::camera::View{ static_cast<CameraView>(current) });
+        }
+    }
+
+  public:
+    void
+    on_mount_() override
+    {
+        hold(game()->input.bind(Action::ToggleHud, [this] { toggle_(); }));
+    }
+
+    void
+    on_tick_() override
+    {
+        if (!visible_)
+        {
+            return;
+        }
+
+        ImGui::Begin("Soccernoid");
+
+        ImGui::Text("FPS: %.0f", game()->instant_frame_rate());
+
+        ImGui::SeparatorText("Time");
+        checkbox_<settings::time::Paused>("Paused");
+        slider_<settings::time::Speed>("Speed", 0.0f, 4.0f, "%.2f");
+
+        ImGui::SeparatorText("Camera");
+        view_combo_();
+        slider_<settings::camera::MouseSensitivity>("Mouse sensitivity", 0.001f, 0.1f);
+        slider_<settings::camera::MovementSpeed>("Movement speed", 0.0f, 20.0f, "%.1f");
+
+        ImGui::SeparatorText("Window");
+        checkbox_<settings::window::Fullscreen>("Fullscreen");
+        checkbox_<settings::render::ShowFrameRate>("Show frame rate");
+
+        ImGui::End();
+    }
+};
+
+} // namespace soccernoid

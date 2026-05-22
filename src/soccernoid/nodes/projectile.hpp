@@ -10,15 +10,17 @@
 #include "oh-my-engine/nodes/light_node.hpp"
 #include "oh-my-engine/nodes/particle_emitter_node.hpp"
 #include "oh-my-engine/spline.hpp"
+#include "soccernoid/events.hpp"
 #include "soccernoid/nodes/mixins/distance_culled.hpp"
 #include "soccernoid/nodes/mixins/falling.hpp"
+#include "soccernoid/nodes/soccernoid_node.hpp"
 
 namespace soccernoid {
 
-class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
+class ProjectileNode : public SoccernoidNode<DistanceCulled<Falling<ome::KinematicNode>>>
 {
   private:
-    using Base_ = DistanceCulled<Falling<ome::KinematicNode>>;
+    using Base_ = SoccernoidNode<DistanceCulled<Falling<ome::KinematicNode>>>;
 
     static constexpr float radius_          = 0.10f;
     static constexpr float elasticity_      = 0.90f; // 1.0f = perfectly elastic, 0.0f = inelastic
@@ -179,6 +181,20 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
     on_tick_() override
     {
         Base_::on_tick_();
+    }
+
+    void
+    on_mount_() override
+    {
+        Base_::on_mount_();
+        game()->events.emit(ProjectileSpawned{});
+    }
+
+    void
+    on_unmount_() override
+    {
+        game()->events.emit(ProjectileDespawned{});
+        Base_::on_unmount_();
     }
 };
 

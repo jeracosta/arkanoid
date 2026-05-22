@@ -4,24 +4,11 @@
 #include "oh-my-engine/curve.hpp"
 #include "oh-my-engine/input.hpp"
 #include "oh-my-engine/interpolation.hpp"
-#include "oh-my-engine/node.hpp"
 #include "soccernoid/input.hpp"
+#include "soccernoid/nodes/soccernoid_node.hpp"
+#include "soccernoid/settings.hpp"
 
 namespace soccernoid {
-
-enum class CameraView
-{
-    FirstPerson,
-    ThirdPerson,
-    Count_,
-};
-
-inline CameraView
-succesor(CameraView view)
-{
-    return static_cast<CameraView>((static_cast<int>(view) + 1)
-                                   % static_cast<int>(CameraView::Count_));
-}
 
 struct CameraShot
 {
@@ -46,18 +33,20 @@ struct CameraShot
 
 using CameraTransition = ome::CurveProcess<CameraShot>;
 
-class CameraControlNode : public ome::Node
+class CameraControlNode : public SoccernoidNode<>
 {
   public:
     struct Settings
     {
-        float mouse_sensitivity   = 0.01f;
-        float movement_speed      = 5.0f;
         float sprint_multiplier   = 2.0f;
         float transition_duration = 0.5f;
     };
 
   private:
+    using MouseSensitivity = settings::camera::MouseSensitivity;
+    using MovementSpeed    = settings::camera::MovementSpeed;
+    using View             = settings::camera::View;
+
     ome::Camera *camera_;
     Settings     settings_;
     CameraView   view_ = CameraView::ThirdPerson;
@@ -73,14 +62,15 @@ class CameraControlNode : public ome::Node
     void
     on_mouse_motion_(const ome::input::MouseMotionInput &input)
     {
-        if (is_transitioning_())
+        if (is_transitioning_() || !game()->window.is_relative_mouse_mode())
         {
             return;
         }
 
         // FIXME: Clamp pitch to avoid turning over
 
-        auto [delta_yaw, delta_pitch] = -input.delta * settings_.mouse_sensitivity;
+        auto mouse_sensitivity        = game()->settings.get<MouseSensitivity>().value;
+        auto [delta_yaw, delta_pitch] = -input.delta * mouse_sensitivity;
 
         auto yaw_axis = view_ == CameraView::FirstPerson ? ome::up : camera_->up();
         camera_->rotate(delta_yaw, yaw_axis);
@@ -91,7 +81,7 @@ class CameraControlNode : public ome::Node
     void
     on_mouse_wheel_(const ome::input::MouseWheelInput &input)
     {
-        if (is_transitioning_())
+        if (is_transitioning_() || !game()->window.is_relative_mouse_mode())
         {
             return;
         }
@@ -120,6 +110,18 @@ class CameraControlNode : public ome::Node
         default:
             throw std::runtime_error("Unsupported camera view");
         }
+    }
+
+    void
+    apply_view_(CameraView view)
+    {
+        if (view == view_)
+        {
+            return;
+        }
+
+        view_ = view;
+        start_transition_();
     }
 
     void
@@ -197,7 +199,7 @@ class CameraControlNode : public ome::Node
         auto is_sprinting = game()->input.is_pressed(Action::CameraSprint);
 
         auto speed_factor = is_sprinting ? settings_.sprint_multiplier : 1.0f;
-        auto speed        = settings_.movement_speed * speed_factor;
+        auto speed        = game()->settings.get<MovementSpeed>().value * speed_factor;
 
         auto velocity     = direction * speed;
         auto displacement = velocity * game()->time.unscaled.delta();
@@ -216,7 +218,9 @@ class CameraControlNode : public ome::Node
     {
         camera_ = &game()->camera;
 
-        hold(game()->input.bind(Action::ChangeView, [this] { set_view(succesor(view_)); }));
+        hold(game()->input.bind(Action::ChangeView, [this] {
+            game()->settings.set<View>(succesor(game()->settings.get<View>().value));
+        }));
 
         auto mouse_motion_handler = &CameraControlNode::on_mouse_motion_;
         hold(game()->input.bind(mouse_motion_handler, this));
@@ -224,7 +228,9 @@ class CameraControlNode : public ome::Node
         auto mouse_wheel_handler = &CameraControlNode::on_mouse_wheel_;
         hold(game()->input.bind(mouse_wheel_handler, this));
 
-        snap_to_view_(view_);
+        hold(game()->settings.bind([this](const View &view) { apply_view_(view); }));
+
+        snap_to_view_(game()->settings.get<View>());
     }
 
     CameraView
@@ -236,13 +242,7 @@ class CameraControlNode : public ome::Node
     void
     set_view(CameraView view)
     {
-        if (view == view_)
-        {
-            return;
-        }
-
-        view_ = view;
-        start_transition_();
+        game()->settings.set<View>(view);
     }
 
     void

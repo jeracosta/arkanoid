@@ -76,14 +76,44 @@ if(NOT assimp_FOUND)
   set(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT OFF CACHE BOOL "" FORCE)
   set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF CACHE BOOL "" FORCE)
   set(ASSIMP_BUILD_3DS_IMPORTER ON CACHE BOOL "" FORCE)
-
-  set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+  set(ASSIMP_BUILD_OBJ_IMPORTER ON CACHE BOOL "" FORCE)
+  set(ASSIMP_BUILD_FBX_IMPORTER ON CACHE BOOL "" FORCE)
   set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
   set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
   set(ASSIMP_NO_EXPORT ON CACHE BOOL "" FORCE)
 
   FetchContent_MakeAvailable(assimp)
 endif()
+
+FetchContent_Declare(
+  imgui
+  GIT_REPOSITORY https://github.com/ocornut/imgui.git
+  GIT_TAG v1.91.5
+)
+
+FetchContent_MakeAvailable(imgui)
+
+# ImGui ships no CMake for the core library, so build it explicitly with the
+# SDL2 + fixed-function OpenGL2 backends (matches our GL 2.1 compat profile).
+add_library(imgui STATIC
+  "${imgui_SOURCE_DIR}/imgui.cpp"
+  "${imgui_SOURCE_DIR}/imgui_draw.cpp"
+  "${imgui_SOURCE_DIR}/imgui_tables.cpp"
+  "${imgui_SOURCE_DIR}/imgui_widgets.cpp"
+  "${imgui_SOURCE_DIR}/imgui_demo.cpp"
+  "${imgui_SOURCE_DIR}/backends/imgui_impl_sdl2.cpp"
+  "${imgui_SOURCE_DIR}/backends/imgui_impl_opengl2.cpp"
+)
+
+target_include_directories(imgui PUBLIC
+  "${imgui_SOURCE_DIR}"
+  "${imgui_SOURCE_DIR}/backends"
+)
+
+target_link_libraries(imgui PUBLIC
+  SDL2::SDL2
+  OpenGL::GL
+)
 
 
 file(GLOB_RECURSE OME_SOURCES
@@ -105,6 +135,7 @@ target_link_libraries(ome PUBLIC
   glm::glm
   Boost::mp11
   assimp::assimp
+  imgui
 )
 
 file(GLOB_RECURSE GAME_SOURCES

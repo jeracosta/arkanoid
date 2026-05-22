@@ -9,6 +9,9 @@
 
 namespace ome {
 
+// Owns the ImGui context/backends; needs the raw SDL window and GL context.
+class DebugUi; // forward declaration
+
 struct WindowResized
 {
     Vec2u new_size;
@@ -27,6 +30,9 @@ class Window : EventBus<WindowResized>, public ome::sdl::EventHandler
   private:
     SDL_Window   *window_;
     SDL_GLContext gl_context_;
+
+    // DebugUi initializes the ImGui SDL2/OpenGL2 backends from these handles.
+    friend class DebugUi;
 
     void
     resize_viewport_(Vec2u new_size)
@@ -72,20 +78,18 @@ class Window : EventBus<WindowResized>, public ome::sdl::EventHandler
 
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
-        SDL_SetRelativeMouseMode(SDL_TRUE);
+        set_relative_mouse_mode(true);
         SDL_GL_SetSwapInterval(1);
     }
 
     Window(const Window &) = delete;
 
     Window &
-    operator=(const Window &)
-        = delete;
+    operator=(const Window &) = delete;
 
     Window(Window &&) = default;
     Window &
-    operator=(Window &&)
-        = default;
+    operator=(Window &&) = default;
 
     ~Window()
     {
@@ -116,10 +120,28 @@ class Window : EventBus<WindowResized>, public ome::sdl::EventHandler
     }
 
     void
+    set_fullscreen(bool enabled)
+    {
+        auto flag = enabled ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0;
+        SDL_SetWindowFullscreen(window_, flag);
+    }
+
+    void
     toggle_fullscreen()
     {
-        auto flag = is_fullscreen() ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
-        SDL_SetWindowFullscreen(window_, flag);
+        set_fullscreen(!is_fullscreen());
+    }
+
+    bool
+    is_relative_mouse_mode() const
+    {
+        return SDL_GetRelativeMouseMode() == SDL_TRUE;
+    }
+
+    void
+    set_relative_mouse_mode(bool enabled)
+    {
+        SDL_SetRelativeMouseMode(enabled ? SDL_TRUE : SDL_FALSE);
     }
 
     friend void

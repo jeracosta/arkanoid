@@ -1,6 +1,8 @@
 #include "oh-my-engine/texture.hpp"
 
 #include <GL/glu.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <cstring>
 #include <ranges>

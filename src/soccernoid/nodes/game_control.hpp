@@ -1,0 +1,46 @@
+#pragma once
+
+#include <format>
+
+#include "soccernoid/events.hpp"
+#include "soccernoid/nodes/soccernoid_node.hpp"
+
+namespace soccernoid {
+
+// Tracks game-wide state.
+class GameControlNode : public SoccernoidNode<>
+{
+  private:
+    int projectile_count_ = 0;
+
+    void
+    on_projectile_spawned_(const ProjectileSpawned &)
+    {
+        ++projectile_count_;
+        log(std::format("Projectile spawned (live: {})", projectile_count_));
+    }
+
+    void
+    on_projectile_despawned_(const ProjectileDespawned &)
+    {
+        --projectile_count_;
+        log(std::format("Projectile despawned (live: {})", projectile_count_));
+
+        if (projectile_count_ == 0)
+        {
+            log("No projectiles left — player defeated");
+            game()->events.emit(PlayerDefeated{});
+        }
+    }
+
+  public:
+    void
+    on_mount_() override
+    {
+        auto &events = game()->events;
+        hold(events.bind(&GameControlNode::on_projectile_spawned_, this));
+        hold(events.bind(&GameControlNode::on_projectile_despawned_, this));
+    }
+};
+
+} // namespace soccernoid

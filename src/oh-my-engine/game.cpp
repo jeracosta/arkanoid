@@ -36,7 +36,7 @@ Game::Enviroment::instance()
     }
     else
     {
-        // note: std::make_shared can't used because Enviroment constructor is private.
+        // note: std::make_shared can't be used if Enviroment constructor is private.
         auto new_enviroment = std::shared_ptr<Enviroment>(new Enviroment{});
         enviroment          = new_enviroment;
         return new_enviroment;
@@ -53,6 +53,19 @@ Game::Game(const Configuration &config)
       window(config.window),
       camera(config.camera)
 {
+}
+
+Game::~Game()
+{
+    // Shut ImGui down while the SDL GL context (owned by `window`) is alive.
+    debug_ui_.reset();
+}
+
+void
+Game::initialize_()
+{
+    debug_ui_.emplace(window);
+
     if (config_.make_logger)
     {
         logger_ = config_.make_logger();
@@ -116,8 +129,6 @@ Game::Game(const Configuration &config)
     }
 }
 
-Game::~Game() = default;
-
 void
 Game::mount_(std::shared_ptr<Node> node_owner)
 {
@@ -137,6 +148,8 @@ Game::mount_(std::shared_ptr<Node> node_owner)
 void
 Game::run_()
 {
+    initialize_();
+
     running_ = true;
 
     while (running_)
@@ -144,6 +157,8 @@ Game::run_()
         time.update_();
 
         process_sdl_events_();
+
+        debug_ui_->begin_frame();
 
         config_.on_update ? config_.on_update(*this) : void();
 
@@ -179,6 +194,8 @@ Game::run_()
 
         resolve_tasks_();
 
+        debug_ui_->end_frame();
+
         SDL_GL_SwapWindow(window);
 
         frame_count_++;
@@ -196,7 +213,7 @@ Game::process_sdl_events_()
             running_ = false;
         }
 
-        event | input | window; // piped to chain of handlers
+        event | *debug_ui_ | input | window; // piped to chain of handlers
     }
 }
 

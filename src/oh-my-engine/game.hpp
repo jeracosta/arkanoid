@@ -3,10 +3,12 @@
 #include <GL/gl.h>
 #include <SDL2/SDL.h>
 #include <memory>
+#include <optional>
 
 #include "camera.hpp"
 #include "collision_server.hpp"
 #include "color.hpp"
+#include "debug_ui.hpp"
 #include "input.hpp"
 #include "logger.hpp"
 #include "time.hpp"
@@ -72,11 +74,15 @@ class Game : public EventConnectionHolder
         std::function<void(Game &)> on_update = {};
     };
 
-    ~Game();
+    virtual ~Game();
 
     // #endregion
 
-    // #region Lifecycle management
+  protected:
+    Game(const Configuration &config);
+
+    void
+    run_();
 
   private:
     Configuration                      config_;
@@ -86,22 +92,19 @@ class Game : public EventConnectionHolder
     std::shared_ptr<Node>              root_node_;
     std::vector<std::function<void()>> tasks_;
     std::unique_ptr<Logger>            logger_;
-
-    Game(const Configuration &config);
+    std::optional<DebugUi>             debug_ui_;
 
     void
     mount_(std::shared_ptr<Node> node);
 
     void
-    run_();
+    initialize_();
 
     void
     on_projection_update_(const ProjectionUpdated &projection);
 
     void
     on_window_resize_(const WindowResized &projection);
-
-    // #endregion
 
     void
     resolve_tasks_();

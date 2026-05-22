@@ -1,20 +1,27 @@
 #include "oh-my-engine/input.hpp"
-#include "oh-my-engine/node.hpp"
 #include "soccernoid/input.hpp"
+#include "soccernoid/nodes/soccernoid_node.hpp"
+#include "soccernoid/settings.hpp"
 
 namespace soccernoid {
 
-class WindowControlNode : public ome::Node
+class WindowControlNode : public SoccernoidNode<>
 {
   private:
+    using Fullscreen = settings::window::Fullscreen;
+
     void
     on_mount_() override
     {
         auto bind = [&](auto action, auto callback) { hold(game()->input.bind(action, callback)); };
 
-        bind(Action::ToggleFullscreen, [&] { game()->window.toggle_fullscreen(); });
+        bind(Action::ToggleFullscreen,
+             [&] { game()->settings.set<Fullscreen>(!game()->settings.get<Fullscreen>()); });
 
         bind(Action::Quit, [&] { game()->stop(); });
+
+        hold(game()->settings.bind([this](const Fullscreen &fullscreen)
+        { game()->window.set_fullscreen(fullscreen); }));
     }
 };
 

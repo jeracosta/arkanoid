@@ -44,3 +44,7 @@ practicos/
 
 # Open-code files
 .sisyphus/
+
+# Claude files
+.CLAUDE
+CLAUDE.md

@@ -1,14 +1,17 @@
 #include "oh-my-engine/curve.hpp"
-#include "oh-my-engine/game.hpp"
 #include "oh-my-engine/interpolation.hpp"
-#include "oh-my-engine/node.hpp"
 #include "soccernoid/input.hpp"
+#include "soccernoid/nodes/soccernoid_node.hpp"
+#include "soccernoid/settings.hpp"
 
 namespace soccernoid {
 
-class TimeSpeedNode : public ome::Node
+class TimeSpeedNode : public SoccernoidNode<>
 {
   private:
+    using Paused = settings::time::Paused;
+    using Speed  = settings::time::Speed;
+
     float scaling_factor_ = 1.1f;
 
     std::shared_ptr<ome::Interpolation<float>> speed_curve_
@@ -19,19 +22,34 @@ class TimeSpeedNode : public ome::Node
     void
     speed_by_(float factor_)
     {
-        auto speed = speed_curve_->to() * factor_;
-
-        speed_curve_->to(speed);
-
-        log(std::format("Time speed: {}", speed));
+        game()->settings.set<Speed>(game()->settings.get<Speed>().value * factor_);
     }
 
     void
-    on_toggle_pause_()
+    set_speed_(Speed speed)
     {
+        speed_curve_->to(speed.value);
+
+        log(std::format("Time speed: {}", speed.value));
+    }
+
+    void
+    set_paused_(Paused paused)
+    {
+        if (speed_interpolation_.is_reversed() == static_cast<bool>(paused))
+        {
+            return;
+        }
+
         speed_interpolation_.reverse();
 
-        log(speed_interpolation_.is_reversed() ? "Paused" : "Resumed");
+        // Pause snaps to 0 instantly; unpause keeps the curve and ramps back up.
+        if (paused)
+        {
+            speed_interpolation_.complete();
+        }
+
+        log(paused ? "Paused" : "Resumed");
     }
 
   public:
@@ -41,7 +59,12 @@ class TimeSpeedNode : public ome::Node
         hold(game()->input.bind(Action::TimeSpeedUp, [&] { speed_by_(scaling_factor_); }));
         hold(game()->input.bind(Action::TimeSpeedDown, [&] { speed_by_(1.0f / scaling_factor_); }));
 
-        hold(game()->input.bind(Action::TogglePause, [&] { on_toggle_pause_(); }));
+        hold(game()->input.bind(Action::TogglePause, [&] {
+            game()->settings.set<Paused>(!game()->settings.get<Paused>());
+        }));
+
+        hold(game()->settings.bind([this](const Paused &paused) { set_paused_(paused); }));
+        hold(game()->settings.bind([this](const Speed &speed) { set_speed_(speed); }));
     }
 
     void

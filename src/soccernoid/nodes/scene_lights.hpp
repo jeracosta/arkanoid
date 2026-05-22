@@ -23,7 +23,7 @@ class SceneLightsNode : public ome::Node
         sun.color.diffuse  = ome::Color::rgb(0.9f, 0.9f, 0.85f);
         sun.color.specular = ome::Color::rgb(1.0f, 1.0f, 1.0f);
 
-        auto sun_node = std::make_shared<ome::LightNode>(sun);
+        auto sun_node = std::make_shared<ome::LightNode<ome::DirectionalLight>>(sun);
 
         auto fill           = ome::DirectionalLight{};
         fill.direction      = ome::Vec3f{ 0.5f, -0.2f, 0.8f };
@@ -31,7 +31,7 @@ class SceneLightsNode : public ome::Node
         fill.color.diffuse  = ome::Color::rgb(0.3f, 0.35f, 0.4f);
         fill.color.specular = ome::Color::rgb(0.0f, 0.0f, 0.0f);
 
-        auto fill_node = std::make_shared<ome::LightNode>(fill);
+        auto fill_node = std::make_shared<ome::LightNode<ome::DirectionalLight>>(fill);
 
         add_child(sun_node);
         add_child(fill_node);

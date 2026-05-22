@@ -3,6 +3,7 @@
 #include <filesystem>
 
 #include "oh-my-engine/color.hpp"
+#include "oh-my-engine/math/vector.hpp"
 #include "oh-my-engine/texture.hpp"
 
 namespace soccernoid {
@@ -11,11 +12,21 @@ static constexpr float gravity_strength = 9.81f;
 
 static constexpr float despawn_distance = 60.0f;
 
+// Play area half-extent on the x/z axes. Lateral and forward boundaries are
+// at |x| = map_half_extent and z = -map_half_extent. The +z side (behind the
+// player) is left open so projectiles can fall out of play.
+static constexpr float map_half_extent = 5.0f;
+static constexpr float wall_thickness  = 1.0f;
+static constexpr float wall_height     = 6.0f;
+
 static constexpr struct
 {
     float start = 25.0f;
     float end   = 50.0f;
 } fog;
+
+/** World-space spawn for the wizard goalkeeper under Level. */
+inline constexpr ome::Vec3f wizard_spawn_position{ 0.0f, 1.15f, -4.0f };
 
 struct ColorPalette
 {
@@ -68,6 +79,8 @@ struct FilesystemPaths
         = executable / SOCCERNOID_ASSETS_DIRECTORY_RELATIVE_PATH;
 
     inline static const std::filesystem::path textures = assets / "textures";
+
+    inline static const std::filesystem::path meshes = assets / "meshes";
 };
 
 struct TexturePalette
@@ -168,6 +181,7 @@ struct TexturePalette
 
     Item          dirt;
     Item          floor;
+    Item          wall;
     Item          snail;
     SkyboxPalette skybox;
 };
@@ -175,6 +189,7 @@ struct TexturePalette
 static const inline TexturePalette textures = {
     .dirt = { "dirt.png" },
     .floor = { "floor.jpg" },
+    .wall = { "wall.jpg" },
     .snail = { "snail.webp" },
     .skybox = { //TODO: Generate faces from cubemap
         .ablaze = TexturePalette::SkyboxFaces::from_directory("skybox/ablaze"),

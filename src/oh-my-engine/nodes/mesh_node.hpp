@@ -18,6 +18,20 @@ class MeshNode : public TransformNode
     {
     }
 
+    template <typename F>
+    void
+    update_mesh(const F &&function)
+    {
+        function(mesh_);
+    }
+
+    template <typename F>
+    void
+    update_material(const F &&function)
+    {
+        function(material_);
+    }
+
     void
     on_render_(RenderFrame &frame) override
     {

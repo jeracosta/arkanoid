@@ -19,9 +19,11 @@ class FireNode : public ome::TransformNode
         void
         update_light_()
         {
-            light_.constant_attenuation  = 1.0f;
-            light_.linear_attenuation    = 0.06f;
-            light_.quadratic_attenuation = 0.12f;
+            light_.attenuation = {
+                .constant  = 1.0f,
+                .linear    = 0.06f,
+                .quadratic = 0.12f,
+            };
 
             constexpr auto flicker_depth = 0.5f; // %
 

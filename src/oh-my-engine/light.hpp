@@ -15,6 +15,13 @@ struct LightColor
     Color specular = Color::rgb(1.0f, 1.0f, 1.0f);
 };
 
+struct LightAttenuation
+{
+    float constant  = 1.0f;
+    float linear    = 0.0f;
+    float quadratic = 0.0f;
+};
+
 struct DirectionalLight
 {
     LightColor color;
@@ -24,28 +31,22 @@ struct DirectionalLight
 
 struct PointLight
 {
-    LightColor color;
+    LightColor       color;
+    LightAttenuation attenuation;
 
     Vec3f position{ 0.0f, 0.0f, 0.0f };
-
-    float constant_attenuation  = 1.0f;
-    float linear_attenuation    = 0.0f;
-    float quadratic_attenuation = 0.0f;
 };
 
 struct SpotLight
 {
-    LightColor color;
+    LightColor       color;
+    LightAttenuation attenuation;
 
     Vec3f position{ 0.0f, 0.0f, 0.0f };
     Vec3f direction{ 0.0f, -1.0f, 0.0f };
 
     float cutoff_angle = 45.0f;
     float exponent     = 0.0f;
-
-    float constant_attenuation  = 1.0f;
-    float linear_attenuation    = 0.0f;
-    float quadratic_attenuation = 0.0f;
 };
 
 using Light = std::variant<DirectionalLight, PointLight, SpotLight>;

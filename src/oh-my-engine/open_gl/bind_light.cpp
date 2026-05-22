@@ -36,9 +36,9 @@ bind(const PointLight &light, GLenum slot)
     glLightfv(slot, GL_DIFFUSE, diffuse.data());
     glLightfv(slot, GL_SPECULAR, specular.data());
 
-    glLightf(slot, GL_CONSTANT_ATTENUATION, light.constant_attenuation);
-    glLightf(slot, GL_LINEAR_ATTENUATION, light.linear_attenuation);
-    glLightf(slot, GL_QUADRATIC_ATTENUATION, light.quadratic_attenuation);
+    glLightf(slot, GL_CONSTANT_ATTENUATION, light.attenuation.constant);
+    glLightf(slot, GL_LINEAR_ATTENUATION, light.attenuation.linear);
+    glLightf(slot, GL_QUADRATIC_ATTENUATION, light.attenuation.quadratic);
 }
 
 void
@@ -61,9 +61,9 @@ bind(const SpotLight &light, GLenum slot)
     glLightf(slot, GL_SPOT_CUTOFF, light.cutoff_angle);
     glLightf(slot, GL_SPOT_EXPONENT, light.exponent);
 
-    glLightf(slot, GL_CONSTANT_ATTENUATION, light.constant_attenuation);
-    glLightf(slot, GL_LINEAR_ATTENUATION, light.linear_attenuation);
-    glLightf(slot, GL_QUADRATIC_ATTENUATION, light.quadratic_attenuation);
+    glLightf(slot, GL_CONSTANT_ATTENUATION, light.attenuation.constant);
+    glLightf(slot, GL_LINEAR_ATTENUATION, light.attenuation.linear);
+    glLightf(slot, GL_QUADRATIC_ATTENUATION, light.attenuation.quadratic);
 }
 
 } // namespace ome::open_gl

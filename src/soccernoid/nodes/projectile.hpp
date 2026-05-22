@@ -92,10 +92,11 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
                 .diffuse  = ome::Color::rgb(0.4f, 1.0f, 0.5f),
                 .specular = ome::Color::rgb(0.1f, 1.0f, 0.2f),
             },
-
-            .constant_attenuation  = 0.00f,
-            .linear_attenuation    = 0.00f,
-            .quadratic_attenuation = 0.50f,
+            .attenuation = {
+                .constant  = 0.00f,
+                .linear    = 0.00f,
+                .quadratic = 0.50f,
+            }
         };
 
         LightNode_()

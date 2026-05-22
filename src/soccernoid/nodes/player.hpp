@@ -4,40 +4,18 @@
 #include <GL/glu.h>
 #include <algorithm>
 #include <cmath>
-#include <exception>
 #include <filesystem>
 #include <format>
 #include <memory>
-#include <optional>
 
 #include "oh-my-engine/constants.hpp"
-#include "oh-my-engine/material.hpp"
-#include "oh-my-engine/mesh.hpp"
+#include "oh-my-engine/nodes/hitbox_node.hpp"
 #include "oh-my-engine/nodes/kinematic_node.hpp"
 #include "oh-my-engine/open_gl/render_quad.hpp"
 #include "oh-my-engine/render_frame.hpp"
-#include "oh-my-engine/texture.hpp"
 #include "soccernoid/constants.hpp"
 #include "soccernoid/input.hpp"
 #include "soccernoid/nodes/projectile.hpp"
-
-namespace {
-
-struct DragonPlayerDrawSlot
-{
-    bool                       tried_load = false;
-    std::shared_ptr<ome::Mesh> mesh{};
-    ome::Material              material;
-};
-
-inline DragonPlayerDrawSlot &
-dragon_player_slot()
-{
-    static DragonPlayerDrawSlot slot;
-    return slot;
-}
-
-} // namespace
 
 namespace soccernoid {
 
@@ -62,6 +40,46 @@ class PlayerNode : public ome::KinematicNode
     };
 
   private:
+    static auto
+    mesh_() -> std::shared_ptr<ome::Mesh>
+    {
+        static auto mesh = [] {
+            auto m = static_cast<std::shared_ptr<ome::Mesh>>(meshes.dragon);
+            m->recenter();
+            constexpr float target_extent = 2.5f;
+            auto            sz            = m->size();
+            float           max_dim       = std::max({ sz[0], sz[1], sz[2] });
+            m->resize(sz * (target_extent / max_dim));
+            return m;
+        }();
+        return mesh;
+    }
+
+    static auto
+    material_() -> ome::Material
+    {
+        static auto mat = [] {
+            auto m = ome::Material{};
+            for (auto candidate : {
+                     FilesystemPaths::textures / "dragon_texture.png",
+                     FilesystemPaths::textures / "dragon.png",
+                 })
+            {
+                if (!std::filesystem::exists(candidate))
+                {
+                    continue;
+                }
+                auto tex = ome::Texture::load(candidate);
+                tex->set_wrap({ GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE });
+                tex->set_filters(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+                m.texture = std::move(tex);
+                break;
+            }
+            return m;
+        }();
+        return mat;
+    }
+
     static constexpr float player_radius_ = 0.2f;
 
     Configuration config_;
@@ -192,67 +210,9 @@ class PlayerNode : public ome::KinematicNode
     };
 
     void
-    ensure_dragon_mesh_loaded_()
-    {
-        auto &dr = dragon_player_slot();
-
-        if (dr.tried_load)
-        {
-            return;
-        }
-
-        dr.tried_load = true;
-
-        try
-        {
-            dr.mesh = static_cast<std::shared_ptr<ome::Mesh>>(meshes.dragon);
-            dr.mesh->recenter();
-
-            {
-                constexpr float target_extent = 2.5f;
-                auto            sz            = dr.mesh->size();
-                float           max_dim       = std::max({ sz[0], sz[1], sz[2] });
-                dr.mesh->resize(sz * (target_extent / max_dim));
-            }
-
-            std::filesystem::path texture_png;
-            for (auto candidate : {
-                     FilesystemPaths::textures / "dragon_texture.png",
-                     FilesystemPaths::textures / "dragon.png",
-                 })
-            {
-                if (std::filesystem::exists(candidate))
-                {
-                    texture_png = std::move(candidate);
-                    break;
-                }
-            }
-
-            if (!texture_png.empty())
-            {
-                auto tex = ome::Texture::load(texture_png);
-                tex->set_wrap({ GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE });
-                tex->set_filters(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
-                dr.material.texture = std::move(tex);
-            }
-        }
-        catch (const std::exception &e)
-        {
-            dr.mesh.reset();
-            dr.material = {};
-
-            log(std::format("Failed loading dragon mesh: {}", e.what()));
-        }
-    }
-
-    void
     on_render_(ome::RenderFrame &frame) override
     {
-        ensure_dragon_mesh_loaded_();
-
-        auto &dr = dragon_player_slot();
-
-        if (dr.mesh)
+        if (auto dr_mesh = mesh_())
         {
             auto draw_tr = transform<ome::Space::World>();
 
@@ -261,8 +221,8 @@ class PlayerNode : public ome::KinematicNode
             draw_tr.orientation = draw_tr.orientation * face_align;
 
             frame.draw_commands.push_back(ome::DrawCommand{
-                .mesh      = dr.mesh,
-                .materials = { dr.material },
+                .mesh      = std::move(dr_mesh),
+                .materials = { material_() },
                 .transform = draw_tr,
             });
 
@@ -351,6 +311,8 @@ class PlayerNode : public ome::KinematicNode
     PlayerNode(const Configuration &config)
         : config_(config)
     {
+        auto sz = mesh_()->size();
+        emplace_child<ome::HitboxNode>(sz).rename("Hitbox");
         emplace_child<AimArrowNode>().rename("AimArrow");
     }
 
@@ -382,7 +344,6 @@ class PlayerNode : public ome::KinematicNode
     void
     on_mount_() override
     {
-        update_transform<ome::Space::Local>([&](auto &t) { t.position = ome::up * 1.5f; });
         log("Player mounted");
     }
 };

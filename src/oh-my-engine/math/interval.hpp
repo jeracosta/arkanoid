@@ -32,6 +32,13 @@ class Interval
         : min_(std::move(bounds.min)),
           max_(std::move(bounds.max))
     {
+        for (std::size_t i = 0; i < Dimension; ++i)
+        {
+            if (min_[i] > max_[i])
+            {
+                std::swap(min_[i], max_[i]);
+            }
+        }
     }
 
     // #region Factory methods

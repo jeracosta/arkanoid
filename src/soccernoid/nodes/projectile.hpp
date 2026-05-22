@@ -88,18 +88,18 @@ class ProjectileNode : public DistanceCulled<Falling<ome::KinematicNode>>
       public:
         static const inline auto light = ome::PointLight {
             .color = {
-                .ambient  = ome::Color::rgb(0.0f, 0.1f, 0.0f),
-                .diffuse  = ome::Color::rgb(0.5f, 2.5f, 0.5f),
-                .specular = ome::Color::rgb(0.5f, 2.5f, 0.5f),
+                .ambient  = ome::Color::rgb(0.0f, 0.0f, 0.0f),
+                .diffuse  = ome::Color::rgb(0.4f, 1.0f, 0.5f),
+                .specular = ome::Color::rgb(0.1f, 1.0f, 0.2f),
             },
 
-            .constant_attenuation  = 1.00f,
-            .linear_attenuation    = 0.06f,
-            .quadratic_attenuation = 0.15f,
+            .constant_attenuation  = 0.00f,
+            .linear_attenuation    = 0.00f,
+            .quadratic_attenuation = 0.50f,
         };
 
         LightNode_()
-            : ome::LightNode(light)
+            : ome::LightNode(light, 2)
         {
             position({ 0.0f, 0.05f, 0.0f });
         }

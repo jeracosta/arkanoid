@@ -14,7 +14,8 @@ namespace ome {
 class LightNode : public TransformNode
 {
   private:
-    Light light_;
+    Light       light_;
+    std::size_t instances_;
 
     Vec3f
     direction_()
@@ -29,8 +30,9 @@ class LightNode : public TransformNode
     }
 
   public:
-    explicit LightNode(Light light)
-        : light_(std::move(light))
+    explicit LightNode(Light light, std::size_t instances = 1)
+        : light_(std::move(light)),
+          instances_(instances)
     {
     }
 
@@ -64,7 +66,10 @@ class LightNode : public TransformNode
         },
             light_);
 
-        frame.lights.push_back(light_);
+        for (auto _ : std::views::iota(0u, instances_))
+        {
+            frame.lights.push_back(light_);
+        }
     }
 
     Light &

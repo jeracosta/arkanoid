@@ -172,7 +172,8 @@ Mesh::unit_quad()
                     .texture_coords = { 0.0f, 1.0f },
                 },
             },
-            .indices = { 0, 1, 2, 0, 2, 3 },
+            .indices        = { 0, 1, 2, 0, 2, 3 },
+            .material_index = 0,
         });
 
         Node root{ std::vector<std::size_t>{ 0 } };
@@ -212,9 +213,9 @@ Mesh::box(const Box &box, std::size_t subdivisions)
         auto const &c2 = face.corners[2];
         auto const &c3 = face.corners[3];
 
-        std::vector<Vertex>     vertices;
-        std::vector<unsigned>   indices;
-        float                   step = 1.0f / static_cast<float>(subdivisions);
+        std::vector<Vertex>   vertices;
+        std::vector<unsigned> indices;
+        float                 step = 1.0f / static_cast<float>(subdivisions);
 
         for (std::size_t j = 0; j <= subdivisions; ++j)
         {
@@ -248,8 +249,8 @@ Mesh::box(const Box &box, std::size_t subdivisions)
             }
         }
 
-        return Surface{ .vertices = std::move(vertices),
-                        .indices  = std::move(indices),
+        return Surface{ .vertices       = std::move(vertices),
+                        .indices        = std::move(indices),
                         .primitive_type = GL_QUADS };
     };
 
@@ -272,35 +273,42 @@ Mesh::box(const Box &box, std::size_t subdivisions)
 std::shared_ptr<Mesh>
 Mesh::quad(Vec3f a, Vec3f b, Vec3f c, Vec3f d)
 {
+    return std::make_shared<Mesh>(std::vector<Surface>{ Surface::quad(a, b, c, d) }, Node{ { 0 } });
+}
+
+Mesh::Surface
+Mesh::Surface::quad(Vec3f a, Vec3f b, Vec3f c, Vec3f d)
+{
     Vec3f normal = math::normalized(Vec3f{ glm::cross(glm::vec3(b - a), glm::vec3(d - a)) });
 
-    return std::make_shared<Mesh>(
-        std::vector<Surface>{
-            Surface{
-                .vertices = {
-                    { .position = a, .normal = normal, .texture_coords = { 0.0f, 0.0f } },
-                    { .position = b, .normal = normal, .texture_coords = { 1.0f, 0.0f } },
-                    { .position = c, .normal = normal, .texture_coords = { 1.0f, 1.0f } },
-                    { .position = d, .normal = normal, .texture_coords = { 0.0f, 1.0f } },
-                },
-                .indices        = { 0, 1, 2, 0, 2, 3 },
-                .primitive_type = GL_TRIANGLES,
-            },
+    return Surface{
+        .vertices = {
+            { .position = a, .normal = normal, .texture_coords = { 0.0f, 0.0f } },
+            { .position = b, .normal = normal, .texture_coords = { 1.0f, 0.0f } },
+            { .position = c, .normal = normal, .texture_coords = { 1.0f, 1.0f } },
+            { .position = d, .normal = normal, .texture_coords = { 0.0f, 1.0f } },
         },
-        Node{ { 0 } });
+        .indices        = { 0, 1, 2, 0, 2, 3 },
+        .primitive_type = GL_TRIANGLES,
+        .material_index = 0,
+    };
 }
 
 std::shared_ptr<Mesh>
 Mesh::billboard(Vec3f position, Vec2f size, const Camera &camera)
 {
+    return std::make_shared<Mesh>(std::vector<Surface>{ Surface::billboard(position, size, camera) },
+                                  Node{ { 0 } });
+}
+
+Mesh::Surface
+Mesh::Surface::billboard(Vec3f position, Vec2f size, const Camera &camera)
+{
     Vec3f right = camera.right() * (size[0] * 0.5f);
     Vec3f up    = camera.up() * (size[1] * 0.5f);
 
     return quad(
-        position - right - up,
-        position + right - up,
-        position + right + up,
-        position - right + up);
+        position - right - up, position + right - up, position + right + up, position - right + up);
 }
 
 std::shared_ptr<Mesh>
@@ -308,10 +316,10 @@ Mesh::pyramid(Vec3f apex, Vec3f direction, float height, Vec2f base_half_extents
 {
     direction = math::normalized(direction);
 
-    Vec3f ref       = std::abs(direction[0]) > 0.9f ? Vec3f{ 0, 1, 0 } : Vec3f{ 1, 0, 0 };
-    Vec3f right     = math::normalized(Vec3f{ glm::cross(glm::vec3(direction), glm::vec3(ref)) });
-    Vec3f forward   = Vec3f{ glm::cross(glm::vec3(direction), glm::vec3(right)) };
-    Vec3f base_ctr  = apex + direction * height;
+    Vec3f ref      = std::abs(direction[0]) > 0.9f ? Vec3f{ 0, 1, 0 } : Vec3f{ 1, 0, 0 };
+    Vec3f right    = math::normalized(Vec3f{ glm::cross(glm::vec3(direction), glm::vec3(ref)) });
+    Vec3f forward  = Vec3f{ glm::cross(glm::vec3(direction), glm::vec3(right)) };
+    Vec3f base_ctr = apex + direction * height;
 
     Vec3f c0 = base_ctr + right * base_half_extents[0] + forward * base_half_extents[1];
     Vec3f c1 = base_ctr - right * base_half_extents[0] + forward * base_half_extents[1];

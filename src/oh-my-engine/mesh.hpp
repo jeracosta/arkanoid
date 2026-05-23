@@ -40,6 +40,12 @@ class Mesh
         std::vector<unsigned int>  indices;
         GLenum                     primitive_type = GL_TRIANGLES;
         std::optional<std::size_t> material_index = std::nullopt;
+
+        static Surface
+        quad(Vec3f a, Vec3f b, Vec3f c, Vec3f d);
+
+        static Surface
+        billboard(Vec3f position, Vec2f size, const Camera &camera);
     };
 
     struct Node
@@ -128,8 +134,20 @@ class Mesh
         return primitives_;
     }
 
+    std::vector<Surface> &
+    surfaces() noexcept
+    {
+        return primitives_;
+    }
+
     const Surface &
     surface(std::size_t index) const
+    {
+        return primitives_.at(index);
+    }
+
+    Surface &
+    surface(std::size_t index)
     {
         return primitives_.at(index);
     }

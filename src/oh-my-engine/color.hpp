@@ -46,14 +46,14 @@ class Color
         return Color(v[0], v[1], v[2], v[3]);
     }
 
-    static Color
+    static constexpr Color
     rgba(float red, float green, float blue, float alpha)
     {
         auto cast = [](float x) { return static_cast<uint8_t>(x * 255.0f + 0.5f); };
         return Color(cast(red), cast(green), cast(blue), cast(alpha));
     }
 
-    static Color
+    static constexpr Color
     rgba(Vec4f v)
     {
         return rgba(v[0], v[1], v[2], v[3]);
@@ -77,13 +77,13 @@ class Color
         return Color(v[0], v[1], v[2], 255);
     }
 
-    static Color
+    static constexpr Color
     rgb(Vec3f v)
     {
         return rgba(Vec4f{ v[0], v[1], v[2], 1.0f });
     }
 
-    static Color
+    static constexpr Color
     rgb(float red, float green, float blue)
     {
         return rgba(red, green, blue, 1.0f);
@@ -100,45 +100,57 @@ class Color
         return rgb(red, green, blue);
     }
 
-    static Color
+    static constexpr Color
     hsv(float hue, float saturation, float value, float alpha = 1.0f)
     {
-        auto wrap = [](float x) { return x - std::floor(x / 360.0f) * 360.0f; };
-        float h   = wrap(hue) / 60.0f;
-        float c   = value * saturation;
-        float x   = c * (1.0f - std::abs(std::fmod(h, 2.0f) - 1.0f));
-        float m   = value - c;
+        auto  wrap = [](float x) { return x - std::floor(x / 360.0f) * 360.0f; };
+        float h    = wrap(hue) / 60.0f;
+        float c    = value * saturation;
+        float x    = c * (1.0f - std::abs(std::fmod(h, 2.0f) - 1.0f));
+        float m    = value - c;
 
         float r, g, b;
         if (h < 1.0f)
         {
-            r = c; g = x; b = 0.0f;
+            r = c;
+            g = x;
+            b = 0.0f;
         }
         else if (h < 2.0f)
         {
-            r = x; g = c; b = 0.0f;
+            r = x;
+            g = c;
+            b = 0.0f;
         }
         else if (h < 3.0f)
         {
-            r = 0.0f; g = c; b = x;
+            r = 0.0f;
+            g = c;
+            b = x;
         }
         else if (h < 4.0f)
         {
-            r = 0.0f; g = x; b = c;
+            r = 0.0f;
+            g = x;
+            b = c;
         }
         else if (h < 5.0f)
         {
-            r = x; g = 0.0f; b = c;
+            r = x;
+            g = 0.0f;
+            b = c;
         }
         else
         {
-            r = c; g = 0.0f; b = x;
+            r = c;
+            g = 0.0f;
+            b = x;
         }
 
         return rgba(r + m, g + m, b + m, alpha);
     }
 
-    static Color
+    static constexpr Color
     hsv(Vec3f v, float alpha = 1.0f)
     {
         return hsv(v[0], v[1], v[2], alpha);

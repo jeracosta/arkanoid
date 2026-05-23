@@ -14,7 +14,8 @@ namespace soccernoid {
 
 class ExplosiveBarrelNode : public ome::TransformNode
 {
-    class HitboxNode_ : public ome::HitboxNode
+  public:
+    class HitboxNode : public ome::HitboxNode
     {
         void
         on_collision_(ome::HitboxNode &other) override
@@ -25,7 +26,7 @@ class ExplosiveBarrelNode : public ome::TransformNode
                 return;
             }
 
-            projectile->update_kinematic([](auto &k) { k.velocity *= 1.5f; });
+            projectile->update_kinematic([](auto &k) { k.velocity *= 2.0f; });
 
             auto world_position = hitbox<ome::Space::World>().center();
 
@@ -37,12 +38,13 @@ class ExplosiveBarrelNode : public ome::TransformNode
         }
 
       public:
-        HitboxNode_(const ome::Vec3f &size, const ome::Vec3f &center)
+        HitboxNode(const ome::Vec3f &size, const ome::Vec3f &center)
             : ome::HitboxNode(size, center)
         {
         }
     };
 
+  private:
     ome::MeshNode *mesh_;
 
   public:
@@ -64,7 +66,7 @@ class ExplosiveBarrelNode : public ome::TransformNode
         mesh_ = &emplace_child<ome::MeshNode>(barrel_mesh, material);
         mesh_->position(offset).rename("BarrelMesh");
 
-        emplace_child<HitboxNode_>(size, center + offset).rename("BarrelHitbox");
+        emplace_child<HitboxNode>(size, center + offset).rename("BarrelHitbox");
     }
 };
 

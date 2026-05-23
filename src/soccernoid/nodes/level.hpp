@@ -4,24 +4,28 @@
 #include <vector>
 
 #include "oh-my-engine/constants.hpp"
+#include "oh-my-engine/material.hpp"
 #include "oh-my-engine/math/interval.hpp"
+#include "oh-my-engine/math/orientation.hpp"
 #include "oh-my-engine/node.hpp"
 #include "oh-my-engine/nodes/hitbox_node.hpp"
+#include "oh-my-engine/nodes/mesh_node.hpp"
+#include "oh-my-engine/texture.hpp"
 #include "soccernoid/constants.hpp"
 #include "soccernoid/events.hpp"
 #include "soccernoid/nodes/comet.hpp"
 #include "soccernoid/nodes/defeat_screen.hpp"
-#include "soccernoid/nodes/fire.hpp"
-#include "soccernoid/nodes/fbx_character.hpp"
+#include "soccernoid/nodes/map.hpp"
 #include "soccernoid/nodes/player.hpp"
-#include "soccernoid/nodes/soccernoid_node.hpp"
-#include "soccernoid/nodes/wizard_goalkeeper.hpp"
 #include "soccernoid/nodes/projectile.hpp"
 #include "soccernoid/nodes/scene_lights.hpp"
 #include "soccernoid/nodes/skybox.hpp"
 #include "soccernoid/nodes/snail.hpp"
+#include "soccernoid/nodes/spikes/test_explosion.hpp"
+#include "soccernoid/nodes/teapot.hpp"
 #include "soccernoid/nodes/terrain.hpp"
 #include "soccernoid/nodes/wall.hpp"
+#include "soccernoid/nodes/wizard_goalkeeper.hpp"
 
 namespace soccernoid {
 
@@ -59,9 +63,6 @@ class LevelNode : public SoccernoidNode<>
     void
     swap_to_(const Level &level)
     {
-        // We're in on_tick_ here, so the LevelNode is Mounted (not in
-        // transition). remove_child runs synchronously; the new children added
-        // by configure_ also mount synchronously.
         std::vector<std::string> names;
         for (auto *child : children())
         {
@@ -82,7 +83,7 @@ class LevelNode : public SoccernoidNode<>
     {
         configure_(standard_level_);
 
-        hold(game()->Events.bind([this](const PlayerDefeated &)
+        hold(game()->events.bind([this](const PlayerDefeated &)
         {
             if (is_defeated_)
             {
@@ -111,118 +112,42 @@ Level::standard()
 {
     return { [](LevelNode &level)
     {
-        level.emplace_child<SceneLightsNode>().rename("Lights");
-
         level.emplace_child<SkyboxNode>().rename("Skybox");
-
         level.emplace_child<CometNode>().rename("Comet");
 
-        level
-            .emplace_child<TerrainNode>(ome::Box::from_bounds(
-                ome::Vec3f{ -map_half_extent, -fog.end, -map_half_extent - wall_thickness },
-                ome::Vec3f{ map_half_extent, 0.0f, map_half_extent }))
-            .rename("Terreno");
+        level.emplace_child<spikes::TestExplosionNode>();
 
-        // Boundary walls on three sides: left, right, and forward (the side
-        // the player shoots toward). The +z side (behind the player) is left
-        // open so projectiles can fall out of play. The forward wall is wider
-        // than the play area to cap the corners of the lateral walls.
-        // Rendered as TerrainNode (textured + collidable) rather than a bare
-        // HitboxNode so they're visible.
+        level.emplace_child<MapNode>(MapNode::Configuration{
+            .column_count = 4,
+            .area         = { 6, 7 },
+        }).rename("Map");
+
+        // Teapot at forward side
         {
-            const float h = map_half_extent;
-            const float t = wall_thickness;
-            const float H = wall_height;
-            const float y = H * 0.5f;
+            constexpr float scale  = 0.5f;
+            auto            mesh   = static_cast<std::shared_ptr<ome::Mesh>>(meshes.teapot);
+            auto            size   = mesh->size();
+            auto            center = mesh->center();
 
-            level
-                .emplace_child<WallNode>(ome::Box::from_size_location(
-                    ome::Vec3f{ t, H, 2.0f * h }, ome::Vec3f{ -h - t / 2, y, 0 }))
-                .rename("WallLeft");
+            float teapot_y = scale * (size[1] / 2.0f - center[1] + 1.0f);
 
-            level
-                .emplace_child<WallNode>(ome::Box::from_size_location(
-                    ome::Vec3f{ t, H, 2.0f * h }, ome::Vec3f{ h + t / 2, y, 0 }))
-                .rename("WallRight");
+            float forward_local_x = size[0] / 2.0f + center[0];
+            float teapot_z        = -7.0f + 0.5f + scale * forward_local_x;
 
-            level
-                .emplace_child<WallNode>(ome::Box::from_size_location(
-                    ome::Vec3f{ 2.0f * h + 2.0f * t, H, t },
-                    ome::Vec3f{ 0, y, -h - t / 2 }))
-                .rename("WallForward");
+            auto orientation = ome::Orientation{}.steer_yaw(-std::numbers::pi_v<float> / 2);
+            level.emplace_child<TeapotNode>()
+                .scale({ scale })
+                .position({ 0.0f, teapot_y, teapot_z })
+                .orientation(orientation);
         }
 
-        level
-            .emplace_child<WizardGoalkeeperNode>(WizardGoalkeeperNode::Configuration{
-                .position = wizard_spawn_position,
-            })
-            .rename("Wizard");
+        // Player at backward border (centered)
+        constexpr float player_y = 1.5f;
+        level.emplace_child<PlayerNode>(PlayerNode::Configuration::make_harry())
+            .position({ 0.0f, player_y, 7.0f })
+            .rename("Harry");
 
-        {
-            constexpr float flank_x               = 1.2f;
-            constexpr float toward_pitch_z        = 0.45f;
-            constexpr float side_character_y       = 1.0f;
-            constexpr float side_character_size    = 2.5f;
-            constexpr float side_character_yaw_rad = ome::pi * 0.5f;
-            const auto     &wiz                    = wizard_spawn_position;
-
-            static const std::vector<std::filesystem::path> textures_g{
-                "texture-g.png",
-            };
-            static const std::vector<std::filesystem::path> textures_h{
-                "texture-h.png",
-            };
-
-            level
-                .emplace_child<FbxCharacterNode>(FbxCharacterNode::Configuration{
-                    .position          = { wiz[0] - flank_x, side_character_y, wiz[2] + toward_pitch_z },
-                    .mesh_relative     = std::filesystem::path{ "characters" } / "character-g.fbx",
-                    .textures_relative = textures_g,
-                    .normalize_extent  = side_character_size,
-                    .yaw_pi            = false,
-                    .extra_yaw_rad     = side_character_yaw_rad,
-                })
-                .rename("G");
-
-            level
-                .emplace_child<FbxCharacterNode>(FbxCharacterNode::Configuration{
-                    .position          = { wiz[0] + flank_x, side_character_y, wiz[2] + toward_pitch_z },
-                    .mesh_relative     = std::filesystem::path{ "characters" } / "character-h.fbx",
-                    .textures_relative = textures_h,
-                    .normalize_extent  = side_character_size,
-                    .yaw_pi            = false,
-                    .extra_yaw_rad     = side_character_yaw_rad,
-                })
-                .rename("H");
-        }
-
-        level.emplace_child<ProjectileNode>().rename("Projectile");
-
-        level.emplace_child<PlayerNode>(PlayerNode::Configuration::make_harry()).rename("Harry");
-
-        level.emplace_child<SnailNode>().position({ -3.0f, 1.0f, -3.0f }).rename("Snail");
-
-        static constexpr uint pilars         = 7;
-        static constexpr uint pilar_distance = 13;
-
-        for (uint i = 0; i < pilars; ++i)
-        {
-            float angle = (static_cast<float>(i) / pilars) * 2.0f * std::numbers::pi_v<float>;
-
-            float size = 1.0f;
-
-            auto location = ome::Vec3f{ std::cos(angle), 0.0f, std::sin(angle) };
-            location *= pilar_distance;
-            location[1] = -1.0f;
-
-            auto region = ome::Box::from_size_location(ome::Vec3f{ size, size, size }, location);
-
-            auto name = std::format("Pilar {}", i + 1);
-
-            auto &terrain = level.emplace_child<TerrainNode>(region).rename(name);
-
-            terrain.emplace_child<FireNode>().position(ome::up * size / 2).rename("Fire");
-        }
+        level.emplace_child<SnailNode>().position({ -3.0f, 0.0f, -3.0f }).rename("Snail");
     } };
 }
 

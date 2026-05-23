@@ -1,7 +1,6 @@
 #pragma once
 
-#include <cstdlib>
-#include <memory>
+#include <functional>
 
 #include "oh-my-engine/color.hpp"
 #include "oh-my-engine/light.hpp"
@@ -22,20 +21,38 @@ namespace soccernoid {
 
 class ProjectileNode : public SoccernoidNode<DistanceCulled<Falling<ome::KinematicNode>>>
 {
+  public:
+    struct Configuration
+    {
+        float radius;
+        float elasticity;
+        float speed_threshold;
+
+        std::function<ome::Vec3f(const ProjectileNode &)> force;
+
+        Configuration()
+            : radius(0.10f)
+            , elasticity(0.98f)
+            , speed_threshold(0.1f)
+        {
+        }
+    };
+
   private:
     using Base_ = SoccernoidNode<DistanceCulled<Falling<ome::KinematicNode>>>;
 
-    static constexpr float radius_          = 0.10f;
-    static constexpr float elasticity_      = 0.90f; // 1.0f = perfectly elastic, 0.0f = inelastic
-    static constexpr float speed_threshold_ = 0.1f;
+    Configuration config_;
 
     static constexpr ome::Vec3f spawn_position = { 0.0f, 7.0f, -3.0f };
 
     class HitboxNode_ : public ome::HitboxNode
     {
+        Configuration config_;
+
       public:
-        HitboxNode_()
-            : ome::HitboxNode(ome::Vec3f{ radius_ * 2, radius_ * 2, radius_ * 2 })
+        HitboxNode_(const Configuration &config)
+            : ome::HitboxNode(ome::Vec3f{ config.radius * 2, config.radius * 2, config.radius * 2 })
+            , config_(config)
         {
         }
 
@@ -71,13 +88,13 @@ class ProjectileNode : public SoccernoidNode<DistanceCulled<Falling<ome::Kinemat
                 auto normal_velocity = projection(kinematic.velocity, normal);
                 auto normal_speed    = norm(normal_velocity);
 
-                if (normal_speed < speed_threshold_)
+                if (normal_speed < config_.speed_threshold)
                 {
                     kinematic.velocity -= normal_velocity;
                 }
                 else
                 {
-                    kinematic.velocity -= (1.0f + elasticity_) * normal_velocity;
+                    kinematic.velocity -= (1.0f + config_.elasticity) * normal_velocity;
                 }
 
                 auto correction = normal * (overlap[penetration_axis] + epsilon);
@@ -88,28 +105,26 @@ class ProjectileNode : public SoccernoidNode<DistanceCulled<Falling<ome::Kinemat
         }
     };
 
-    // Point light parented to the projectile so a colored pool follows the ball (GL_LIGHT2).
-    class ProjectilePointLightNode_ : public ome::LightNode
+    class LightNode_ : public ome::LightNode<ome::PointLight>
     {
-      private:
-        static std::unique_ptr<ome::PointLight>
-        make_point_light_()
-        {
-            auto light = std::make_unique<ome::PointLight>(GL_LIGHT2);
-            light->ambient              = ome::Color::rgb(0.0f, 0.0f, 0.0f);
-            light->diffuse              = ome::Color::rgb(1.0f, 0.45f, 0.95f);
-            light->specular             = ome::Color::rgb(0.9f, 0.75f, 1.0f);
-            light->constant_attenuation = 1.0f;
-            light->linear_attenuation   = 0.12f;
-            light->quadratic_attenuation = 0.28f;
-            return light;
-        }
-
       public:
-        ProjectilePointLightNode_()
-            : ome::LightNode(make_point_light_())
+        static const inline auto light = ome::PointLight {
+            .color = {
+                .ambient  = ome::Color::rgb(0.0f, 0.0f, 0.0f),
+                .diffuse  = ome::Color::rgb(0.4f, 1.0f, 0.5f),
+                .specular = ome::Color::rgb(0.1f, 1.0f, 0.2f),
+            },
+            .attenuation = {
+                .constant  = 0.00f,
+                .linear    = 0.00f,
+                .quadratic = 0.50f,
+            }
+        };
+
+        LightNode_()
+            : ome::LightNode<ome::PointLight>(light, 2)
         {
-            update_transform<ome::Space::Local>([](auto &t) { t.position = { 0.0f, 0.2f, 0.0f }; });
+            position({ 0.0f, 0.05f, 0.0f });
         }
     };
 
@@ -157,8 +172,6 @@ class ProjectileNode : public SoccernoidNode<DistanceCulled<Falling<ome::Kinemat
             .color = ome::Interpolation{ ome::Color::white(), colors.projectile },
 
             .scale = ome::Interpolation{ 0.075f, 0.0f },
-
-            .blend_mode = ome::BlendMode::additive(),
         };
 
         static inline const ome::ParticleEmitterNode::Settings settings_ = {
@@ -174,33 +187,43 @@ class ProjectileNode : public SoccernoidNode<DistanceCulled<Falling<ome::Kinemat
     };
 
   public:
-    ProjectileNode()
+    ProjectileNode(Configuration config = {})
+        : config_(std::move(config))
     {
         update_transform<ome::Space::Local>([&](auto &t) { t.position = spawn_position; });
 
-        emplace_child<ProjectilePointLightNode_>().rename("GlowLight");
+        emplace_child<LightNode_>().rename("GlowLight");
         emplace_child<GlowParticlesNode_>().rename("GlowParticles");
         emplace_child<TraceParticlesNode_>().rename("TraceParticles");
-        emplace_child<HitboxNode_>().rename("Hitbox");
+        emplace_child<HitboxNode_>(config_).rename("Hitbox");
     }
 
     void
     on_tick_() override
     {
         Base_::on_tick_();
+
+        if (config_.force)
+        {
+            auto f = config_.force(*this);
+            update_kinematic<ome::Space::World>([&](auto &k)
+            {
+                k.velocity += f * game()->time.delta();
+            });
+        }
     }
 
     void
     on_mount_() override
     {
         Base_::on_mount_();
-        game()->Events.emit(ProjectileSpawned{});
+        game()->events.emit(ProjectileSpawned{});
     }
 
     void
     on_unmount_() override
     {
-        game()->Events.emit(ProjectileDespawned{});
+        game()->events.emit(ProjectileDespawned{});
         Base_::on_unmount_();
     }
 };

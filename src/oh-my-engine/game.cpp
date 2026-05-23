@@ -21,9 +21,8 @@ Game::Enviroment::Enviroment()
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, true);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 1);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 }
 
 std::shared_ptr<Game::Enviroment>
@@ -37,7 +36,7 @@ Game::Enviroment::instance()
     }
     else
     {
-        // note: std::make_shared can't used because Enviroment constructor is private.
+        // note: std::make_shared can't be used if Enviroment constructor is private.
         auto new_enviroment = std::shared_ptr<Enviroment>(new Enviroment{});
         enviroment          = new_enviroment;
         return new_enviroment;
@@ -59,20 +58,13 @@ Game::Game(const Configuration &config)
 Game::~Game()
 {
     // Shut ImGui down while the SDL GL context (owned by `window`) is alive.
-    debug_ui_.reset();
+    imgui_.reset();
 }
 
 void
 Game::initialize_()
 {
-    if (initialized_)
-    {
-        return;
-    }
-
-    initialized_ = true;
-
-    debug_ui_.emplace(window);
+    imgui_.emplace(window);
 
     if (config_.make_logger)
     {
@@ -154,10 +146,65 @@ Game::mount_(std::shared_ptr<Node> node_owner)
 }
 
 void
-Game::update_()
+Game::run_()
 {
-    time.update_();
+    initialize_();
 
+    running_ = true;
+
+    while (running_)
+    {
+        time.update_();
+
+        process_sdl_events_();
+
+        imgui_->begin_frame();
+
+        config_.on_update ? config_.on_update(*this) : void();
+
+        // Render and logic update are intertwined, as some nodes use OpenGL directly in on_tick_.
+        // TODO: Make all nodes render thru the render_to method, and extract a render_ method here.
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+
+        ome::open_gl::look_at(camera);
+
+        [[likely]]
+        if (root_node_)
+        {
+            visit_dfs(*root_node_, &Node::tick, [](Node &) {});
+        }
+
+        collision_server.process_collisions();
+
+        auto render_frame = RenderFrame{};
+
+        [[likely]]
+        if (root_node_)
+        {
+            visit_dfs(*root_node_,
+                      [&render_frame](Node &node) { node.render_to(render_frame); },
+                      [](Node &) {});
+        }
+
+        ome::open_gl::render(render_frame);
+
+        resolve_tasks_();
+
+        imgui_->end_frame();
+
+        SDL_GL_SwapWindow(window);
+
+        frame_count_++;
+    }
+}
+
+void
+Game::process_sdl_events_()
+{
     auto event = SDL_Event{};
     while (SDL_PollEvent(&event))
     {
@@ -166,40 +213,19 @@ Game::update_()
             running_ = false;
         }
 
-        event | *debug_ui_ | input | window; // piped to chain of handlers
+        event | *imgui_ | input | window; // piped to chain of handlers
     }
+}
 
-    debug_ui_->begin_frame();
-
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-
-    ome::open_gl::look_at(camera);
-
-    config_.on_update ? config_.on_update(*this) : void();
-
-    [[likely]]
-    if (root_node_)
-    {
-        visit_dfs(*root_node_, &Node::tick, [](Node &) {});
-    }
-
-    collision_server.process_collisions();
-
+void
+Game::resolve_tasks_()
+{
     for (auto &task : tasks_)
     {
         task();
     }
 
     tasks_.clear();
-
-    debug_ui_->end_frame();
-
-    SDL_GL_SwapWindow(window);
-
-    frame_count_++;
 }
 
 std::shared_ptr<Node>

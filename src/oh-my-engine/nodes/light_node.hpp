@@ -1,74 +1,82 @@
 #pragma once
 
-#include <memory>
+#include <type_traits>
 
 #include "oh-my-engine/constants.hpp"
 #include "oh-my-engine/light.hpp"
 #include "oh-my-engine/math/vector.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
+#include "oh-my-engine/render_frame.hpp"
 
 namespace ome {
 
-namespace light_node_detail {
-
-inline Vec3f
-unit_light_direction_from_transform(const TransformNode::Component &transform)
-{
-    auto v = transform.orientation * down;
-    const auto n = math::norm(v);
-    if (n < 1e-8f)
-    {
-        return down;
-    }
-    return v / n;
-}
-
-}
-
+template <std::convertible_to<Light> TLight>
 class LightNode : public TransformNode
 {
+  protected:
+    TLight light_;
+
   private:
-    std::unique_ptr<Light> light_;
+    std::size_t light_instances_;
+
+    Vec3f
+    direction_()
+    {
+        auto       dir  = transform<Space::World>().orientation * down;
+        const auto norm = math::norm(dir);
+        if (norm < 1e-8f)
+        {
+            return down;
+        }
+        return dir / norm;
+    }
 
   public:
-    explicit LightNode(std::unique_ptr<Light> light)
-        : light_(std::move(light))
+    explicit LightNode(TLight light = {}, std::size_t instances = 1)
+        : light_(std::move(light)),
+          light_instances_(instances)
     {
     }
 
     void
-    on_tick_() override
+    on_render_(RenderFrame &frame) override
     {
         const auto world = transform<Space::World>();
 
-        if (auto *point = dynamic_cast<PointLight *>(light_.get()))
+        if constexpr (std::is_same_v<TLight, PointLight>)
         {
-            point->position = world.position;
+            light_.position = world.position;
         }
-        else if (auto *spot = dynamic_cast<SpotLight *>(light_.get()))
+        else if constexpr (std::is_same_v<TLight, SpotLight>)
         {
-            spot->position  = world.position;
-            spot->direction = light_node_detail::unit_light_direction_from_transform(world);
+            light_.position  = world.position;
+            light_.direction = direction_();
         }
-        else if (auto *dir = dynamic_cast<DirectionalLight *>(light_.get()))
+        else if constexpr (std::is_same_v<TLight, DirectionalLight>)
         {
-            dir->direction = light_node_detail::unit_light_direction_from_transform(world);
+            light_.direction = world.orientation * light_.direction;
+            const auto norm  = math::norm(light_.direction);
+            if (norm > 1e-8f)
+            {
+                light_.direction /= norm;
+            }
+        }
+        else
+        {
+            static_assert(!"Unsupported light type");
         }
 
-        light_->apply();
+        for (auto _ : std::views::iota(0u, light_instances_))
+        {
+            frame.lights.push_back(light_);
+        }
     }
 
-    Light *
-    light()
-    {
-        return light_.get();
-    }
-
-    const Light *
+    const Light &
     light() const
     {
-        return light_.get();
+        return light_;
     }
 };
 
-}
+} // namespace ome

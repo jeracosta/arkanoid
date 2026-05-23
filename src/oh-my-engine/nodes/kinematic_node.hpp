@@ -56,13 +56,13 @@ class KinematicNode : public TransformNode
         }
     }
 
-    template <Space space = Space::Local>
+    template <Space space = Space::Local, typename F>
     void
-    update_kinematic(const std::function<void(Component &)> &fn)
+    update_kinematic(const F &&function)
     {
         if constexpr (space == Space::Local)
         {
-            fn(kinematic_);
+            function(kinematic_);
         }
         else
         {
@@ -72,7 +72,7 @@ class KinematicNode : public TransformNode
             world.velocity         = world_orient * kinematic_.velocity;
             world.angular_velocity = world_orient * kinematic_.angular_velocity;
 
-            fn(world);
+            function(world);
 
             auto inv_rot                = inverse_of(world_orient);
             kinematic_.velocity         = inv_rot * world.velocity;

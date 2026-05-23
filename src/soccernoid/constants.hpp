@@ -4,6 +4,7 @@
 
 #include "oh-my-engine/color.hpp"
 #include "oh-my-engine/math/vector.hpp"
+#include "oh-my-engine/mesh.hpp"
 #include "oh-my-engine/texture.hpp"
 
 namespace soccernoid {
@@ -11,13 +12,6 @@ namespace soccernoid {
 static constexpr float gravity_strength = 9.81f;
 
 static constexpr float despawn_distance = 60.0f;
-
-// Play area half-extent on the x/z axes. Lateral and forward boundaries are
-// at |x| = map_half_extent and z = -map_half_extent. The +z side (behind the
-// player) is left open so projectiles can fall out of play.
-static constexpr float map_half_extent = 5.0f;
-static constexpr float wall_thickness  = 1.0f;
-static constexpr float wall_height     = 6.0f;
 
 static constexpr struct
 {
@@ -179,6 +173,7 @@ struct TexturePalette
         SkyboxFaces space2;
     };
 
+    Item          column;
     Item          dirt;
     Item          floor;
     Item          wall;
@@ -187,6 +182,7 @@ struct TexturePalette
 };
 
 static const inline TexturePalette textures = {
+    .column = { "column.tga.png" },
     .dirt = { "dirt.png" },
     .floor = { "floor.jpg" },
     .wall = { "wall.jpg" },
@@ -203,4 +199,62 @@ static const inline TexturePalette textures = {
     },
 };
 
-}; // namespace soccernoid
+struct MeshPalette
+{
+    class Item
+    {
+      private:
+        std::filesystem::path              file_name_;
+        mutable std::shared_ptr<ome::Mesh> mesh_;
+
+        std::shared_ptr<ome::Mesh>
+        load_() const
+        {
+            if (!mesh_)
+            {
+                mesh_ = ome::Mesh::load(FilesystemPaths::meshes / file_name_);
+            }
+            return mesh_;
+        }
+
+      public:
+        Item(std::filesystem::path file_name)
+            : file_name_(std::move(file_name))
+        {
+        }
+
+        ome::Mesh &
+        get() const
+        {
+            return *load_();
+        }
+
+        operator const ome::Mesh &() const
+        {
+            return get();
+        }
+
+        operator std::shared_ptr<ome::Mesh>() const
+        {
+            return load_();
+        }
+    };
+
+    Item characters_g;
+    Item characters_h;
+    Item column;
+    Item dragon;
+    Item wizard;
+    Item teapot;
+};
+
+static const inline MeshPalette meshes = {
+    .characters_g = { "characters/character-g.fbx" },
+    .characters_h = { "characters/character-h.fbx" },
+    .column       = { "column.fbx" },
+    .dragon       = { "dragon/Dragon.fbx" },
+    .wizard       = { "wizard/PolyArtWizardMesh.fbx" },
+    .teapot       = { "teapot/teapot.obj" },
+};
+
+} // namespace soccernoid

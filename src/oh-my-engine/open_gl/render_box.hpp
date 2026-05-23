@@ -1,5 +1,6 @@
 #pragma once
 
+#include <GL/gl.h>
 #include <algorithm>
 
 #include "oh-my-engine/math/interval.hpp"
@@ -29,9 +30,9 @@ struct BoxRenderTask
     void
     operator()() const
     {
-        const auto         bounds = world_region.bounds();
-        const auto        &mn     = bounds.min;
-        const auto        &mx     = bounds.max;
+        const auto  bounds = world_region.bounds();
+        const auto &mn     = bounds.min;
+        const auto &mx     = bounds.max;
 
         const GLint prev_env_mode = []
         {
@@ -47,7 +48,7 @@ struct BoxRenderTask
                              math::Vector<3> d,
                              math::Vector<3> normal)
         {
-            open_gl::glBindTexture(*sprite.texture);
+            ::glBindTexture(GL_TEXTURE_2D, sprite.texture->id());
 
             const auto &uv0 = sprite.uv_region.min();
             const auto &uv1 = sprite.uv_region.max();
@@ -107,7 +108,7 @@ struct BoxRenderTask
             const int sx = (std::max)(1, top_subdiv_x);
             const int sz = (std::max)(1, top_subdiv_z);
 
-            open_gl::glBindTexture(*sprites.top.texture);
+            ::glBindTexture(GL_TEXTURE_2D, sprites.top.texture->id());
 
             const auto &uv0 = sprites.top.uv_region.min();
             const auto &uv1 = sprites.top.uv_region.max();
@@ -135,9 +136,7 @@ struct BoxRenderTask
                     const float u1 = uv0[0] + s1 * (uv1[0] - uv0[0]);
 
                     const auto v_for_z = [&](float z)
-                    {
-                        return uv0[1] + ((mx[2] - z) / z_extent) * (uv1[1] - uv0[1]);
-                    };
+                    { return uv0[1] + ((mx[2] - z) / z_extent) * (uv1[1] - uv0[1]); };
 
                     const float v0 = v_for_z(z0);
                     const float v1 = v_for_z(z1);

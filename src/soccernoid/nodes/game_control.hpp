@@ -7,9 +7,7 @@
 
 namespace soccernoid {
 
-// Tracks game-wide state. Currently: counts live projectiles and emits
-// PlayerDefeated when the count drops to zero. Intended to live alongside the
-// LevelNode under the root so it survives level swaps.
+// Tracks game-wide state.
 class GameControlNode : public SoccernoidNode<>
 {
   private:
@@ -31,7 +29,7 @@ class GameControlNode : public SoccernoidNode<>
         if (projectile_count_ == 0)
         {
             log("No projectiles left — player defeated");
-            game()->Events.emit(PlayerDefeated{});
+            game()->events.emit(PlayerDefeated{});
         }
     }
 
@@ -39,7 +37,7 @@ class GameControlNode : public SoccernoidNode<>
     void
     on_mount_() override
     {
-        auto &events = game()->Events;
+        auto &events = game()->events;
         hold(events.bind(&GameControlNode::on_projectile_spawned_, this));
         hold(events.bind(&GameControlNode::on_projectile_despawned_, this));
     }

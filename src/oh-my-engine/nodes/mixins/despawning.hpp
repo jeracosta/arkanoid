@@ -15,7 +15,7 @@ class Despawning : public TBase
         [[unlikely]]
         if (TShouldDespawn{}(*this))
         {
-            this->schedule_unmount();
+            this->request_unmount();
         }
 
         TBase::on_tick_();

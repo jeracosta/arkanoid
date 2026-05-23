@@ -19,10 +19,11 @@ class ParticleEmitterNode : public TransformNode
   public:
     struct Settings
     {
-        ParticleScheme particle_blueprint;
-        float          trigger_rate;              // how many times it triggers per time unit
-        uint           particles_per_trigger = 1; // how many particles to emit at each trigger
-        bool           use_unscaled_time     = false;
+        ParticleScheme      particle_blueprint;
+        float               trigger_rate;              // how many times it triggers per time unit
+        uint                particles_per_trigger = 1; // how many particles to emit at each trigger
+        bool                use_unscaled_time     = false;
+        std::optional<uint> total_emissions_count = std::nullopt;
     };
 
     ParticleEmitterNode(Settings settings)
@@ -31,6 +32,33 @@ class ParticleEmitterNode : public TransformNode
     {
     }
 
+  protected:
+    void
+    schedule_render_()
+    {
+        auto  self_weak = weak_from_this();
+        auto &camera    = Node::game()->camera;
+        game()->schedule([self_weak, &camera]
+        {
+            if (auto self = self_weak.lock())
+            {
+                static_cast<ParticleEmitterNode *>(self.get())->particles_.render(camera);
+            }
+        });
+    }
+    CleanupStatus
+    on_cleanup_() override
+    {
+        const float delta_time
+            = settings_.use_unscaled_time ? game()->time.unscaled.delta() : game()->time.delta();
+
+        particles_.update({ delta_time, transform<Space::World>().position });
+        schedule_render_();
+
+        return particle_count() == 0 ? Completed : InProgress;
+    }
+
+  private:
     void
     on_tick_() override
     {
@@ -47,8 +75,14 @@ class ParticleEmitterNode : public TransformNode
             origin_ = origin;
         }
 
-        [[unlikely]]
-        if (!std::isfinite(period))
+        bool done = settings_.total_emissions_count
+                    && emissions_made_ >= *settings_.total_emissions_count;
+
+        if (done)
+        {
+            particles_.update({ delta_time, origin });
+        }
+        else if (!std::isfinite(period))
         {
             particles_.update({ delta_time, origin });
         }
@@ -67,6 +101,14 @@ class ParticleEmitterNode : public TransformNode
 
                 particles_.update({ segment, interpolated_origin });
                 particles_.emit(settings_.particles_per_trigger);
+                ++emissions_made_;
+
+                if (settings_.total_emissions_count
+                    && emissions_made_ >= *settings_.total_emissions_count)
+                {
+                    done = true;
+                    break;
+                }
 
                 cursor = next_trigger_at;
                 next_trigger_at += period;
@@ -82,22 +124,15 @@ class ParticleEmitterNode : public TransformNode
 
         origin_ = origin;
 
-        // Rendering is deferred to the end-of-frame task drain so particles
-        // compose on top of all opaque geometry. The schedule must not capture
-        // a raw `this`: the emitter can be unmounted and destroyed earlier in
-        // the same drain (e.g. when its parent despawns this frame). Using a
-        // weak reference lets the task safely no-op in that case.
-        auto self_weak = this->weak_from_this();
-        auto &camera   = Node::game()->camera;
-        game()->schedule([self_weak, &camera]
+        schedule_render_();
+
+        if (done)
         {
-            if (auto self = self_weak.lock())
-            {
-                static_cast<ParticleEmitterNode *>(self.get())->particles_.render(camera);
-            }
-        });
+            request_unmount();
+        }
     }
 
+  public:
     std::size_t
     particle_count()
     {
@@ -114,7 +149,8 @@ class ParticleEmitterNode : public TransformNode
     ParticleServer<1000> particles_;
     Settings             settings_;
     std::optional<Vec3f> origin_;
-    float                accumulator_ = 0.0f;
+    float                accumulator_    = 0.0f;
+    unsigned int         emissions_made_ = 0;
 
   protected:
     static inline std::mt19937 rng = {};

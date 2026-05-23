@@ -13,7 +13,6 @@ class Interval
   public:
     using Vector        = Vector<Dimension, Component>;
     using ComponentType = Component;
-    using Face          = Interval<Dimension - 1, Component>;
 
     struct Bounds
     {
@@ -33,6 +32,13 @@ class Interval
         : min_(std::move(bounds.min)),
           max_(std::move(bounds.max))
     {
+        for (std::size_t i = 0; i < Dimension; ++i)
+        {
+            if (min_[i] > max_[i])
+            {
+                std::swap(min_[i], max_[i]);
+            }
+        }
     }
 
     // #region Factory methods
@@ -142,37 +148,6 @@ class Interval
         return indices | std::views::transform(make_corner);
     }
 
-    // Lazy range over the faces of the box.
-    // Order: min-x, max-x, min-y, max-y, mix-z, max-z, ...
-    auto
-    faces() const
-    {
-        auto count = Dimension * 2;
-
-        auto indices = std::views::iota(std::size_t{ 0 }, count);
-
-        auto make_face = [this](std::size_t face_index)
-        {
-            const std::size_t axis   = face_index / 2;
-            const bool        is_max = face_index % 2;
-
-            Face face = *this;
-
-            if (is_max)
-            {
-                face.min_[axis] = max_[axis];
-            }
-            else
-            {
-                face.max_[axis] = min_[axis];
-            }
-
-            return face;
-        };
-
-        return indices | std::views::transform(make_face);
-    }
-
     // #endregion
 
     void
@@ -258,5 +233,90 @@ class Interval
 
 using Box  = math::Interval<3>;
 using Rect = math::Interval<2>;
+
+struct BoxFace
+{
+    std::array<Vec3f, 4> corners;
+    Vec3f                normal;
+};
+
+template <typename T>
+struct BoxFaces
+{
+    T front;
+    T back;
+    T left;
+    T right;
+    T top;
+    T bottom;
+};
+
+inline BoxFaces<BoxFace>
+faces_of(const Box &box)
+{
+    auto [min, max] = box.bounds();
+
+    return BoxFaces<BoxFace>{
+        .front = BoxFace{
+            .corners = {
+                Vec3f{ min[0], min[1], max[2] },
+                Vec3f{ max[0], min[1], max[2] },
+                Vec3f{ max[0], max[1], max[2] },
+                Vec3f{ min[0], max[1], max[2] },
+            },
+            .normal = { 0.0f, 0.0f, 1.0f }
+        },
+
+        .back = BoxFace{
+            .corners = {
+                Vec3f{ max[0], min[1], min[2] },
+                Vec3f{ min[0], min[1], min[2] },
+                Vec3f{ min[0], max[1], min[2] },
+                Vec3f{ max[0], max[1], min[2] },
+            },
+            .normal = { 0.0f, 0.0f, -1.0f }
+        },
+
+        .left = BoxFace{
+            .corners = {
+                Vec3f{ min[0], min[1], min[2] },
+                Vec3f{ min[0], min[1], max[2] },
+                Vec3f{ min[0], max[1], max[2] },
+                Vec3f{ min[0], max[1], min[2] },
+            },
+            .normal = { -1.0f, 0.0f, 0.0f }
+        },
+
+        .right = BoxFace{
+            .corners = {
+                Vec3f{ max[0], min[1], max[2] },
+                Vec3f{ max[0], min[1], min[2] },
+                Vec3f{ max[0], max[1], min[2] },
+                Vec3f{ max[0], max[1], max[2] },
+            },
+            .normal = { 1.0f, 0.0f, 0.0f }
+        },
+
+        .top = BoxFace{
+            .corners = {
+                Vec3f{ min[0], max[1], max[2] },
+                Vec3f{ max[0], max[1], max[2] },
+                Vec3f{ max[0], max[1], min[2] },
+                Vec3f{ min[0], max[1], min[2] },
+            },
+            .normal = { 0.0f, 1.0f, 0.0f }
+        },
+
+        .bottom = BoxFace{
+            .corners = {
+                Vec3f{ min[0], min[1], min[2] },
+                Vec3f{ max[0], min[1], min[2] },
+                Vec3f{ max[0], min[1], max[2] },
+                Vec3f{ min[0], min[1], max[2] },
+            },
+            .normal = { 0.0f, -1.0f, 0.0f }
+        }
+    };
+}
 
 } // namespace ome

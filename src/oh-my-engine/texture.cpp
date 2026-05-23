@@ -13,47 +13,7 @@
 
 namespace ome {
 
-namespace {
-
-std::shared_ptr<Texture>
-make_texture_from_rgba_surface(SDL_Surface *surface_converted_rgba_must_free_and_nonnull)
-{
-    SDL_Surface *surface = surface_converted_rgba_must_free_and_nonnull;
-
-    auto size             = Vec2u{ surface->w, surface->h };
-    auto &[width, height] = size;
-
-    auto image = ImageBuffer(size);
-
-    using namespace std::views;
-
-    auto rows = [height](void *storage, std::size_t pitch)
-    {
-        auto *base = static_cast<std::byte *>(storage);
-
-        return iota(std::size_t{ 0 }, static_cast<std::size_t>(height))
-               | transform([=](std::size_t i)
-        { return reinterpret_cast<ImageBuffer::Pixel *>(base + i * pitch); });
-    };
-
-    auto row_size = width * sizeof(ImageBuffer::Pixel);
-
-    auto image_rows   = rows(image.raw(), row_size);
-    auto surface_rows = rows(surface->pixels, surface->pitch);
-
-    for (auto &&[image_row, surface_row] : zip(image_rows, surface_rows | reverse))
-    {
-        std::memcpy(image_row, surface_row, row_size);
-    }
-
-    SDL_FreeSurface(surface);
-
-    return std::make_shared<Texture>(std::move(image));
-}
-
-} // namespace
-
-Texture::Texture(ImageBuffer image)
+Texture::Texture(Primitive image)
 {
     auto guard = open_gl::TextureBindingGuard<GL_TEXTURE_2D>();
 
@@ -94,13 +54,44 @@ Texture::load(const std::filesystem::path &path)
             std::format("Failed to convert texture `{}`: {}", path.string(), SDL_GetError()));
     }
 
-    return make_texture_from_rgba_surface(surface);
+    auto size             = Vec2u{ surface->w, surface->h };
+    auto &[width, height] = size;
+
+    auto image = Primitive(size);
+
+    // NOTE: SDL surfaces are stored in top-down order, but OpenGL expects bottom-up order.
+    //       We will copy the rows in reverse order to effectively flip the image vertically.
+
+    using namespace std::views;
+
+    auto rows = [height](void *storage, std::size_t pitch)
+    {
+        auto *base = static_cast<std::byte *>(storage);
+
+        return iota(std::size_t{ 0 }, static_cast<std::size_t>(height))
+               | transform([=](std::size_t i)
+        { return reinterpret_cast<Primitive::Pixel *>(base + i * pitch); });
+    };
+
+    auto row_size = width * sizeof(Primitive::Pixel);
+
+    auto image_rows   = rows(image.raw(), row_size);
+    auto surface_rows = rows(surface->pixels, surface->pitch);
+
+    for (auto &&[image_row, surface_row] : zip(image_rows, surface_rows | reverse))
+    {
+        std::memcpy(image_row, surface_row, row_size);
+    }
+
+    SDL_FreeSurface(surface);
+
+    return std::make_shared<Texture>(std::move(image));
 }
 
-ImageBuffer
-ImageBuffer::checkerboard(Vec2u size, float cell_size, Color odd_color, Color even_color)
+Texture::Primitive
+Texture::Primitive::checkerboard(Vec2u size, float cell_size, Color odd_color, Color even_color)
 {
-    auto image = ImageBuffer(size);
+    auto image = Primitive(size);
 
     auto &[width, height] = size;
 
@@ -130,7 +121,7 @@ Texture::placeholder()
     static constexpr auto odd_color  = Color::magenta();
     static constexpr auto even_color = Color::black();
 
-    auto        image   = ImageBuffer::checkerboard(size, cell_size, odd_color, even_color);
+    auto        image   = Primitive::checkerboard(size, cell_size, odd_color, even_color);
     static auto texture = std::make_shared<Texture>(image);
 
     return texture;
@@ -170,13 +161,3 @@ Texture::set_blend_mode(GLenum mode)
 }
 
 } // namespace ome
-
-namespace ome::open_gl {
-
-void
-glBindTexture(const Texture &texture)
-{
-    ::glBindTexture(GL_TEXTURE_2D, texture.id_);
-}
-
-} // namespace ome::open_gl

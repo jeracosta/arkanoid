@@ -11,24 +11,23 @@ namespace ome::open_gl {
 inline void
 render_quad(const std::array<Vec3f, 4> &vertices, const Material &material)
 {
-    if (material.blend_mode.source_factor == GL_ONE
-        && material.blend_mode.destination_factor == GL_ZERO)
+    if (material.blend_mode.has_value())
     {
-        glDisable(GL_BLEND);
+        glEnable(GL_BLEND);
+        glBlendFunc(material.blend_mode->source_factor, material.blend_mode->destination_factor);
     }
     else
     {
-        glEnable(GL_BLEND);
-        glBlendFunc(material.blend_mode.source_factor, material.blend_mode.destination_factor);
+        glDisable(GL_BLEND);
     }
 
     if (material.texture)
     {
         glEnable(GL_TEXTURE_2D);
-        open_gl::glBindTexture(*material.texture);
+        ::glBindTexture(GL_TEXTURE_2D, material.texture->id());
     }
 
-    glColor(material.color);
+    glColor(material.color.emission);
 
     glBegin(GL_QUADS);
     {

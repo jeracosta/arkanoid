@@ -172,8 +172,8 @@ struct TexturePalette
 
     Item          column;
     Item          dirt;
-    Item          floor;
-    Item          wall;
+    Item          metal;
+    Item          cobblestone;
     Item          snail;
     Item          barrel;
     SkyboxPalette skybox;
@@ -182,8 +182,8 @@ struct TexturePalette
 static const inline TexturePalette textures = {
     .column = { "column.tga.png" },
     .dirt = { "dirt.png" },
-    .floor = { "floor.jpg" },
-    .wall = { "wall.jpg" },
+    .metal = { "metal.jpg" },
+    .cobblestone = { "cobblestone.jpg" },
     .snail = { "snail.webp" },
     .barrel = { "explosive_barrel.png" },
     .skybox = { //TODO: Generate faces from cubemap

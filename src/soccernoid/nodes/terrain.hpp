@@ -2,6 +2,7 @@
 
 #include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/nodes/hitbox_node.hpp"
+#include "oh-my-engine/texture.hpp"
 #include "soccernoid/constants.hpp"
 
 namespace soccernoid {
@@ -21,9 +22,9 @@ class TerrainNode : public ome::HitboxNode
         auto region = hitbox<ome::Space::World>();
 
         auto materials = std::vector<ome::Material>{
-            { .texture = textures.dirt },                     // 0
-            { .texture = textures.floor, .shininess = 1.0f }, // 1
-            {},                                               // 2
+            { .texture = textures.dirt },                           // 0
+            { .texture = textures.cobblestone, .shininess = 1.0f }, // 1
+            { .texture = ome::Texture::placeholder() },             // 2
         };
 
         auto material_indices = ome::BoxFaces<std::size_t>{

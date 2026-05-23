@@ -246,6 +246,7 @@ struct MeshPalette
     Item arrow;
     Item barrel;
     Item teapot;
+    Item moai;
 };
 
 static const inline MeshPalette meshes = {
@@ -256,6 +257,7 @@ static const inline MeshPalette meshes = {
     .arrow        = { "arrow.glb" },
     .barrel       = { "barrel.glb" },
     .teapot       = { "teapot/teapot.obj" },
+    .moai         = { "moai.fbx" },
 };
 
 } // namespace soccernoid

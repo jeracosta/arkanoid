@@ -1,50 +1,108 @@
 #pragma once
 
+#include <GL/gl.h>
 #include <cstddef>
 #include <filesystem>
 #include <memory>
+#include <optional>
+#include <utility>
 #include <vector>
 
-#ifndef GL_GLEXT_PROTOTYPES
-#define GL_GLEXT_PROTOTYPES 1
-#endif
-#include <GL/gl.h>
-#include <GL/glext.h>
+#include "oh-my-engine/math/interval.hpp"
+#include "oh-my-engine/math/vector.hpp"
 
 namespace ome {
 
-namespace open_gl {
-struct MeshRenderTask;
-}
+struct Camera; // forward declaration
 
 class Mesh
 {
-    friend struct open_gl::MeshRenderTask;
-
   public:
+    struct Vertex
+    {
+        Vec3f position;
+        Vec3f normal;
+        Vec2f texture_coords;
+    };
+
+    static_assert(sizeof(Vertex) == 8 * sizeof(float),
+                  "Mesh::Vertex must be tightly packed (8 floats) for interleaved array stride");
+    static_assert(offsetof(Vertex, position) == 0 * sizeof(float),
+                  "Mesh::Vertex.position must be at offset 0");
+    static_assert(offsetof(Vertex, normal) == 3 * sizeof(float),
+                  "Mesh::Vertex.normal must be at offset 3 floats");
+    static_assert(offsetof(Vertex, texture_coords) == 6 * sizeof(float),
+                  "Mesh::Vertex.texture_coords must be at offset 6 floats");
+
+    struct Surface
+    {
+        std::vector<Vertex>        vertices;
+        std::vector<unsigned int>  indices;
+        GLenum                     primitive_type = GL_TRIANGLES;
+        std::optional<std::size_t> material_index = std::nullopt;
+    };
+
+    struct Node
+    {
+        // TODO: add .transform
+
+        std::vector<std::size_t> surface_indices;
+        std::vector<Node>        children;
+
+        Node(std::vector<std::size_t> surface_indices = { 0 }, std::vector<Node> children = {})
+            : surface_indices(std::move(surface_indices)),
+              children(std::move(children))
+        {
+        }
+    };
+
     Mesh() = delete;
+
+    Mesh(std::vector<Surface> surfaces, Node root = {});
 
     ~Mesh();
 
-    Mesh(const Mesh &)            = delete;
-    Mesh &operator=(const Mesh &) = delete;
-    Mesh(Mesh &&)                 = delete;
-    Mesh &operator=(Mesh &&)      = delete;
+    Mesh(const Mesh &) = delete;
+
+    Mesh &
+    operator=(const Mesh &)
+        = delete;
+
+    Mesh(Mesh &&) = delete;
+
+    Mesh &
+    operator=(Mesh &&)
+        = delete;
 
     static std::shared_ptr<Mesh>
     load(const std::filesystem::path &path);
 
-    void
-    recenter_to_origin();
+    static std::shared_ptr<const Mesh>
+    unit_quad();
+
+    static std::shared_ptr<Mesh>
+    box(const Box &box, std::size_t subdivisions = 1);
+
+    static std::shared_ptr<Mesh>
+    quad(Vec3f a, Vec3f b, Vec3f c, Vec3f d);
+
+    static std::shared_ptr<Mesh>
+    billboard(Vec3f position, Vec2f size, const Camera &camera);
+
+    static std::shared_ptr<Mesh>
+    pyramid(Vec3f apex, Vec3f direction, float height, Vec2f base_half_extents);
+
+    Vec3f
+    size() const;
+
+    Vec3f
+    center() const;
 
     void
-    normalize_to_max_extent(float max_extent);
+    resize(const Vec3f &new_size);
 
-    bool
-    has_uv() const noexcept
-    {
-        return has_uv_;
-    }
+    void
+    recenter(Vec3f new_origin = { 0.0f });
 
     GLsizei
     index_count() const noexcept
@@ -52,20 +110,35 @@ class Mesh
         return index_count_;
     }
 
+    GLsizei
+    vertex_count() const noexcept
+    {
+        return vertex_count_;
+    }
+
+    const Node &
+    root() const noexcept
+    {
+        return root_;
+    }
+
+    const std::vector<Surface> &
+    surfaces() const noexcept
+    {
+        return primitives_;
+    }
+
+    const Surface &
+    surface(std::size_t index) const
+    {
+        return primitives_.at(index);
+    }
+
   private:
-    Mesh(std::vector<float> interleaved, std::vector<unsigned> indices, bool has_uv);
-
-    void
-    reupload_();
-
-    std::vector<float>    interleaved_;
-    std::vector<unsigned> indices_;
-    bool                  has_uv_;
-    GLsizei               stride_bytes_;
-    GLsizei               index_count_;
-
-    GLuint vbo_ = 0;
-    GLuint ebo_ = 0;
+    std::vector<Surface> primitives_;
+    Node                 root_;
+    GLsizei              index_count_;
+    GLsizei              vertex_count_;
 };
 
-}
+} // namespace ome

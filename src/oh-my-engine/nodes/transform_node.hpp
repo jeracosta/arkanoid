@@ -6,50 +6,14 @@
 #include "oh-my-engine/math/vector.hpp"
 #include "oh-my-engine/node.hpp"
 #include "oh-my-engine/space.hpp"
+#include "oh-my-engine/transform.hpp"
 
 namespace ome {
-
-struct TransformComponent
-{
-    Vec3f       position    = { 0.0f };
-    Orientation orientation = Orientation::identity();
-    Vec3f       scale       = { 1.0f };
-};
-
-inline Vec3f
-operator*(const TransformComponent &transform, const Vec3f &vector)
-{
-    return transform.position + transform.orientation * (transform.scale * vector);
-}
-
-inline TransformComponent
-operator*(const TransformComponent &lhs, const TransformComponent &rhs)
-{
-    return {
-        .position    = lhs * rhs.position,
-        .orientation = lhs.orientation * rhs.orientation,
-        .scale       = lhs.scale * rhs.scale,
-    };
-}
-
-inline TransformComponent
-inverse_of(const TransformComponent &transform)
-{
-    auto inverse_orientation = inverse_of(transform.orientation);
-    auto inverse_scale       = Vec3f{ 1 } / transform.scale;
-    auto inverse_position    = inverse_orientation * (inverse_scale * -transform.position);
-
-    return {
-        .position    = inverse_position,
-        .orientation = inverse_orientation,
-        .scale       = inverse_scale,
-    };
-}
 
 class TransformNode : public Node
 {
   public:
-    using Component = TransformComponent;
+    using Component = Transform;
 
     TransformNode() = default;
 
@@ -59,7 +23,7 @@ class TransformNode : public Node
     }
 
     template <Space space>
-    TransformComponent
+    Transform
     transform() const
     {
         if constexpr (space == Space::Local)
@@ -78,12 +42,12 @@ class TransformNode : public Node
         }
     };
 
-    template <Space space>
+    template <Space space, typename F>
     void
-    update_transform(const std::function<void(Component &)> &fn)
+    update_transform(const F &&function)
     {
         static_assert(space == Space::Local, "Only updates of the local transform are supported.");
-        fn(local_transform_);
+        function(local_transform_);
     }
 
     TransformNode &
@@ -110,7 +74,7 @@ class TransformNode : public Node
   private:
     template <Space space>
     void
-    set_transform(const TransformComponent &transform)
+    set_transform(const Transform &transform)
     {
         if constexpr (space == Space::Local)
         {

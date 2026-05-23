@@ -1,10 +1,6 @@
 #pragma once
 
-#ifndef GL_GLEXT_PROTOTYPES
-#define GL_GLEXT_PROTOTYPES 1
-#endif
 #include <GL/gl.h>
-#include <GL/glext.h>
 #include <SDL2/SDL.h>
 #include <memory>
 #include <optional>
@@ -12,7 +8,7 @@
 #include "camera.hpp"
 #include "collision_server.hpp"
 #include "color.hpp"
-#include "debug_ui.hpp"
+#include "imgui.hpp"
 #include "input.hpp"
 #include "logger.hpp"
 #include "time.hpp"
@@ -82,51 +78,27 @@ class Game : public EventConnectionHolder
 
     // #endregion
 
-    // #region Lifecycle management
+  protected:
+    Game(const Configuration &config);
+
+    void
+    run_();
 
   private:
     Configuration                      config_;
-    bool                               initialized_ = false;
     bool                               running_     = false;
     unsigned long                      frame_count_ = 0;
     std::shared_ptr<Enviroment>        enviroment_  = Enviroment::instance();
     std::shared_ptr<Node>              root_node_;
     std::vector<std::function<void()>> tasks_;
     std::unique_ptr<Logger>            logger_;
-
-    // Constructed in initialize_() (needs the window + GL context); explicitly
-    // torn down in ~Game() while `window` (and its GL context) is still alive.
-    std::optional<DebugUi> debug_ui_;
+    std::optional<Imgui>               imgui_;
 
     void
     mount_(std::shared_ptr<Node> node);
 
     void
-    update_();
-
-  protected:
-    // Constructor only initializes engine subsystems (logger, window, camera).
-    // Derived classes' members are not yet constructed when this runs, so it
-    // must not invoke user-provided callbacks or mount the node tree -- that
-    // work happens in initialize_(), which run_() calls before entering the
-    // main loop, by which point the derived object is fully constructed.
-    Game(const Configuration &config);
-
-    void
     initialize_();
-
-    void
-    run_()
-    {
-        initialize_();
-
-        running_ = true;
-
-        while (running_)
-        {
-            update_();
-        }
-    }
 
     void
     on_projection_update_(const ProjectionUpdated &projection);
@@ -134,7 +106,11 @@ class Game : public EventConnectionHolder
     void
     on_window_resize_(const WindowResized &projection);
 
-    // #endregion
+    void
+    resolve_tasks_();
+
+    void
+    process_sdl_events_();
 
     // #region Game interface
 

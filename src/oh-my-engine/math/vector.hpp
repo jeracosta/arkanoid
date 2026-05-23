@@ -236,6 +236,12 @@ class Vector
         return self.components_.end();
     }
 
+    auto
+    data(this auto &&self) noexcept
+    {
+        return self.components_.data();
+    }
+
     friend void
     swap(Vector &lhs, Vector &rhs)
     {
@@ -287,6 +293,12 @@ class Vector
     operator Vector<TDimension, T>() const
     {
         return Vector<TDimension, T>((components_));
+    }
+
+    constexpr
+    operator const std::array<TComponent, TDimension> &() const
+    {
+        return components_;
     }
 
 #ifdef GLM_VERSION
@@ -399,7 +411,6 @@ norm(const is_vector auto &vector)
     return std::sqrt(std::accumulate(std::begin(vector), std::end(vector), 0.0f, sum_square));
 }
 
-// TODO: Consider renaming to "normalize" for consistency with common terminology.
 template <class Vector>
 Vector
 normalized(const Vector &vector)

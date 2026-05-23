@@ -1,3 +1,4 @@
+#include <cmath>
 #include <memory>
 
 #include "oh-my-engine/light.hpp"
@@ -12,28 +13,66 @@ namespace soccernoid {
 class FireNode : public ome::TransformNode
 {
   private:
-    // Point light at the fire pit lights nearby ground and characters
-    class FirePointLightNode_ : public ome::LightNode
+    class LightNode_ : public ome::LightNode<ome::PointLight>
     {
       private:
-        static std::unique_ptr<ome::PointLight>
-        make_point_light_()
+        static inline std::minstd_rand rng_{ std::random_device{}() };
+
+        static inline std::uniform_real_distribution<float> phase_distribution_{
+            0.0f, 2.0f * std::numbers::pi_v<float>
+        };
+
+        // used to prevent different fire lights from flickering in sync
+        float flicker_phase_offset_ = phase_distribution_(rng_);
+
+        void
+        update_light_()
         {
-            auto light                   = std::make_unique<ome::PointLight>(GL_LIGHT3);
-            light->ambient               = ome::Color::rgb(0.0f, 0.0f, 0.0f);
-            light->diffuse               = ome::Color::rgb(1.0f, 0.55f, 0.12f);
-            light->specular              = ome::Color::rgb(1.0f, 0.75f, 0.35f);
-            light->constant_attenuation  = 1.0f;
-            light->linear_attenuation    = 0.06f;
-            light->quadratic_attenuation = 0.12f;
-            return light;
+            light_.attenuation = {
+                .constant  = 1.0f,
+                .linear    = 0.06f,
+                .quadratic = 0.12f,
+            };
+
+            constexpr auto flicker_depth = 0.5f; // %
+
+            const auto intensity = ome::Vec3f{ (1 - flicker_depth) + flicker_depth * flicker_() };
+
+            auto diffuse  = ome::Vec3f(1.00f, 0.35f, 0.12f) * intensity;
+            auto specular = ome::Vec3f(1.00f, 0.35f, 0.35f) * intensity;
+
+            light_.color.diffuse  = ome::Color::rgb(diffuse);
+            light_.color.specular = ome::Color::rgb(specular);
+        }
+
+        float
+        flicker_()
+        {
+            const float time = this->game()->time.elapsed() + flicker_phase_offset_;
+
+            float flicker = 0.0f;
+
+            flicker += std::sin(time * 14.6f);
+            flicker += std::sin(time * 23.4f);
+            flicker += std::sin(time * 38.2f);
+            flicker += std::sin(time * 11.8f);
+
+            flicker *= 0.25f;                // [-1,1]
+            flicker = flicker * 0.5f + 0.5f; // [0,1]
+
+            return flicker;
         }
 
       public:
-        FirePointLightNode_()
-            : ome::LightNode(make_point_light_())
+        LightNode_()
         {
-            update_transform<ome::Space::Local>([](auto &t) { t.position = { 0.0f, 0.55f, 0.0f }; });
+            position({ 0.0f, 0.5f, 0.0f });
+        }
+
+        void
+        on_tick_() override
+        {
+            update_light_();
         }
     };
 
@@ -42,10 +81,10 @@ class FireNode : public ome::TransformNode
       private:
         static inline const ome::ParticleScheme scheme_ = {
 
-            .initial_position = { ome::Box::from_size({ 0.5f, 0.0f, 0.5f }), rng },
+            .initial_position = { ome::Box::from_size({ 0.3f, 0.0f, 0.3f }), rng },
 
             .initial_velocity
-            = { ome::Box::from_bounds({ -0.5f, 1.2f, -0.5f }, { 0.5f, 2.8f, 0.5f }), rng },
+            = { ome::Box::from_bounds({ -0.3f, 0.6f, -0.3f }, { 0.3f, 1.4f, 0.3f }), rng },
 
             .time_to_live = 2.0f,
 
@@ -62,11 +101,11 @@ class FireNode : public ome::TransformNode
             }),
 
             .scale = ome::Spline<float>::catmull_rom({
-                { 0.00f, 0.05f },
-                { 0.10f, 0.20f },
-                { 0.30f, 0.35f },
-                { 0.50f, 0.30f },
-                { 0.70f, 0.20f },
+                { 0.00f, 0.02f },
+                { 0.10f, 0.08f },
+                { 0.30f, 0.15f },
+                { 0.50f, 0.12f },
+                { 0.70f, 0.07f },
                 { 1.00f, 0.00f },
             }),
 
@@ -92,7 +131,7 @@ class FireNode : public ome::TransformNode
         : TransformNode()
     {
         update_transform<ome::Space::Local>([&](auto &t) { t.position = position; });
-        emplace_child<FirePointLightNode_>().rename("FireLight");
+        emplace_child<LightNode_>().rename("FireLight");
         add_child(particles_).rename("FireParticles");
     }
 };

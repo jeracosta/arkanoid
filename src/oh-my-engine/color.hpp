@@ -2,7 +2,7 @@
 
 #include <GL/gl.h>
 #include <GL/glu.h>
-#include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <glm/ext/vector_float3.hpp>
 #include <limits>
@@ -47,19 +47,16 @@ class Color
     }
 
     static Color
-    rgba(Vec4f v)
+    rgba(float red, float green, float blue, float alpha)
     {
-        auto to_u8 = [](float x)
-        { return static_cast<uint8_t>(std::clamp(x, 0.0f, 1.0f) * 255.0f + 0.5f); };
-        return Color(to_u8(v[0]), to_u8(v[1]), to_u8(v[2]), to_u8(v[3]));
+        auto cast = [](float x) { return static_cast<uint8_t>(x * 255.0f + 0.5f); };
+        return Color(cast(red), cast(green), cast(blue), cast(alpha));
     }
 
     static Color
-    rgba(float red, float green, float blue, float alpha)
+    rgba(Vec4f v)
     {
-        auto to_u8 = [](float x)
-        { return static_cast<uint8_t>(std::clamp(x, 0.0f, 1.0f) * 255.0f + 0.5f); };
-        return Color(to_u8(red), to_u8(green), to_u8(blue), to_u8(alpha));
+        return rgba(v[0], v[1], v[2], v[3]);
     }
 
     static constexpr Color
@@ -95,11 +92,56 @@ class Color
     static constexpr Color
     hex(uint32_t hex_value)
     {
-        uint8_t red   = ((hex_value >> 16) & 0xFF);
-        uint8_t green = ((hex_value >> 8) & 0xFF);
-        uint8_t blue  = ((hex_value) & 0xFF);
+        // Format: 0xRRGGBBAA  (alpha is ignored — fully opaque is assumed)
+        uint8_t red   = ((hex_value >> 24) & 0xFF);
+        uint8_t green = ((hex_value >> 16) & 0xFF);
+        uint8_t blue  = ((hex_value >> 8) & 0xFF);
 
         return rgb(red, green, blue);
+    }
+
+    static Color
+    hsv(float hue, float saturation, float value, float alpha = 1.0f)
+    {
+        auto wrap = [](float x) { return x - std::floor(x / 360.0f) * 360.0f; };
+        float h   = wrap(hue) / 60.0f;
+        float c   = value * saturation;
+        float x   = c * (1.0f - std::abs(std::fmod(h, 2.0f) - 1.0f));
+        float m   = value - c;
+
+        float r, g, b;
+        if (h < 1.0f)
+        {
+            r = c; g = x; b = 0.0f;
+        }
+        else if (h < 2.0f)
+        {
+            r = x; g = c; b = 0.0f;
+        }
+        else if (h < 3.0f)
+        {
+            r = 0.0f; g = c; b = x;
+        }
+        else if (h < 4.0f)
+        {
+            r = 0.0f; g = x; b = c;
+        }
+        else if (h < 5.0f)
+        {
+            r = x; g = 0.0f; b = c;
+        }
+        else
+        {
+            r = c; g = 0.0f; b = x;
+        }
+
+        return rgba(r + m, g + m, b + m, alpha);
+    }
+
+    static Color
+    hsv(Vec3f v, float alpha = 1.0f)
+    {
+        return hsv(v[0], v[1], v[2], alpha);
     }
 
     // #endregion

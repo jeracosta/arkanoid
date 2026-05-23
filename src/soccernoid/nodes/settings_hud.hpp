@@ -8,17 +8,12 @@
 
 namespace soccernoid {
 
-// In-game overlay for inspecting and editing game state. It is a pure view over
-// Settings: it reads values with get<T>() and writes them back with set<T>().
-// Because set<T>() only emits on change and the control nodes already subscribe
-// to those settings, editing a widget drives the game with no extra wiring.
+// In-game overlay for inspecting and editing game settings
 class SettingsHudNode : public SoccernoidNode<>
 {
   private:
     bool visible_ = false;
 
-    // Opening the HUD frees the cursor and pauses the game; closing restores
-    // both. Pause goes through Settings so TimeSpeedNode reacts as usual.
     void
     toggle_()
     {

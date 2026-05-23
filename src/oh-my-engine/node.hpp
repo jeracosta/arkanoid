@@ -26,10 +26,10 @@
 #include <ranges>
 #include <string>
 #include <string_view>
-#include <type_traits>
 
-#include "copy_const.hpp"
-#include "game.hpp"
+#include "oh-my-engine/copy_const.hpp"
+#include "oh-my-engine/game.hpp"
+#include "oh-my-engine/render_frame.hpp"
 
 // #endregion
 
@@ -41,13 +41,14 @@ namespace ome {
 struct NodeMounted {};
 struct NodeGotReady {};
 struct NodeTicked {};
+struct NodeUnmountRequested {};
 struct NodeUnmounted {};
 
 // #endregion
 // clang-format on
 
 class Node : public std::enable_shared_from_this<Node>,
-             private EventBus<NodeMounted, NodeGotReady, NodeTicked, NodeUnmounted>,
+             private EventBus<NodeMounted, NodeGotReady, NodeTicked, NodeUnmountRequested, NodeUnmounted>,
              public EventConnectionHolder
 {
   public:
@@ -56,7 +57,8 @@ class Node : public std::enable_shared_from_this<Node>,
         Unmounted,      // Before first mount, or after unmounting
         Mounting,       // During mount recursion (downward)
         Mounted,        // Got ready and it's tickable
-        PendingUnmount, // Between calling die() and the end-of-frame cleanup
+        Cleanup,        // Running on_cleanup_ before actual unmount
+        PendingUnmount, // Between cleanup completion and the end-of-frame removal
         Unmounting,     // During unmount recursion (upward)
     };
 
@@ -165,11 +167,15 @@ class Node : public std::enable_shared_from_this<Node>,
 
     // #region Tree-related methods
 
+    template <class T = Node>
+        requires std::derived_from<T, Node>
     auto
     children(this auto &&self)
     {
         return self.children_ // view over its stored pointers:
-               | std::views::values | std::views::transform(&std::shared_ptr<Node>::get);
+               | std::views::values | std::views::transform(&std::shared_ptr<Node>::get)
+               | std::views::filter([](Node *n) { return dynamic_cast<T *>(n) != nullptr; })
+               | std::views::transform([](Node *n) { return static_cast<T *>(n); });
     }
 
     template <class TChild>
@@ -283,6 +289,29 @@ class Node : public std::enable_shared_from_this<Node>,
     void
     tick()
     {
+        if (phase_ == Cleanup)
+        {
+            if (on_cleanup_() == Completed)
+            {
+                phase_ = PendingUnmount;
+                game()->schedule([this]
+                {
+                    if (parent())
+                    {
+                        parent()->remove_child(name());
+                    }
+                    else
+                    {
+                        throw std::runtime_error(
+                            std::format("Tried to schedule unmounting of root node "
+                                        "'{}'. Root nodes cannot be unmounted,",
+                                        name()));
+                    }
+                });
+            }
+            return;
+        }
+
         [[unlikely]]
         if (!is_ready())
         {
@@ -294,31 +323,35 @@ class Node : public std::enable_shared_from_this<Node>,
         emit(NodeTicked{});
     }
 
-    // Schedules the node for unmounting at the end of the current frame. The node will stop ticking
     void
-    schedule_unmount()
+    render_to(RenderFrame &frame)
     {
         [[unlikely]]
-        if (is_unmounted() || phase_ == PendingUnmount)
+        if (!is_ready())
         {
             return;
         }
 
-        phase_ = PendingUnmount;
+        on_render_(frame);
+    }
 
-        game()->schedule([this]
+    // Transitions to Cleanup, emits the unmount request event, and runs the first tick
+    // (which will call on_cleanup_). The node continues to tick until on_cleanup_ returns
+    // Completed, at which point it transitions to PendingUnmount and gets removed.
+    void
+    request_unmount()
+    {
+        [[unlikely]]
+        if (is_unmounted() || phase_ == PendingUnmount || phase_ == Cleanup)
         {
-            if (parent())
-            {
-                parent()->remove_child(name());
-            }
-            else
-            {
-                throw std::runtime_error(std::format("Tried to schedule unmounting of root node "
-                                                     "'{}'. Root nodes cannot be unmounted,",
-                                                     name()));
-            }
-        });
+            return;
+        }
+
+        phase_ = Cleanup;
+
+        emit(NodeUnmountRequested{});
+
+        tick();
     }
 
     void
@@ -345,13 +378,21 @@ class Node : public std::enable_shared_from_this<Node>,
     // #endregion
 
   protected:
+    enum CleanupStatus
+    {
+        InProgress,
+        Completed,
+    };
+
     // #region Lifecycle hooks
     // clang-format off
 
-    virtual void  on_mount_   (){} // Can safely modify tree structure. Changes will be scheduled.
-    virtual void  on_ready_   (){} // WARN: Do NOT modify tree structure in this hook (SIGSEV risk).
-    virtual void  on_tick_    (){}
-    virtual void  on_unmount_ (){}
+    virtual void          on_mount_   (){} // Can safely modify tree structure.
+    virtual void          on_ready_   (){} // WARN: Do NOT modify tree structure (SIGSEV risk).
+    virtual CleanupStatus on_cleanup_ (){ return Completed; } // Returns Completed by default.
+    virtual void          on_tick_    (){}
+    virtual void          on_render_  (RenderFrame &){}
+    virtual void          on_unmount_ (){}
 
     // #endregion
     // clang-format on
@@ -409,7 +450,8 @@ class Node : public std::enable_shared_from_this<Node>,
     void
     unmount_()
     {
-        assert(lifecycle_phase() == LifecyclePhase::Mounted);
+        assert(lifecycle_phase() == LifecyclePhase::Mounted
+               || lifecycle_phase() == LifecyclePhase::PendingUnmount);
 
         phase_ = Unmounting;
 

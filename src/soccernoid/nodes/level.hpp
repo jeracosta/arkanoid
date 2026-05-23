@@ -26,7 +26,6 @@
 #include "soccernoid/nodes/terrain.hpp"
 #include "soccernoid/nodes/victory_screen.hpp"
 #include "soccernoid/nodes/wall.hpp"
-#include "soccernoid/nodes/wizard_goalkeeper.hpp"
 
 namespace soccernoid {
 
@@ -105,7 +104,7 @@ class LevelNode : public SoccernoidNode<>
             pending_swap_ = PendingSwap::Defeat;
         }));
 
-        hold(game()->Events.bind([this](const PlayerVictorious &)
+        hold(game()->events.bind([this](const PlayerVictorious &)
         {
             if (game_over_)
             {

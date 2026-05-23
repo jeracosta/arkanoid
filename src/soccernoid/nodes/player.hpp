@@ -96,7 +96,6 @@ class PlayerNode : public ome::KinematicNode
     }
 
     static constexpr float player_radius_ = 0.2f;
-    static constexpr float hitbox_size_   = 1.2f;
 
     Configuration config_;
     ome::Vec2f    map_area_  = { 6, 7 };
@@ -107,20 +106,10 @@ class PlayerNode : public ome::KinematicNode
     static constexpr float aim_sweep_amplitude_ = 0.7f;
     static constexpr float shoot_force_         = 5.0f;
 
-    class PlayerHitboxNode : public ome::HitboxNode
-    {
-      public:
-        PlayerHitboxNode()
-            : ome::HitboxNode(ome::Vec3f{ hitbox_size_, hitbox_size_, hitbox_size_ })
-        {
-        }
-    };
-
     class AimArrowNode : public ome::Node
     {
       private:
-        float         current_angle_  = 0.0f;
-        ome::Vec3f    current_dir_    = ome::forward;
+        float         current_angle_ = 0.0f;
         ome::Material material_;
 
         static constexpr float shaft_length_ = 1.2f;
@@ -131,22 +120,14 @@ class PlayerNode : public ome::KinematicNode
         static constexpr float arrow_height_ = 0.05f;
 
         void
-        update_direction_()
-        {
-            current_angle_ = std::sin(game()->time.elapsed() * aim_sweep_speed_) * aim_sweep_amplitude_;
-
-            ome::Orientation rotation;
-            rotation.rotate(current_angle_, ome::up);
-            current_dir_ = rotation * ome::forward;
-        }
-
-        void
         render_arrow_()
         {
             auto *player     = static_cast<PlayerNode *>(parent());
             auto  player_pos = player->transform<ome::Space::World>().position;
 
-            auto dir = current_dir_;
+            ome::Orientation rotation;
+            rotation.rotate(current_angle_, ome::up);
+            auto dir = rotation * ome::forward;
 
             ome::Vec3f perp = { dir[2], 0.0f, -dir[0] };
 
@@ -234,9 +215,10 @@ class PlayerNode : public ome::KinematicNode
             auto &projectile = player->emplace_child<ProjectileNode>(std::move(config));
             projectile.position(ome::up * 0.5f);
 
-            // Spawn projectile ahead of player, outside the hitbox
-            auto spawn_pos = player_pos + current_dir_ * 1.0f + ome::up * 0.5f;
-            auto velocity  = current_dir_ * shoot_force_ + ome::up * 0.2f;
+            ome::Orientation rotation;
+            rotation.rotate(current_angle_, ome::up);
+            auto shoot_direction = rotation * ome::forward;
+            auto velocity        = shoot_direction * shoot_force_ + ome::up * 0.2f;
 
             projectile.update_kinematic<ome::Space::World>([&](auto &k) { k.velocity = velocity; });
 
@@ -257,6 +239,9 @@ class PlayerNode : public ome::KinematicNode
         void
         on_mount_() override
         {
+            auto *player      = static_cast<PlayerNode *>(parent());
+            player->can_move_ = false;
+
             hold(game()->input.bind(Action::PlayerShoot, &AimArrowNode::on_shoot_, this));
         }
 

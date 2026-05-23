@@ -47,7 +47,7 @@ class GameControlNode : public SoccernoidNode<>
 
         game_over_ = true;
         log("Goal hit — player victorious!");
-        game()->Events.emit(PlayerVictorious{});
+        game()->events.emit(PlayerVictorious{});
     }
 
   public:

@@ -19,9 +19,6 @@ static constexpr struct
     float end   = 50.0f;
 } fog;
 
-/** World-space spawn for the wizard goalkeeper under Level. */
-inline constexpr ome::Vec3f wizard_spawn_position{ 0.0f, 1.15f, -4.0f };
-
 struct ColorPalette
 {
     ome::Color fog;
@@ -244,7 +241,6 @@ struct MeshPalette
     Item characters_h;
     Item column;
     Item dragon;
-    Item wizard;
     Item teapot;
 };
 
@@ -253,7 +249,6 @@ static const inline MeshPalette meshes = {
     .characters_h = { "characters/character-h.fbx" },
     .column       = { "column.fbx" },
     .dragon       = { "dragon/Dragon.fbx" },
-    .wizard       = { "wizard/PolyArtWizardMesh.fbx" },
     .teapot       = { "teapot/teapot.obj" },
 };
 

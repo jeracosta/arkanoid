@@ -203,6 +203,7 @@ Mesh::box(const Box &box, std::size_t subdivisions)
                 },
                 .indices        = { 0, 1, 2, 0, 2, 3 },
                 .primitive_type = GL_TRIANGLES,
+                .material_index = 0,
             };
         }
 

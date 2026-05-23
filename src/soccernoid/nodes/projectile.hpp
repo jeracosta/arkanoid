@@ -53,10 +53,11 @@ class ProjectileNode : public SoccernoidNode<DistanceCulled<Falling<ome::Kinemat
     void
     bounce_from_(ome::HitboxNode &other);
 
-    class HitboxNode_ : public ome::HitboxNode
+  public:
+    class HitboxNode : public ome::HitboxNode
     {
       public:
-        HitboxNode_(const Configuration &config)
+        HitboxNode(const Configuration &config)
             : ome::HitboxNode({ config.radius * 2 })
         {
         }
@@ -65,7 +66,7 @@ class ProjectileNode : public SoccernoidNode<DistanceCulled<Falling<ome::Kinemat
         on_collision_(ome::HitboxNode &other) override;
     };
 
-    class LightNode_ : public ome::LightNode<ome::PointLight>
+    class LightNode : public ome::LightNode<ome::PointLight>
     {
       public:
         static const inline auto light = ome::PointLight {
@@ -81,14 +82,14 @@ class ProjectileNode : public SoccernoidNode<DistanceCulled<Falling<ome::Kinemat
             }
         };
 
-        LightNode_()
+        LightNode()
             : ome::LightNode<ome::PointLight>(light, 2)
         {
             position({ 0.0f, 0.05f, 0.0f });
         }
     };
 
-    class GlowParticlesNode_ : public ome::ParticleEmitterNode
+    class GlowParticlesNode : public ome::ParticleEmitterNode
     {
       private:
         static inline const ome::ParticleScheme scheme_ = {
@@ -113,13 +114,13 @@ class ProjectileNode : public SoccernoidNode<DistanceCulled<Falling<ome::Kinemat
         };
 
       public:
-        GlowParticlesNode_()
+        GlowParticlesNode()
             : ome::ParticleEmitterNode(settings_)
         {
         }
     };
 
-    class TraceParticlesNode_ : public ome::ParticleEmitterNode
+    class TraceParticlesNode : public ome::ParticleEmitterNode
     {
       private:
         static inline const ome::ParticleScheme scheme_ = {
@@ -140,23 +141,22 @@ class ProjectileNode : public SoccernoidNode<DistanceCulled<Falling<ome::Kinemat
         };
 
       public:
-        TraceParticlesNode_()
+        TraceParticlesNode()
             : ome::ParticleEmitterNode(settings_)
         {
         }
     };
 
-  public:
     ProjectileNode(Configuration config)
         : config_(std::move(config))
     {
         update_transform<ome::Space::Local>([&](auto &t) { t.position = spawn_position; });
 
-        emplace_child<LightNode_>().rename("GlowLight");
-        emplace_child<GlowParticlesNode_>().rename("GlowParticles");
-        emplace_child<TraceParticlesNode_>().rename("TraceParticles");
+        emplace_child<LightNode>().rename("GlowLight");
+        emplace_child<GlowParticlesNode>().rename("GlowParticles");
+        emplace_child<TraceParticlesNode>().rename("TraceParticles");
 
-        auto &hitbox = emplace_child<HitboxNode_>(config_);
+        auto &hitbox = emplace_child<HitboxNode>(config_);
         hitbox.rename("Hitbox");
         hitbox_ = &hitbox;
     }

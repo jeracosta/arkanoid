@@ -97,7 +97,7 @@ ProjectileNode::bounce_from_(ome::HitboxNode &other)
 }
 
 void
-ProjectileNode::HitboxNode_::on_collision_(ome::HitboxNode &other)
+ProjectileNode::HitboxNode::on_collision_(ome::HitboxNode &other)
 {
     log(std::format("Collided with {} ({})", other.name(), other.default_name()),
         ome::LogLevel::Debug);

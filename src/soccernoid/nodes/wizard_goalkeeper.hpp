@@ -1,15 +1,7 @@
 #pragma once
 
-#include <exception>
-#include <filesystem>
 #include <format>
-#include <memory>
-#include <optional>
 
-#include <GL/gl.h>
-
-#include "oh-my-engine/constants.hpp"
-#include "oh-my-engine/mesh.hpp"
 #include "oh-my-engine/nodes/hitbox_node.hpp"
 #include "oh-my-engine/render_frame.hpp"
 #include "oh-my-engine/texture.hpp"
@@ -35,10 +27,6 @@ wizard_gk_draw_slot()
 
 namespace soccernoid {
 
-// PolyArt wizard; hitbox matches HumanNode at the same logical position `{0,0,-5}`.
-// Mesh pivot is its AABB centre (different from procedural ellipsoid). Tune `normalize`
-// only if silhouette clips past the plateau edges.
-
 class WizardGoalkeeperNode : public ome::HitboxNode
 {
   public:
@@ -48,19 +36,8 @@ class WizardGoalkeeperNode : public ome::HitboxNode
     };
 
   private:
-    // Match HumanNode hitbox extents (same collision as before swapping to mesh).
-    static constexpr float body_radius_ = 0.50f;
-    static constexpr float body_height_ = 2.92f;
-    static constexpr float head_radius_ = 0.24f;
-    static constexpr ome::Vec3f hit_dims_{
-        2.0f * body_radius_,
-        body_height_ + 2.0f * head_radius_,
-        2.0f * body_radius_,
-    };
-    static constexpr ome::Vec3f hit_offset_{ 0.0f, head_radius_, 0.0f };
-
-    void
-    ensure_wizard_mesh_loaded_()
+    static auto
+    mesh_()
     {
         auto &gk = wizard_gk_draw_slot();
 
@@ -158,8 +135,15 @@ class WizardGoalkeeperNode : public ome::HitboxNode
             });
         }
 
-  private:
-    ome::Vec3f spawn_;
+    void
+    on_render_(ome::RenderFrame &frame) override
+    {
+        frame.draw_commands.push_back(ome::DrawCommand{
+            .mesh      = mesh_(),
+            .materials = { material_() },
+            .transform = transform<ome::Space::World>(),
+        });
+    }
 };
 
 } // namespace soccernoid

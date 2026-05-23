@@ -176,6 +176,8 @@ struct TexturePalette
     Item          cobblestone;
     Item          snail;
     Item          barrel;
+    Item          transformer;
+    Item          moai;
     SkyboxPalette skybox;
 };
 
@@ -186,6 +188,8 @@ static const inline TexturePalette textures = {
     .cobblestone = { "cobblestone.jpg" },
     .snail = { "snail.webp" },
     .barrel = { "explosive_barrel.png" },
+    .transformer = { "transformer.png" },
+    .moai        = { "moai.png" },
     .skybox = { //TODO: Generate faces from cubemap
         .ablaze = TexturePalette::SkyboxFaces::from_directory("skybox/ablaze"),
         .blink  = TexturePalette::SkyboxFaces::from_directory("skybox/blink"),
@@ -246,6 +250,7 @@ struct MeshPalette
     Item arrow;
     Item barrel;
     Item teapot;
+    Item transformer;
     Item moai;
 };
 
@@ -257,6 +262,7 @@ static const inline MeshPalette meshes = {
     .arrow        = { "arrow.glb" },
     .barrel       = { "barrel.glb" },
     .teapot       = { "teapot/teapot.obj" },
+    .transformer  = { "transformer/tranformer.gltf" },
     .moai         = { "moai.fbx" },
 };
 

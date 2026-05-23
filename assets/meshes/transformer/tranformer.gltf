@@ -1,0 +1,151 @@
+{
+  "asset": {
+    "generator": "glTF-Transform v4.2.1",
+    "version": "2.0"
+  },
+  "accessors": [
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 40,
+      "max": [
+        0.6397638320922852,
+        1.6732285022735596,
+        0.4429135322570801
+      ],
+      "min": [
+        5.5511160330244565e-18,
+        0,
+        -0.4429135322570801
+      ],
+      "bufferView": 0,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 40,
+      "bufferView": 0,
+      "byteOffset": 12
+    },
+    {
+      "type": "VEC2",
+      "componentType": 5126,
+      "count": 40,
+      "bufferView": 0,
+      "byteOffset": 24
+    },
+    {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 60,
+      "bufferView": 1,
+      "byteOffset": 0
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 1280,
+      "byteStride": 32,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 1280,
+      "byteLength": 120,
+      "target": 34963
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "buffer.bin",
+      "byteLength": 1400
+    }
+  ],
+  "materials": [
+    {
+      "name": "material",
+      "doubleSided": true,
+      "pbrMetallicRoughness": {
+        "metallicFactor": 0
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0,
+            "NORMAL": 1,
+            "TEXCOORD_0": 2
+          },
+          "mode": 4,
+          "material": 0,
+          "extras": {
+            "__blendVertexMap": [
+              1,
+              0,
+              3,
+              5,
+              0,
+              7,
+              2,
+              3,
+              6,
+              1,
+              5,
+              4,
+              7,
+              6,
+              4,
+              2,
+              9,
+              10,
+              11,
+              13,
+              10,
+              9,
+              14,
+              8,
+              11,
+              10,
+              8,
+              12,
+              13,
+              11,
+              12,
+              15,
+              9,
+              13,
+              15,
+              14,
+              8,
+              14,
+              15,
+              12
+            ]
+          },
+          "indices": 3
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "Transformer",
+      "mesh": 0
+    }
+  ],
+  "scenes": [
+    {
+      "name": "Scene",
+      "nodes": [
+        0
+      ]
+    }
+  ],
+  "scene": 0
+}

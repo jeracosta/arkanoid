@@ -3,12 +3,13 @@
 #include <cmath>
 #include <memory>
 
+#include "oh-my-engine/harmonic_oscillator_curve.hpp"
+#include "oh-my-engine/interpolation.hpp"
 #include "oh-my-engine/nodes/hitbox_node.hpp"
 #include "oh-my-engine/nodes/mesh_node.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
-#include "oh-my-engine/spline.hpp"
-#include "oh-my-engine/spring_curve.hpp"
 #include "soccernoid/constants.hpp"
+#include "soccernoid/nodes/progress_bar.hpp"
 #include "soccernoid/nodes/projectile.hpp"
 
 namespace soccernoid {
@@ -30,16 +31,36 @@ class TeapotNode : public ome::TransformNode
         void
         on_collision_(ome::HitboxNode &other) override
         {
-            if (dynamic_cast<ProjectileNode *>(other.parent()))
+            if (!dynamic_cast<ProjectileNode *>(other.parent()))
             {
-                teapot()->process_->restart();
+                return;
+            }
+
+            auto *teapot = this->teapot();
+
+            if (!teapot->is_invulnerable_())
+            {
+                teapot->life_ = std::max(0.0f, teapot->life_ - 0.2f);
+                teapot->size_process_->restart();
+                teapot->color_process_->restart();
             }
         }
     };
 
-    std::unique_ptr<ome::CurveProcess<float>> process_;
-    ome::MeshNode                            *mesh_node_ = nullptr;
-    ome::Vec3f                                mesh_size_ = {};
+    std::unique_ptr<ome::CurveProcess<float>> size_process_;
+    std::unique_ptr<ome::CurveProcess<float>> color_process_;
+
+    ome::MeshNode *mesh_node_ = nullptr;
+    ome::Vec3f     mesh_size_ = {};
+
+    float            life_    = 1.0f;
+    ProgressBarNode *lifebar_ = nullptr;
+
+    bool
+    is_invulnerable_() const
+    {
+        return !size_process_->is_completed();
+    }
 
   public:
     TeapotNode()
@@ -47,53 +68,90 @@ class TeapotNode : public ome::TransformNode
         auto mesh  = static_cast<std::shared_ptr<ome::Mesh>>(meshes.teapot);
         mesh_size_ = mesh->size();
 
-        auto envelope = std::make_shared<ome::Spline<float>>(ome::Spline<float>::catmull_rom({
-            { 0.0f, 0.0f },
-            { 0.5f, 1.0f },
-            { 1.0f, 0.0f },
-        }));
+        auto spring   = std::make_shared<ome::HarmonicOscillatorCurve>();
+        size_process_ = std::make_unique<ome::CurveProcess<float>>(spring, 1.5f);
 
-        auto spring         = std::make_shared<ome::SpringCurve>();
-        spring->envelope_ = std::move(envelope);
-        process_          = std::make_unique<ome::CurveProcess<float>>(spring, 1.5f);
+        auto color_curve = std::make_shared<ome::Interpolation<float>>(0.02f, 0.0f);
+        color_process_   = std::make_unique<ome::CurveProcess<float>>(color_curve, 0.5f);
 
         auto &node = emplace_child<ome::MeshNode>(mesh, ome::Material{ .shininess = 25.0f });
         node.emplace_child<HitboxNode_>(mesh_size_, mesh->center());
 
         mesh_node_ = &node;
+
+        auto &lifebar = emplace_child<ProgressBarNode>(ProgressBarNode::Configuration{
+            .materials = {
+                .foreground = {
+                    .color = {
+                        .diffuse  = ome::Color::transparent(),
+                        .specular = ome::Color::transparent(),
+                        .emission = ome::Color::red(),
+                    }
+                },
+                .background = {
+                    .color = {
+                        .ambient = ome::Color::rgb(0.3f, 0.3f, 0.3f),
+                        .diffuse  = ome::Color::transparent(),
+                        .specular = ome::Color::transparent(),
+                    }
+                },
+                .ghosting = {
+                    .color = {
+                        .diffuse  = ome::Color::transparent(),
+                        .specular = ome::Color::transparent(),
+                        .emission = ome::Color::white(),
+                    }
+                },
+            },
+            .size = { 2.0f, 0.2f},
+            .slide_duration = 1.0f,
+            .ghost_delay = 0.5f,
+        });
+        lifebar.rename("Lifebar");
+        lifebar.position({ 0.0f, mesh_size_[1] / 2.0f + 3.5f, 0.0f });
+        lifebar_ = &lifebar;
     }
 
     void
     on_mount_() override
     {
-        process_->complete();
+        size_process_->complete();
+        color_process_->complete();
     }
 
     void
     on_tick_() override
     {
-        process_->update(game()->time.delta());
+        size_process_->update(game()->time.delta());
+        color_process_->update(game()->time.delta());
 
         auto angle = game()->time.elapsed();
-        auto s     = process_->value();
 
         ome::Orientation rot;
         rot.rotate(angle, ome::up);
 
         auto vertical = std::sin(angle);
 
+        auto size = size_process_->value();
+
         mesh_node_->update_transform<ome::Space::Local>([&](auto &t)
         {
             t.orientation = rot;
             t.position    = { 0.0f, vertical, 0.0f };
-            t.scale       = { s, s, s };
+            t.scale       = { size, size, size };
         });
+
+        auto color_value = color_process_->value();
 
         mesh_node_->update_material([&](auto &mat)
         {
-            mat.color.ambient = ome::Color::hsv(angle * 60.0f, 0.9f, 1.0f);
-            mat.color.diffuse = mat.color.ambient;
+            mat.color.ambient  = ome::Color::hsv(angle * 60.0f, 0.9f, 1.0f);
+            mat.color.diffuse  = mat.color.ambient;
+            mat.color.emission = ome::Color::rgb(ome::Vec3f(color_value));
         });
+
+        lifebar_->position({ 0.0f, vertical + mesh_size_[1] / 2.0f + 3.5f, 0.0f });
+        lifebar_->set_progress(life_);
     }
 };
 

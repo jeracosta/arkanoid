@@ -18,7 +18,7 @@ class MapNode : public ome::TransformNode
     struct Configuration
     {
         uint       column_count = 4;
-        ome::Vec2f area         = { 6, 7 };
+        ome::Vec2f area         = { 12, 14 };
     };
 
   private:

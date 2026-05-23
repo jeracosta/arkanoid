@@ -105,7 +105,7 @@ class CameraControlNode : public SoccernoidNode<>
             ome::Orientation orientation;
             orientation.steer_pitch(-1.0f);
 
-            return { { 0, 0, 0 }, 18.0f, orientation };
+            return { { 0, 0, 0 }, 25.0f, orientation };
         }
         default:
             throw std::runtime_error("Unsupported camera view");
@@ -218,9 +218,9 @@ class CameraControlNode : public SoccernoidNode<>
     {
         camera_ = &game()->camera;
 
-        hold(game()->input.bind(Action::ChangeView, [this] {
-            game()->settings.set<View>(succesor(game()->settings.get<View>().value));
-        }));
+        hold(game()->input.bind(Action::ChangeView,
+                                [this]
+        { game()->settings.set<View>(succesor(game()->settings.get<View>().value)); }));
 
         auto mouse_motion_handler = &CameraControlNode::on_mouse_motion_;
         hold(game()->input.bind(mouse_motion_handler, this));

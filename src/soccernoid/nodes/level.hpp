@@ -1,5 +1,6 @@
 #include <filesystem>
 #include <memory>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -14,18 +15,19 @@
 #include "soccernoid/constants.hpp"
 #include "soccernoid/events.hpp"
 #include "soccernoid/nodes/comet.hpp"
+#include "soccernoid/nodes/current_transformer.hpp"
 #include "soccernoid/nodes/defeat_screen.hpp"
+#include "soccernoid/nodes/explosive_barrel.hpp"
 #include "soccernoid/nodes/map.hpp"
+#include "soccernoid/nodes/moai.hpp"
 #include "soccernoid/nodes/player.hpp"
 #include "soccernoid/nodes/projectile.hpp"
 #include "soccernoid/nodes/scene_lights.hpp"
 #include "soccernoid/nodes/skybox.hpp"
 #include "soccernoid/nodes/snail.hpp"
-#include "soccernoid/nodes/spikes/test_explosion.hpp"
 #include "soccernoid/nodes/teapot.hpp"
 #include "soccernoid/nodes/terrain.hpp"
 #include "soccernoid/nodes/victory_screen.hpp"
-#include "soccernoid/nodes/wall.hpp"
 
 namespace soccernoid {
 
@@ -123,7 +125,7 @@ class LevelNode : public SoccernoidNode<>
             return;
         }
 
-        auto swap = pending_swap_;
+        auto swap     = pending_swap_;
         pending_swap_ = PendingSwap::None;
 
         if (swap == PendingSwap::Defeat)
@@ -142,15 +144,19 @@ Level::standard()
 {
     return { [](LevelNode &level)
     {
+        constexpr auto   map_area = ome::Vec2f{ 9, 10.5f };
+        constexpr uint   grid_n   = 7;
+        constexpr float  padding  = 0.1f;
+
         level.emplace_child<SkyboxNode>().rename("Skybox");
         level.emplace_child<CometNode>().rename("Comet");
 
-        level.emplace_child<spikes::TestExplosionNode>();
-
-        level.emplace_child<MapNode>(MapNode::Configuration{
-            .column_count = 4,
-            .area         = { 6, 7 },
-        }).rename("Map");
+        level
+            .emplace_child<MapNode>(MapNode::Configuration{
+                .column_count = 5,
+                .area         = map_area,
+            })
+            .rename("Map");
 
         // Teapot at forward side
         {
@@ -162,20 +168,61 @@ Level::standard()
             float teapot_y = scale * (size[1] / 2.0f - center[1] + 1.0f);
 
             float forward_local_x = size[0] / 2.0f + center[0];
-            float teapot_z        = -7.0f + 0.5f + scale * forward_local_x;
+            float teapot_z        = -map_area[1] + 0.5f + scale * forward_local_x;
 
-            auto orientation = ome::Orientation{}.steer_yaw(-std::numbers::pi_v<float> / 2);
-            level.emplace_child<TeapotNode>()
-                .scale({ scale })
-                .position({ 0.0f, teapot_y, teapot_z })
-                .orientation(orientation);
+            level.emplace_child<TeapotNode>().scale({ scale }).position(
+                { 0.0f, teapot_y, teapot_z });
         }
 
         // Player at backward border (centered)
         constexpr float player_y = 1.5f;
         level.emplace_child<PlayerNode>(PlayerNode::Configuration::make_harry())
-            .position({ 0.0f, player_y, 7.0f })
+            .position({ 0.0f, player_y, map_area[1] })
             .rename("Harry");
+
+        // Grid-based enemy placement
+        {
+            // Inner zone: exclude padding fraction from each side of the map area
+            float inner_min_x = -map_area[0] * (1.0f - 2.0f * padding);
+            float inner_max_x =  map_area[0] * (1.0f - 2.0f * padding);
+            float inner_min_z = -map_area[1] * (1.0f - 2.0f * padding);
+            float inner_max_z =  map_area[1] * (1.0f - 2.0f * padding);
+
+            static std::mt19937 rng{ std::random_device{}() };
+            std::uniform_int_distribution<int> pick(0, 3); // 0=barrel,1=transformer,2=moai,3=moai
+
+            int idx = 0;
+            for (uint i = 0; i < grid_n; ++i)
+            {
+                for (uint j = 0; j < grid_n; ++j)
+                {
+                    float x = ome::lerp(inner_min_x, inner_max_x,
+                                        (static_cast<float>(i) + 0.5f) / grid_n);
+                    float z = ome::lerp(inner_min_z, inner_max_z,
+                                        (static_cast<float>(j) + 0.5f) / grid_n);
+
+                    switch (pick(rng))
+                    {
+                    case 0:
+                        level.emplace_child<ExplosiveBarrelNode>()
+                            .position({ x, 0.0f, z })
+                            .rename(std::format("Barrel{}", idx++));
+                        break;
+                    case 1:
+                        level.emplace_child<CurrentTransformerNode>()
+                            .position({ x, 0.0f, z })
+                            .rename(std::format("Transformer{}", idx++));
+                        break;
+                    case 2:
+                    case 3:
+                        level.emplace_child<MoaiNode>()
+                            .position({ x, 0.0f, z })
+                            .rename(std::format("Moai{}", idx++));
+                        break;
+                    }
+                }
+            }
+        }
 
         level.emplace_child<SnailNode>().position({ -3.0f, 0.0f, -3.0f }).rename("Snail");
     } };

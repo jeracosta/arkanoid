@@ -9,14 +9,17 @@
 #include "oh-my-engine/nodes/mesh_node.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
 #include "soccernoid/constants.hpp"
+#include "soccernoid/events.hpp"
 #include "soccernoid/nodes/progress_bar.hpp"
 #include "soccernoid/nodes/projectile.hpp"
+#include "soccernoid/nodes/soccernoid_node.hpp"
 
 namespace soccernoid {
 
-class TeapotNode : public ome::TransformNode
+class TeapotNode : public SoccernoidNode<ome::TransformNode>
 {
-    class HitboxNode_ : public ome::HitboxNode
+  public:
+    class HitboxNode : public ome::HitboxNode
     {
       public:
         using ome::HitboxNode::HitboxNode;
@@ -47,6 +50,7 @@ class TeapotNode : public ome::TransformNode
         }
     };
 
+  private:
     std::unique_ptr<ome::CurveProcess<float>> size_process_;
     std::unique_ptr<ome::CurveProcess<float>> color_process_;
 
@@ -54,6 +58,7 @@ class TeapotNode : public ome::TransformNode
     ome::Vec3f     mesh_size_ = {};
 
     float            life_    = 1.0f;
+    bool             won_     = false;
     ProgressBarNode *lifebar_ = nullptr;
 
     bool
@@ -75,7 +80,7 @@ class TeapotNode : public ome::TransformNode
         color_process_   = std::make_unique<ome::CurveProcess<float>>(color_curve, 0.5f);
 
         auto &node = emplace_child<ome::MeshNode>(mesh, ome::Material{ .shininess = 25.0f });
-        node.emplace_child<HitboxNode_>(mesh_size_, mesh->center());
+        node.emplace_child<HitboxNode>(mesh_size_, mesh->center());
 
         mesh_node_ = &node;
 
@@ -152,6 +157,12 @@ class TeapotNode : public ome::TransformNode
 
         lifebar_->position({ 0.0f, vertical + mesh_size_[1] / 2.0f + 3.5f, 0.0f });
         lifebar_->set_progress(life_);
+
+        if (life_ == 0.0f && lifebar_->is_progress_completed() && !won_)
+        {
+            won_ = true;
+            game()->events.emit(PlayerVictorious{});
+        }
     }
 };
 

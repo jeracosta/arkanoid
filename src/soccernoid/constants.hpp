@@ -243,6 +243,7 @@ struct MeshPalette
     Item characters_h;
     Item column;
     Item dragon;
+    Item arrow;
     Item barrel;
     Item teapot;
 };
@@ -252,6 +253,7 @@ static const inline MeshPalette meshes = {
     .characters_h = { "characters/character-h.fbx" },
     .column       = { "column.fbx" },
     .dragon       = { "dragon/Dragon.fbx" },
+    .arrow        = { "arrow.glb" },
     .barrel       = { "barrel.glb" },
     .teapot       = { "teapot/teapot.obj" },
 };

@@ -9,7 +9,7 @@
 #include "oh-my-engine/constants.hpp"
 #include "oh-my-engine/nodes/hitbox_node.hpp"
 #include "oh-my-engine/nodes/kinematic_node.hpp"
-#include "oh-my-engine/open_gl/render_quad.hpp"
+#include "oh-my-engine/nodes/mesh_node.hpp"
 #include "oh-my-engine/render_frame.hpp"
 #include "soccernoid/constants.hpp"
 #include "soccernoid/input.hpp"
@@ -70,73 +70,8 @@ class PlayerNode : public ome::KinematicNode
     class AimArrowNode_ : public ome::Node
     {
       private:
-        float         current_angle_ = 0.0f;
-        ome::Material material_;
-
-        static constexpr float shaft_length_ = 1.2f;
-        static constexpr float shaft_width_  = 0.15f;
-        static constexpr float head_length_  = 0.5f;
-        static constexpr float head_width_   = 0.35f;
-        static constexpr float arrow_offset_ = 0.8f;
-        static constexpr float arrow_height_ = 0.05f;
-
-        void
-        render_arrow_()
-        {
-            auto *player     = static_cast<PlayerNode *>(parent());
-            auto  player_pos = player->transform<ome::Space::World>().position;
-
-            ome::Orientation rotation;
-            rotation.rotate(current_angle_, ome::up);
-            auto dir = rotation * ome::forward;
-
-            ome::Vec3f perp = { dir[2], 0.0f, -dir[0] };
-
-            auto base = player_pos + dir * arrow_offset_ + ome::up * arrow_height_;
-
-            // Shaft (rectangle)
-            auto shaft_start = base;
-            auto shaft_end   = base + dir * shaft_length_;
-
-            std::array<ome::Vec3f, 4> shaft = {
-                shaft_start - perp * shaft_width_,
-                shaft_start + perp * shaft_width_,
-                shaft_end + perp * shaft_width_,
-                shaft_end - perp * shaft_width_,
-            };
-            ome::open_gl::render_quad(shaft, material_);
-
-            // Arrowhead (triangle)
-            auto head_base = shaft_end;
-            auto head_tip  = head_base + dir * head_length_;
-
-            // Left half of triangle
-            std::array<ome::Vec3f, 4> left_head = {
-                head_base - perp * shaft_width_,
-                head_base - perp * head_width_,
-                head_tip,
-                head_tip,
-            };
-            ome::open_gl::render_quad(left_head, material_);
-
-            // Right half of triangle
-            std::array<ome::Vec3f, 4> right_head = {
-                head_base + perp * shaft_width_,
-                head_base + perp * head_width_,
-                head_tip,
-                head_tip,
-            };
-            ome::open_gl::render_quad(right_head, material_);
-
-            // Center of triangle (fills gap between left and right)
-            std::array<ome::Vec3f, 4> center_head = {
-                head_base - perp * shaft_width_,
-                head_base + perp * shaft_width_,
-                head_tip,
-                head_tip,
-            };
-            ome::open_gl::render_quad(center_head, material_);
-        }
+        float               current_angle_ = 0.0f;
+        ome::MeshNode      *arrow_mesh_;
 
         void
         on_shoot_()
@@ -155,11 +90,12 @@ class PlayerNode : public ome::KinematicNode
       public:
         AimArrowNode_()
         {
-            material_.color.ambient  = ome::Color::red();
-            material_.color.diffuse  = ome::Color::white();
-            material_.color.specular = ome::Color::hex(0x000000FF);
-            material_.color.emission = ome::Color::hex(0x000000FF);
-            material_.blend_mode     = ome::BlendMode::alpha();
+            auto mesh     = static_cast<std::shared_ptr<ome::Mesh>>(meshes.arrow);
+            mesh->resize({ 0.5f, 0.5f, 0.5f });
+            auto material = ome::Material{};
+            material.color.emission = ome::Color::rgb(0.0f, 1.0f, 0.0f);
+            arrow_mesh_ = &emplace_child<ome::MeshNode>(mesh, material);
+            arrow_mesh_->rename("ArrowMesh");
         }
 
         void
@@ -176,7 +112,15 @@ class PlayerNode : public ome::KinematicNode
         {
             current_angle_
                 = std::sin(game()->time.elapsed() * aim_sweep_speed_) * aim_sweep_amplitude_;
-            render_arrow_();
+
+            static constexpr float arrow_offset_ = 1.5f;
+            static constexpr float arrow_height_ = 0.05f;
+
+            auto rotation = ome::Orientation{}.rotate(current_angle_, ome::up);
+            auto dir      = rotation * ome::forward;
+
+            arrow_mesh_->position(dir * arrow_offset_ + ome::up * arrow_height_);
+            arrow_mesh_->orientation(rotation);
         }
     };
 

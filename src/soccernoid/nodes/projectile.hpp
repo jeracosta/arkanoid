@@ -1,7 +1,5 @@
 #pragma once
 
-#include <functional>
-
 #include "oh-my-engine/color.hpp"
 #include "oh-my-engine/light.hpp"
 #include "oh-my-engine/math/interval.hpp"
@@ -12,30 +10,23 @@
 #include "oh-my-engine/nodes/light_node.hpp"
 #include "oh-my-engine/nodes/particle_emitter_node.hpp"
 #include "oh-my-engine/spline.hpp"
-#include "soccernoid/events.hpp"
 #include "soccernoid/nodes/mixins/distance_culled.hpp"
 #include "soccernoid/nodes/mixins/falling.hpp"
 #include "soccernoid/nodes/soccernoid_node.hpp"
 
 namespace soccernoid {
 
+class PlayerNode;
+class MapNode;
+
 class ProjectileNode : public SoccernoidNode<DistanceCulled<Falling<ome::KinematicNode>>>
 {
   public:
     struct Configuration
     {
-        float radius;
-        float elasticity;
-        float speed_threshold;
-
-        std::function<ome::Vec3f(const ProjectileNode &)> force;
-
-        Configuration()
-            : radius(0.10f)
-            , elasticity(0.98f)
-            , speed_threshold(0.1f)
-        {
-        }
+        float radius          = 0.10f;
+        float elasticity      = 0.98f;
+        float speed_threshold = 0.1f;
     };
 
   private:
@@ -43,66 +34,35 @@ class ProjectileNode : public SoccernoidNode<DistanceCulled<Falling<ome::Kinemat
 
     Configuration config_;
 
+    PlayerNode *player_;
+    MapNode    *map_;
+
+    ome::HitboxNode *hitbox_;
+
+    // when a projectile goes of bounds towards the forward end of the map, it wraps around
+    bool wrapped_ = false;
+
     static constexpr ome::Vec3f spawn_position = { 0.0f, 7.0f, -3.0f };
+
+    ome::Vec3f
+    position_in_map_();
+
+    ome::Vec3f
+    force_();
+
+    void
+    bounce_from_(ome::HitboxNode &other);
 
     class HitboxNode_ : public ome::HitboxNode
     {
-        Configuration config_;
-
       public:
         HitboxNode_(const Configuration &config)
-            : ome::HitboxNode(ome::Vec3f{ config.radius * 2, config.radius * 2, config.radius * 2 })
-            , config_(config)
+            : ome::HitboxNode({ config.radius * 2 })
         {
         }
 
         void
-        on_collision_(ome::HitboxNode &other) override
-        {
-            log(std::format("Collided with {} ({})", other.name(), other.default_name()),
-                ome::LogLevel::Debug);
-
-            auto hitbox        = this->hitbox<ome::Space::World>();
-            auto others_hitbox = other.hitbox<ome::Space::World>();
-
-            auto *parent = static_cast<KinematicNode *>(this->parent());
-
-            parent->update_kinematic<ome::Space::Local>([&](ome::KinematicComponent &kinematic)
-            {
-                constexpr float epsilon = 1e-4f;
-
-                auto overlap          = overlap_depth(hitbox, others_hitbox);
-                auto penetration_axis = std::ranges::min_element(overlap) - overlap.begin();
-
-                if (overlap[penetration_axis] < epsilon)
-                {
-                    return;
-                }
-
-                bool is_negative = (hitbox.center()[penetration_axis]
-                                    < others_hitbox.center()[penetration_axis]);
-
-                ome::Vec3f normal;
-                normal[penetration_axis] = is_negative ? -1.0f : 1.0f;
-
-                auto normal_velocity = projection(kinematic.velocity, normal);
-                auto normal_speed    = norm(normal_velocity);
-
-                if (normal_speed < config_.speed_threshold)
-                {
-                    kinematic.velocity -= normal_velocity;
-                }
-                else
-                {
-                    kinematic.velocity -= (1.0f + config_.elasticity) * normal_velocity;
-                }
-
-                auto correction = normal * (overlap[penetration_axis] + epsilon);
-
-                parent->update_transform<ome::Space::Local>([&](auto &transform)
-                { transform.position += correction; });
-            });
-        }
+        on_collision_(ome::HitboxNode &other) override;
     };
 
     class LightNode_ : public ome::LightNode<ome::PointLight>
@@ -187,7 +147,7 @@ class ProjectileNode : public SoccernoidNode<DistanceCulled<Falling<ome::Kinemat
     };
 
   public:
-    ProjectileNode(Configuration config = {})
+    ProjectileNode(Configuration config)
         : config_(std::move(config))
     {
         update_transform<ome::Space::Local>([&](auto &t) { t.position = spawn_position; });
@@ -195,37 +155,25 @@ class ProjectileNode : public SoccernoidNode<DistanceCulled<Falling<ome::Kinemat
         emplace_child<LightNode_>().rename("GlowLight");
         emplace_child<GlowParticlesNode_>().rename("GlowParticles");
         emplace_child<TraceParticlesNode_>().rename("TraceParticles");
-        emplace_child<HitboxNode_>(config_).rename("Hitbox");
+
+        auto &hitbox = emplace_child<HitboxNode_>(config_);
+        hitbox.rename("Hitbox");
+        hitbox_ = &hitbox;
+    }
+
+    ProjectileNode()
+        : ProjectileNode(Configuration{})
+    {
     }
 
     void
-    on_tick_() override
-    {
-        Base_::on_tick_();
-
-        if (config_.force)
-        {
-            auto f = config_.force(*this);
-            update_kinematic<ome::Space::World>([&](auto &k)
-            {
-                k.velocity += f * game()->time.delta();
-            });
-        }
-    }
+    on_tick_() override;
 
     void
-    on_mount_() override
-    {
-        Base_::on_mount_();
-        game()->events.emit(ProjectileSpawned{});
-    }
+    on_mount_() override;
 
     void
-    on_unmount_() override
-    {
-        game()->events.emit(ProjectileDespawned{});
-        Base_::on_unmount_();
-    }
+    on_unmount_() override;
 };
 
 } // namespace soccernoid

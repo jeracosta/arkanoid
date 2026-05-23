@@ -4,8 +4,6 @@
 #include <GL/glu.h>
 #include <algorithm>
 #include <cmath>
-#include <filesystem>
-#include <format>
 #include <memory>
 
 #include "oh-my-engine/constants.hpp"
@@ -15,7 +13,6 @@
 #include "oh-my-engine/render_frame.hpp"
 #include "soccernoid/constants.hpp"
 #include "soccernoid/input.hpp"
-#include "soccernoid/nodes/map.hpp"
 #include "soccernoid/nodes/projectile.hpp"
 
 namespace soccernoid {
@@ -40,73 +37,37 @@ class PlayerNode : public ome::KinematicNode
         }
     };
 
-    static float
-    compute_boundary_force_x(float x, float map_x, float strength = 15.0f)
-    {
-        float threshold = 0.8f * map_x;
-        float abs_x     = std::abs(x);
-        if (abs_x <= threshold) return 0.0f;
-        float beyond     = abs_x - threshold;
-        float max_beyond = map_x - threshold;
-        float t          = beyond / max_beyond;
-        return -std::copysign(1.0f, x) * strength * t;
-    }
-
   private:
-    static auto
-    mesh_() -> std::shared_ptr<ome::Mesh>
+    static std::shared_ptr<ome::Mesh>
+    mesh_()
     {
-        static auto mesh = []
-        {
-            auto m = static_cast<std::shared_ptr<ome::Mesh>>(meshes.dragon);
-            m->recenter();
-            constexpr float target_extent = 2.5f;
-            auto            sz            = m->size();
-            float           max_dim       = std::max({ sz[0], sz[1], sz[2] });
-            m->resize(sz * (target_extent / max_dim));
-            return m;
-        }();
+        auto mesh = static_cast<std::shared_ptr<ome::Mesh>>(meshes.dragon);
+        mesh->recenter();
+        constexpr float target_extent = 2.5f;
+        auto            sz            = mesh->size();
+        float           max_dim       = std::max({ sz[0], sz[1], sz[2] });
+        mesh->resize(sz * (target_extent / max_dim));
         return mesh;
     }
 
-    static auto
-    material_() -> ome::Material
+    ome::Material
+    material_()
     {
-        static auto mat = []
-        {
-            auto m = ome::Material{};
-            for (auto candidate : {
-                     FilesystemPaths::textures / "dragon_texture.png",
-                     FilesystemPaths::textures / "dragon.png",
-                 })
-            {
-                if (!std::filesystem::exists(candidate))
-                {
-                    continue;
-                }
-                auto tex = ome::Texture::load(candidate);
-                tex->set_wrap({ GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE });
-                tex->set_filters(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
-                m.texture = std::move(tex);
-                break;
-            }
-            return m;
-        }();
-        return mat;
+        // TODO: Configure player material
+        return {};
     }
 
     static constexpr float player_radius_ = 0.2f;
 
     Configuration config_;
-    ome::Vec2f    map_area_  = { 6, 7 };
-    MapNode      *map_node_  = nullptr;
-    bool          can_move_  = true;
+
+    bool aiming_;
 
     static constexpr float aim_sweep_speed_     = 2.0f;
     static constexpr float aim_sweep_amplitude_ = 0.7f;
     static constexpr float shoot_force_         = 5.0f;
 
-    class AimArrowNode : public ome::Node
+    class AimArrowNode_ : public ome::Node
     {
       private:
         float         current_angle_ = 0.0f;
@@ -182,54 +143,19 @@ class PlayerNode : public ome::KinematicNode
         {
             auto *player = static_cast<PlayerNode *>(parent());
 
-            auto map_area = player->map_area_;
-
-            ProjectileNode::Configuration config;
-            config.force = [map_node = player->map_node_](const ProjectileNode &projectile) -> ome::Vec3f
-            {
-                if (!map_node)
-                {
-                    return {};
-                }
-                auto world_pos = projectile.transform<ome::Space::World>().position;
-                auto map_pos   = map_node->transform<ome::Space::World>().position;
-                auto area      = map_node->area();
-
-                float fx = PlayerNode::compute_boundary_force_x(
-                    world_pos[0] - map_pos[0], area[0]);
-
-                float fz  = 0.0f;
-                float z_fwd_threshold = 0.8f * area[1];
-                float local_z = world_pos[2] - map_pos[2];
-                if (local_z < -z_fwd_threshold)
-                {
-                    float beyond     = -local_z - z_fwd_threshold;
-                    float max_beyond = area[1] - z_fwd_threshold;
-                    float t          = beyond / max_beyond;
-                    float strength   = 20.0f;
-                    fz               = strength * t;
-                }
-                return { fx, 0.0f, fz };
-            };
-
-            auto &projectile = player->emplace_child<ProjectileNode>(std::move(config));
-            projectile.position(ome::up * 0.5f);
-
-            ome::Orientation rotation;
-            rotation.rotate(current_angle_, ome::up);
+            auto rotation        = ome::Orientation{}.rotate(current_angle_, ome::up);
             auto shoot_direction = rotation * ome::forward;
-            auto velocity        = shoot_direction * shoot_force_ + ome::up * 0.2f;
 
-            projectile.update_kinematic<ome::Space::World>([&](auto &k) { k.velocity = velocity; });
+            player->shoot(shoot_direction);
+            player->aiming_ = false;
 
-            player->enable_movement();
             request_unmount();
         }
 
       public:
-        AimArrowNode()
+        AimArrowNode_()
         {
-            material_.color.ambient  = ome::Color::white();
+            material_.color.ambient  = ome::Color::red();
             material_.color.diffuse  = ome::Color::white();
             material_.color.specular = ome::Color::hex(0x000000FF);
             material_.color.emission = ome::Color::hex(0x000000FF);
@@ -239,10 +165,10 @@ class PlayerNode : public ome::KinematicNode
         void
         on_mount_() override
         {
-            auto *player      = static_cast<PlayerNode *>(parent());
-            player->can_move_ = false;
+            auto *player    = static_cast<PlayerNode *>(parent());
+            player->aiming_ = true;
 
-            hold(game()->input.bind(Action::PlayerShoot, &AimArrowNode::on_shoot_, this));
+            hold(game()->input.bind(Action::PlayerShoot, &AimArrowNode_::on_shoot_, this));
         }
 
         void
@@ -257,42 +183,23 @@ class PlayerNode : public ome::KinematicNode
     void
     on_render_(ome::RenderFrame &frame) override
     {
-        if (auto dr_mesh = mesh_())
-        {
-            auto draw_tr = transform<ome::Space::World>();
+        auto transform = this->transform<ome::Space::World>();
 
-            ome::Orientation face_align = ome::Orientation::identity();
-            face_align.rotate(ome::pi, ome::up);
-            draw_tr.orientation = draw_tr.orientation * face_align;
+        ome::Orientation face_align = ome::Orientation::identity();
+        face_align.rotate(ome::pi, ome::up);
+        transform.orientation = transform.orientation * face_align;
 
-            frame.draw_commands.push_back(ome::DrawCommand{
-                .mesh      = std::move(dr_mesh),
-                .materials = { material_() },
-                .transform = draw_tr,
-            });
-
-            return;
-        }
-
-        auto                    position     = transform<ome::Space::World>().position;
-        static const ome::Color sphere_color = ome::Color::hex(0x1486cc);
-
-        glColor(sphere_color);
-        glPushMatrix();
-        {
-            GLUquadric *q = gluNewQuadric();
-            gluQuadricNormals(q, GLU_SMOOTH);
-            glTranslatef(position[0], position[1], position[2]);
-            gluSphere(q, player_radius_, 32, 32);
-            gluDeleteQuadric(q);
-        }
-        glPopMatrix();
+        frame.draw_commands.push_back(ome::DrawCommand{
+            .mesh      = mesh_(),
+            .materials = { material_() },
+            .transform = transform,
+        });
     }
 
     void
     process_movement_()
     {
-        if (!can_move_)
+        if (aiming_)
         {
             return;
         }
@@ -329,88 +236,57 @@ class PlayerNode : public ome::KinematicNode
 
         auto direction = normalized(raw_direction);
 
-        update_kinematic<ome::Space::World>([&](auto &k)
+        update_kinematic<ome::Space::World>([&](auto &kinematic)
         {
-            k.velocity += direction * config_.movement_force * game()->time.delta();
+            kinematic.velocity += direction * config_.movement_force * game()->time.delta();
 
-            if (norm(k.velocity) > config_.max_speed)
+            if (norm(kinematic.velocity) > config_.max_speed)
             {
-                k.velocity = normalized(k.velocity) * config_.max_speed;
+                kinematic.velocity = normalized(kinematic.velocity) * config_.max_speed;
             }
         });
     }
-
-
-
-    void
-    apply_boundary_force_()
-    {
-        if (!map_node_)
-        {
-            return;
-        }
-        auto map_pos = map_node_->transform<ome::Space::World>().position;
-        auto pos     = transform<ome::Space::World>().position;
-        float fx     = compute_boundary_force_x(pos[0] - map_pos[0], map_node_->area()[0]);
-        if (fx == 0.0f)
-        {
-            return;
-        }
-        update_kinematic<ome::Space::World>([&](auto &k)
-        {
-            k.velocity += ome::Vec3f{ fx, 0.0f, 0.0f } * game()->time.delta();
-        });
-    }
-
-    void
-    clamp_to_bounds_();
 
   public:
     PlayerNode(const Configuration &config)
         : config_(config)
     {
-        auto sz = mesh_()->size();
-        emplace_child<ome::HitboxNode>(sz).rename("Hitbox");
-        emplace_child<AimArrowNode>().rename("AimArrow");
-    }
-
-    void
-    enable_movement()
-    {
-        can_move_ = true;
+        emplace_child<ome::HitboxNode>(mesh_()->size()).rename("Hitbox");
+        emplace_child<AimArrowNode_>().rename("AimArrow");
     }
 
     void
     start_aiming()
     {
-        if (!can_move_)
+        if (aiming_)
         {
             return;
         }
 
-        emplace_child<AimArrowNode>().rename("AimArrow");
+        emplace_child<AimArrowNode_>().rename("AimArrow");
+    }
+
+    void
+    shoot(ome::Vec3f direction)
+    {
+        auto position = transform<ome::Space::World>().position;
+
+        auto &projectile = game()->root_node()->emplace_child<ProjectileNode>();
+        projectile.position(position + normalized(direction) * 1.5f);
+
+        auto velocity = normalized(direction) * shoot_force_ + ome::up * 0.2f;
+
+        projectile.update_kinematic<ome::Space::World>([&](auto &k) { k.velocity = velocity; });
     }
 
     void
     on_tick_() override
     {
-        apply_boundary_force_();
         process_movement_();
         ome::KinematicNode::on_tick_();
-        clamp_to_bounds_();
-    }
-
-    void
-    on_mount_() override
-    {
-        log("Player mounted");
-
-        map_node_ = ome::find_descendant<MapNode>(game()->root_node());
-        if (map_node_)
-        {
-            map_area_ = map_node_->area();
-        }
     }
 };
 
 } // namespace soccernoid
+
+

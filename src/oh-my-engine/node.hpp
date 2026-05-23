@@ -47,9 +47,10 @@ struct NodeUnmounted {};
 // #endregion
 // clang-format on
 
-class Node : public std::enable_shared_from_this<Node>,
-             private EventBus<NodeMounted, NodeGotReady, NodeTicked, NodeUnmountRequested, NodeUnmounted>,
-             public EventConnectionHolder
+class Node
+    : public std::enable_shared_from_this<Node>,
+      private EventBus<NodeMounted, NodeGotReady, NodeTicked, NodeUnmountRequested, NodeUnmounted>,
+      public EventConnectionHolder
 {
   public:
     enum LifecyclePhase
@@ -335,9 +336,6 @@ class Node : public std::enable_shared_from_this<Node>,
         on_render_(frame);
     }
 
-    // Transitions to Cleanup, emits the unmount request event, and runs the first tick
-    // (which will call on_cleanup_). The node continues to tick until on_cleanup_ returns
-    // Completed, at which point it transitions to PendingUnmount and gets removed.
     void
     request_unmount()
     {

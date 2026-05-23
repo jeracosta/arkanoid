@@ -2,6 +2,7 @@
 
 #include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/nodes/hitbox_node.hpp"
+#include "soccernoid/nodes/projectile.hpp"
 
 namespace ome {
 
@@ -21,6 +22,36 @@ void
 CollisionServer::process_collisions()
 {
     using namespace std::views;
+
+    // HACK: temporal ad-hoc optimization due to lack of time.
+    // Only checks collisions involving projectile hitboxes.
+    // Remove this block and restore generic pair processing below.
+    {
+        for (auto *node : nodes_)
+        {
+            auto *projectile = dynamic_cast<soccernoid::ProjectileNode::HitboxNode *>(node);
+            if (!projectile)
+            {
+                continue;
+            }
+
+            for (auto *other : nodes_)
+            {
+                if (other == node)
+                {
+                    continue;
+                }
+
+                if (overlaps(node->hitbox<Space::World>(), other->hitbox<Space::World>()))
+                {
+                    node->on_collision_(*other);
+                    other->on_collision_(*node);
+                }
+            }
+        }
+        return;
+    }
+    // end HACK
 
     auto indices = iota(std::size_t{ 0 }, nodes_.size());
 

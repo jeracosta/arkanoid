@@ -9,8 +9,8 @@ namespace soccernoid {
 class Soccernoid : public ome::Game
 {
   public:
-    Settings settings;
-    EventBus events;
+    Settings     settings;
+    GameEventBus events;
 
     explicit Soccernoid(const Configuration &config)
         : Game(config)

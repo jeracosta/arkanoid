@@ -175,6 +175,7 @@ struct TexturePalette
     Item          floor;
     Item          wall;
     Item          snail;
+    Item          barrel;
     SkyboxPalette skybox;
 };
 
@@ -184,6 +185,7 @@ static const inline TexturePalette textures = {
     .floor = { "floor.jpg" },
     .wall = { "wall.jpg" },
     .snail = { "snail.webp" },
+    .barrel = { "explosive_barrel.png" },
     .skybox = { //TODO: Generate faces from cubemap
         .ablaze = TexturePalette::SkyboxFaces::from_directory("skybox/ablaze"),
         .blink  = TexturePalette::SkyboxFaces::from_directory("skybox/blink"),
@@ -241,6 +243,7 @@ struct MeshPalette
     Item characters_h;
     Item column;
     Item dragon;
+    Item barrel;
     Item teapot;
 };
 
@@ -249,6 +252,7 @@ static const inline MeshPalette meshes = {
     .characters_h = { "characters/character-h.fbx" },
     .column       = { "column.fbx" },
     .dragon       = { "dragon/Dragon.fbx" },
+    .barrel       = { "barrel.glb" },
     .teapot       = { "teapot/teapot.obj" },
 };
 

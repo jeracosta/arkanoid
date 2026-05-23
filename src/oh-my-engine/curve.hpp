@@ -17,14 +17,14 @@ template <typename T>
 class CurveProcess
 {
     std::shared_ptr<Curve<T>> curve_;
-    float                     speed_    = 1.0f;
+    float                     duration_  = 1.0f;
     float                     progress_ = 0.0f;
     bool                      reversed_ = false;
 
   public:
-    explicit CurveProcess(std::shared_ptr<Curve<T>> curve, float speed = 1.0f)
+    explicit CurveProcess(std::shared_ptr<Curve<T>> curve, float duration = 1.0f)
         : curve_(std::move(curve)),
-          speed_(speed)
+          duration_(duration)
     {
     }
 
@@ -47,15 +47,15 @@ class CurveProcess
     }
 
     float
-    speed() const
+    duration() const
     {
-        return speed_;
+        return duration_;
     }
 
     void
-    set_speed(float new_speed)
+    set_duration(float new_duration)
     {
-        speed_ = new_speed;
+        duration_ = new_duration;
     }
 
     void
@@ -80,7 +80,7 @@ class CurveProcess
     void
     update(float delta_time)
     {
-        progress_ = std::clamp(progress_ + speed_ * delta_time, 0.0f, 1.0f);
+        progress_ = std::clamp(progress_ + delta_time / duration_, 0.0f, 1.0f);
     }
 
     T

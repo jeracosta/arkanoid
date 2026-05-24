@@ -22,7 +22,7 @@
 #include "soccernoid/nodes/moai.hpp"
 #include "soccernoid/nodes/player.hpp"
 #include "soccernoid/nodes/projectile.hpp"
-#include "soccernoid/nodes/scene_lights.hpp"
+#include "soccernoid/nodes/scene_light.hpp"
 #include "soccernoid/nodes/skybox.hpp"
 #include "soccernoid/nodes/snail.hpp"
 #include "soccernoid/nodes/teapot.hpp"
@@ -148,6 +148,7 @@ Level::standard()
         constexpr uint   grid_n   = 7;
         constexpr float  padding  = 0.1f;
 
+        level.emplace_child<SceneLightNode>().rename("Light");
         level.emplace_child<SkyboxNode>().rename("Skybox");
         level.emplace_child<CometNode>().rename("Comet");
 
@@ -233,7 +234,7 @@ Level::defeat()
 {
     return { [](LevelNode &level)
     {
-        level.emplace_child<SceneLightsNode>().rename("Lights");
+        level.emplace_child<SceneLightNode>().rename("Light");
         level.emplace_child<SkyboxNode>(textures.skybox.blood).rename("Skybox");
         level.emplace_child<CometNode>().rename("Comet");
         level.emplace_child<DefeatScreenNode>().rename("DefeatScreen");
@@ -245,7 +246,7 @@ Level::victory()
 {
     return { [](LevelNode &level)
     {
-        level.emplace_child<SceneLightsNode>().rename("Lights");
+        level.emplace_child<SceneLightNode>().rename("Light");
         level.emplace_child<SkyboxNode>(textures.skybox.dawn).rename("Skybox");
         level.emplace_child<CometNode>().rename("Comet");
         level.emplace_child<VictoryScreenNode>().rename("VictoryScreen");

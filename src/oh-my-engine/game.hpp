@@ -47,8 +47,7 @@ class Game : public EventConnectionHolder
 
         struct Lighting
         {
-            Color global_ambient = Color::rgb(0.2f, 0.2f, 0.2f);
-            bool  enabled        = true;
+            bool enabled = true;
         };
 
         std::function<std::unique_ptr<Logger>()> make_logger

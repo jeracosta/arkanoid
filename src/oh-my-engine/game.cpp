@@ -116,8 +116,7 @@ Game::initialize_()
         glEnable(GL_COLOR_MATERIAL);
         glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
 
-        auto [r, g, b, a]        = config_.lighting.global_ambient.rgba_f();
-        GLfloat global_ambient[] = { r, g, b, a };
+        GLfloat global_ambient[] = { 0, 0, 0, 1 }; // no global ambient
         glLightModelfv(GL_LIGHT_MODEL_AMBIENT, global_ambient);
         glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
 
@@ -185,9 +184,9 @@ Game::run_()
         [[likely]]
         if (root_node_)
         {
-            visit_dfs(*root_node_,
-                      [&render_frame](Node &node) { node.render_to(render_frame); },
-                      [](Node &) {});
+            visit_dfs(*root_node_, [&render_frame](Node &node) {
+                node.render_to(render_frame);
+            }, [](Node &) {});
         }
 
         ome::open_gl::render(render_frame);

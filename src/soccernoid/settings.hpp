@@ -3,7 +3,10 @@
 #include <tuple>
 #include <utility>
 
+#include "oh-my-engine/color.hpp"
+#include "oh-my-engine/constants.hpp"
 #include "oh-my-engine/events.hpp"
+#include "oh-my-engine/math/vector.hpp"
 
 namespace soccernoid::settings::window {
 
@@ -191,6 +194,22 @@ struct ShowWireframes
 
 } // namespace soccernoid::settings::render
 
+namespace soccernoid::settings {
+
+struct GlobalLight
+{
+    ome::Vec3f direction = ome::down;
+
+    ome::Color ambient  = ome::Color::rgb(0.04f, 0.04f, 0.04f);
+    ome::Color diffuse  = ome::Color::rgb(0.10f, 0.10f, 0.10f);
+    ome::Color specular = ome::Color::rgb(0.02f, 0.02f, 0.02f);
+
+    bool
+    operator==(const GlobalLight &) const = default;
+};
+
+} // namespace soccernoid::settings
+
 namespace soccernoid {
 
 using SettingsEventBus = ome::EventBus<settings::window::Fullscreen,
@@ -200,12 +219,12 @@ using SettingsEventBus = ome::EventBus<settings::window::Fullscreen,
                                        settings::camera::MouseSensitivity,
                                        settings::camera::MovementSpeed,
                                        settings::render::ShowFrameRate,
-                                       settings::render::ShowWireframes>;
+                                       settings::render::ShowWireframes,
+                                       settings::GlobalLight>;
 
 class Settings : private SettingsEventBus
 {
   private:
-
     SettingsEventBus::EventTuple values_;
 
   public:

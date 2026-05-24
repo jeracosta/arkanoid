@@ -184,6 +184,10 @@ class Color
         return Vec3f(rgb()) / max_channel_value;
     }
 
+    constexpr bool
+    operator==(const Color &) const
+        = default;
+
     // #endregion
 
     static constexpr uint max_channel_value = std::numeric_limits<decltype(alpha_)>::max();

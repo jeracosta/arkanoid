@@ -81,6 +81,19 @@ Mesh::recenter(Vec3f new_origin)
     }
 }
 
+void
+Mesh::rotate(const Orientation &orientation)
+{
+    for (auto &primitive : primitives_)
+    {
+        for (auto &vertex : primitive.vertices)
+        {
+            vertex.position = orientation * vertex.position;
+            vertex.normal   = orientation * vertex.normal;
+        }
+    }
+}
+
 Vec3f
 Mesh::size() const
 {

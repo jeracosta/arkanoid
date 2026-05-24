@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "oh-my-engine/math/interval.hpp"
+#include "oh-my-engine/math/orientation.hpp"
 #include "oh-my-engine/math/vector.hpp"
 
 namespace ome {
@@ -109,6 +110,9 @@ class Mesh
 
     void
     recenter(Vec3f new_origin = { 0.0f });
+
+    void
+    rotate(const Orientation &orientation);
 
     GLsizei
     index_count() const noexcept

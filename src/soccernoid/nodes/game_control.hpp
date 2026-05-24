@@ -3,6 +3,7 @@
 #include <format>
 
 #include "soccernoid/events.hpp"
+#include "soccernoid/input.hpp"
 #include "soccernoid/nodes/soccernoid_node.hpp"
 
 namespace soccernoid {
@@ -14,6 +15,20 @@ class GameControlNode : public SoccernoidNode<>
     int  projectile_count_    = 0;
     int  total_spawned_count_ = 0;
     bool game_over_           = false;
+    bool resetting_           = false;
+
+    void
+    reset_()
+    {
+        resetting_ = true;
+        game()->schedule([this]
+        {
+            projectile_count_    = 0;
+            total_spawned_count_ = 0;
+            game_over_           = false;
+            resetting_           = false;
+        });
+    }
 
     void
     on_projectile_spawned_(const ProjectileSpawned &)
@@ -29,7 +44,7 @@ class GameControlNode : public SoccernoidNode<>
         --projectile_count_;
         log(std::format("Projectile despawned (live: {})", projectile_count_));
 
-        if (projectile_count_ == 0 && total_spawned_count_ > 0 && !game_over_)
+        if (projectile_count_ == 0 && total_spawned_count_ > 0 && !game_over_ && !resetting_)
         {
             game_over_ = true;
             log("No projectiles left — player defeated");
@@ -58,6 +73,7 @@ class GameControlNode : public SoccernoidNode<>
         hold(events.bind(&GameControlNode::on_projectile_spawned_, this));
         hold(events.bind(&GameControlNode::on_projectile_despawned_, this));
         hold(events.bind(&GameControlNode::on_goal_hit_, this));
+        hold(game()->input.bind(Action::Reset, [this] { reset_(); }));
     }
 };
 

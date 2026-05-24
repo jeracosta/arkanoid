@@ -17,6 +17,7 @@
 #include "oh-my-engine/texture.hpp"
 #include "soccernoid/constants.hpp"
 #include "soccernoid/events.hpp"
+#include "soccernoid/input.hpp"
 #include "soccernoid/nodes/comet.hpp"
 #include "soccernoid/nodes/current_transformer.hpp"
 #include "soccernoid/nodes/defeat_screen.hpp"
@@ -66,6 +67,7 @@ class LevelNode : public SoccernoidNode<>
 
     PendingSwap pending_swap_ = PendingSwap::None;
     bool        game_over_    = false;
+    bool        resetting_    = false;
 
     void
     configure_(const Level &level)
@@ -93,6 +95,18 @@ class LevelNode : public SoccernoidNode<>
         configure_(level);
     }
 
+    void
+    reset_()
+    {
+        resetting_    = true;
+        game_over_    = false;
+        pending_swap_ = PendingSwap::None;
+
+        swap_to_(standard_level_);
+
+        resetting_ = false;
+    }
+
   public:
     void
     on_mount_() override
@@ -101,6 +115,11 @@ class LevelNode : public SoccernoidNode<>
 
         hold(game()->events.bind([this](const PlayerDefeated &)
         {
+            if (resetting_)
+            {
+                return;
+            }
+
             if (game_over_)
             {
                 return;
@@ -111,6 +130,11 @@ class LevelNode : public SoccernoidNode<>
 
         hold(game()->events.bind([this](const PlayerVictorious &)
         {
+            if (resetting_)
+            {
+                return;
+            }
+
             if (game_over_)
             {
                 return;
@@ -118,6 +142,8 @@ class LevelNode : public SoccernoidNode<>
             game_over_    = true;
             pending_swap_ = PendingSwap::Victory;
         }));
+
+        hold(game()->input.bind(Action::Reset, [this] { reset_(); }));
     }
 
     void

@@ -8,10 +8,12 @@
 #include <ranges>
 
 #include "oh-my-engine/constants.hpp"
+#include "oh-my-engine/math/orientation.hpp"
 #include "oh-my-engine/nodes/hitbox_node.hpp"
 #include "oh-my-engine/render_frame.hpp"
 #include "soccernoid/constants.hpp"
 #include "soccernoid/input.hpp"
+#include "soccernoid/nodes/board.hpp"
 #include "soccernoid/nodes/level.hpp"
 #include "soccernoid/nodes/projectile.hpp"
 
@@ -28,11 +30,11 @@ PlayerNode::Configuration::make_harry()
 }
 
 std::shared_ptr<ome::Mesh>
-PlayerNode::mesh_()
+PlayerNode::character_mesh_()
 {
-    auto mesh = static_cast<std::shared_ptr<ome::Mesh>>(meshes.dragon);
+    auto mesh = static_cast<std::shared_ptr<ome::Mesh>>(meshes.racoon);
     mesh->recenter();
-    constexpr float target_extent = 2.5f;
+    constexpr float target_extent = 1.8f;
     auto            sz            = mesh->size();
     float           max_dim       = std::max({ sz[0], sz[1], sz[2] });
     mesh->resize(sz * (target_extent / max_dim));
@@ -40,9 +42,15 @@ PlayerNode::mesh_()
 }
 
 ome::Material
-PlayerNode::material_()
+PlayerNode::character_material_()
 {
-    return {};
+    return {
+        .color = {
+            .ambient  = ome::Color::hex(0x111111FF),
+            .diffuse  = ome::Color::hex(0x111111FF),
+        },
+        .texture = textures.racoon,
+    };
 }
 
 PlayerNode::AimArrowNode_::AimArrowNode_()
@@ -102,9 +110,12 @@ PlayerNode::on_render_(ome::RenderFrame &frame)
     face_align.rotate(ome::pi, ome::up);
     transform.orientation = transform.orientation * face_align;
 
+    transform.position += ome::Vec3f{ 0.0f, 0.1f, 0.0f };
+    transform.orientation.steer_pitch(-ome::pi / 2.0f);
+
     frame.draw_commands.push_back(ome::DrawCommand{
-        .mesh      = mesh_(),
-        .materials = { material_() },
+        .mesh      = character_mesh_(),
+        .materials = { character_material_() },
         .transform = transform,
     });
 }
@@ -135,8 +146,8 @@ PlayerNode::process_movement_()
         { Action::PlayerRight, ome::right },
     });
 
-    auto is_active = [this](const MoveSpecification &move)
-    { return game()->input.is_pressed(move.action); };
+    auto is_active
+        = [this](const MoveSpecification &move) { return game()->input.is_pressed(move.action); };
 
     auto active_moves = moves | std::views::filter(is_active);
 
@@ -163,7 +174,8 @@ PlayerNode::process_movement_()
 PlayerNode::PlayerNode(const Configuration &config)
     : config_(config)
 {
-    emplace_child<ome::HitboxNode>(mesh_()->size()).rename("Hitbox");
+    emplace_child<ome::HitboxNode>(character_mesh_()->size()).rename("Hitbox");
+    emplace_child<BoardNode>().position({ 0.0f, -0.5f, 0.0f }).rename("Board");
     emplace_child<AimArrowNode_>().rename("AimArrow");
 }
 

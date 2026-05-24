@@ -20,10 +20,10 @@ class PlayerNode : public ome::KinematicNode
 
   private:
     static std::shared_ptr<ome::Mesh>
-    mesh_();
+    character_mesh_();
 
     ome::Material
-    material_();
+    character_material_();
 
     static constexpr float player_radius_ = 0.2f;
 

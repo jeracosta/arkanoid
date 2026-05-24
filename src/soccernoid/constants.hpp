@@ -178,18 +178,20 @@ struct TexturePalette
     Item          barrel;
     Item          transformer;
     Item          moai;
+    Item          racoon;
     SkyboxPalette skybox;
 };
 
 static const inline TexturePalette textures = {
-    .column = { "column.tga.png" },
-    .dirt = { "dirt.png" },
-    .metal = { "metal.jpg" },
+    .column      = { "column.tga.png" },
+    .dirt        = { "dirt.png" },
+    .metal       = { "metal.jpg" },
     .cobblestone = { "cobblestone.jpg" },
-    .snail = { "snail.webp" },
-    .barrel = { "explosive_barrel.png" },
+    .snail       = { "snail.webp" },
+    .barrel      = { "explosive_barrel.png" },
     .transformer = { "transformer.png" },
     .moai        = { "moai.png" },
+    .racoon      = { "racoon_colors.png" },
     .skybox = { //TODO: Generate faces from cubemap
         .ablaze = TexturePalette::SkyboxFaces::from_directory("skybox/ablaze"),
         .blink  = TexturePalette::SkyboxFaces::from_directory("skybox/blink"),
@@ -252,6 +254,8 @@ struct MeshPalette
     Item teapot;
     Item transformer;
     Item moai;
+    Item skateboard;
+    Item racoon;
 };
 
 static const inline MeshPalette meshes = {
@@ -264,6 +268,8 @@ static const inline MeshPalette meshes = {
     .teapot       = { "teapot/teapot.obj" },
     .transformer  = { "transformer/tranformer.gltf" },
     .moai         = { "moai.fbx" },
+    .skateboard   = { "board.obj" },
+    .racoon       = { "racoon/scene.gltf" },
 };
 
 } // namespace soccernoid

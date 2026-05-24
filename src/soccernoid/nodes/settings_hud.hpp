@@ -181,6 +181,8 @@ class SettingsHudNode : public SoccernoidNode<>
 
         ImGui::SeparatorText("Render");
         checkbox_<settings::render::ShowWireframes>("Wireframe");
+        checkbox_<settings::render::ShowTextures>("Textures");
+        checkbox_<settings::render::SmoothShading>("Smooth shading");
 
         if (ImGui::CollapsingHeader("Global light"))
         {

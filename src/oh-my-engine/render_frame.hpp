@@ -22,6 +22,12 @@ struct RenderFrame
     // When true, scene geometry is drawn as wireframe (skybox and overlays stay solid).
     bool wireframe = false;
 
+    // When false, scene geometry is drawn untextured (flat material colors).
+    bool textures_enabled = true;
+
+    // true: smooth (GL_SMOOTH) per-vertex shading · false: flat (GL_FLAT) per-face shading.
+    bool smooth_shading = true;
+
     void
     clear()
     {

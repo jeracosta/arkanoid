@@ -21,6 +21,11 @@ struct ObstacleDestroyed
     int projectiles_spawned;
 };
 
+struct ScoreAwarded
+{
+    int points;
+};
+
 struct GoalHit
 {
 };
@@ -37,6 +42,7 @@ using GameEventBus = ome::EventBus<ProjectileSpawned,
                                    ProjectileDespawned,
                                    PlayerDefeated,
                                    ObstacleDestroyed,
+                                   ScoreAwarded,
                                    GoalHit,
                                    PlayerVictorious,
                                    AppTerminated>;

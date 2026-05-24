@@ -7,8 +7,10 @@
 #include "oh-my-engine/nodes/mesh_node.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
 #include "soccernoid/constants.hpp"
+#include "soccernoid/events.hpp"
 #include "soccernoid/nodes/fire_explosion.hpp"
 #include "soccernoid/nodes/projectile.hpp"
+#include "soccernoid/soccernoid.hpp"
 
 namespace soccernoid {
 
@@ -34,6 +36,7 @@ class ExplosiveBarrelNode : public ome::TransformNode
             explosion.position(world_position);
 
             auto *barrel = static_cast<ExplosiveBarrelNode *>(parent());
+            static_cast<Soccernoid *>(game())->events.emit(ScoreAwarded{ 15 });
             barrel->request_unmount();
         }
 

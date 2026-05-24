@@ -9,7 +9,9 @@
 #include "oh-my-engine/nodes/particle_emitter_node.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
 #include "soccernoid/constants.hpp"
+#include "soccernoid/events.hpp"
 #include "soccernoid/nodes/projectile.hpp"
+#include "soccernoid/soccernoid.hpp"
 
 namespace soccernoid {
 
@@ -78,6 +80,7 @@ class MoaiNode : public ome::TransformNode
             particles.position(world_pos);
 
             auto *moai = static_cast<MoaiNode *>(parent());
+            static_cast<Soccernoid *>(game())->events.emit(ScoreAwarded{ 5 });
             moai->request_unmount();
         }
 

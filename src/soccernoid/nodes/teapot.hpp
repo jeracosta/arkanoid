@@ -43,7 +43,13 @@ class TeapotNode : public SoccernoidNode<ome::TransformNode>
 
             if (!teapot->is_invulnerable_())
             {
-                teapot->life_ = std::max(0.0f, teapot->life_ - 0.2f);
+                auto prev_life = teapot->life_;
+                teapot->life_  = std::max(0.0f, teapot->life_ - 0.2f);
+
+                auto damage = prev_life - teapot->life_;
+                teapot->game()->events.emit(
+                    ScoreAwarded{ static_cast<int>(std::round(damage * 100.0f)) });
+
                 teapot->size_process_->restart();
                 teapot->color_process_->restart();
             }

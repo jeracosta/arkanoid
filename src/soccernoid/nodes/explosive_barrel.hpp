@@ -3,7 +3,6 @@
 #include <memory>
 
 #include "oh-my-engine/constants.hpp"
-#include "oh-my-engine/math/orientation.hpp"
 #include "oh-my-engine/math/vector.hpp"
 #include "oh-my-engine/mesh.hpp"
 #include "oh-my-engine/nodes/hitbox_node.hpp"

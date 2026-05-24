@@ -1,7 +1,5 @@
 #pragma once
 
-#include <format>
-#include <functional>
 #include <memory>
 #include <numbers>
 #include <random>

@@ -102,7 +102,7 @@ class CameraControlNode : public SoccernoidNode<>
     }
 
     CameraShot
-    first_person_shot_()
+    first_person_shot_(ome::Orientation orientation)
     {
         auto *player = ome::find_descendant<PlayerNode>(game()->root_node());
 
@@ -114,15 +114,15 @@ class CameraControlNode : public SoccernoidNode<>
         auto eye
             = player->transform<ome::Space::World>().position + ome::up * first_person_eye_height_;
 
-        return { eye + camera_->forward() * first_person_lookahead_,
+        return { eye + orientation.forward() * first_person_lookahead_,
                  first_person_distance_,
-                 camera_->orientation() };
+                 orientation };
     }
 
     void
     follow_player_()
     {
-        auto shot = first_person_shot_();
+        auto shot = first_person_shot_(camera_->orientation());
 
         camera_->target(shot.target);
         camera_->distance(shot.distance);
@@ -135,7 +135,7 @@ class CameraControlNode : public SoccernoidNode<>
         {
         case CameraView::FirstPerson:
         {
-            return first_person_shot_();
+            return first_person_shot_({});
         }
         case CameraView::Freecam:
         {

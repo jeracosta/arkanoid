@@ -1,3 +1,5 @@
+#pragma once
+
 #include <filesystem>
 #include <memory>
 #include <numbers>
@@ -204,20 +206,18 @@ Level::standard()
                         inner_min_z, inner_max_z, (static_cast<float>(j) + 0.5f) / grid_n);
 
                     auto turn_around
-                        = ome::Orientation().rotate(std::numbers::phi_v<float>, ome::up);
+                        = ome::Orientation().rotate(std::numbers::phi_v<float> * 2, ome::up);
 
                     switch (pick(rng))
                     {
                     case 0:
                         level.emplace_child<ExplosiveBarrelNode>()
                             .position({ x, 0.0f, z })
-                            .orientation(turn_around)
                             .rename(std::format("Barrel{}", idx++));
                         break;
                     case 1:
                         level.emplace_child<CurrentTransformerNode>()
                             .position({ x, 0.0f, z })
-                            .orientation(turn_around)
                             .rename(std::format("Transformer{}", idx++));
                         break;
                     case 2:

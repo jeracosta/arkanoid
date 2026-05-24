@@ -205,8 +205,7 @@ Level::standard()
                     float z = ome::lerp(
                         inner_min_z, inner_max_z, (static_cast<float>(j) + 0.5f) / grid_n);
 
-                    auto turn_around
-                        = ome::Orientation().rotate(std::numbers::phi_v<float> * 2, ome::up);
+                    constexpr float phi = std::numbers::phi_v<float>;
 
                     switch (pick(rng))
                     {
@@ -218,13 +217,14 @@ Level::standard()
                     case 1:
                         level.emplace_child<CurrentTransformerNode>()
                             .position({ x, 0.0f, z })
+                            .orientation(ome::Orientation().steer_yaw(-phi))
                             .rename(std::format("Transformer{}", idx++));
                         break;
                     case 2:
                     case 3:
                         level.emplace_child<MoaiNode>()
                             .position({ x, 0.0f, z })
-                            .orientation(turn_around)
+                            .orientation(ome::Orientation().steer_yaw(2 * phi))
                             .rename(std::format("Moai{}", idx++));
                         break;
                     }

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <tuple>
 #include <utility>
 
 #include "oh-my-engine/color.hpp"
@@ -74,6 +73,14 @@ struct Speed
 } // namespace soccernoid::settings::time
 
 namespace soccernoid {
+
+enum class TextFont
+{
+    Arial,
+    ComicSans,
+    DejaVuSans,
+    Count_,
+};
 
 enum class CameraView
 {
@@ -194,6 +201,29 @@ struct ShowWireframes
 
 } // namespace soccernoid::settings::render
 
+namespace soccernoid::settings::ui {
+
+struct TextFont
+{
+    soccernoid::TextFont value = soccernoid::TextFont::Arial;
+
+    constexpr TextFont(soccernoid::TextFont value = soccernoid::TextFont::Arial)
+        : value(value)
+    {
+    }
+
+    constexpr
+    operator soccernoid::TextFont() const
+    {
+        return value;
+    }
+
+    constexpr bool
+    operator==(const TextFont &) const = default;
+};
+
+} // namespace soccernoid::settings::ui
+
 namespace soccernoid::settings {
 
 struct GlobalLight
@@ -220,6 +250,7 @@ using SettingsEventBus = ome::EventBus<settings::window::Fullscreen,
                                        settings::camera::MovementSpeed,
                                        settings::render::ShowFrameRate,
                                        settings::render::ShowWireframes,
+                                       settings::ui::TextFont,
                                        settings::GlobalLight>;
 
 class Settings : private SettingsEventBus

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <imgui.h>
 
 #include "soccernoid/constants.hpp"
@@ -24,7 +25,8 @@ class SettingsHudNode : public SoccernoidNode<>
     static constexpr float menu_font_size_   = 40.0f;
     static constexpr float panel_font_scale_ = 1.0f;
 
-    ImFont *menu_font_ = nullptr;
+    std::array<ImFont *, static_cast<int>(TextFont::Count_)> menu_fonts_{};
+    ImFont                                                  *menu_font_ = nullptr;
 
     bool   visible_ = false;
     Screen screen_  = Screen::Main;
@@ -125,6 +127,32 @@ class SettingsHudNode : public SoccernoidNode<>
         }
     }
 
+    static constexpr int
+    font_index_(TextFont font)
+    {
+        return static_cast<int>(font);
+    }
+
+    void
+    update_menu_font_(const settings::ui::TextFont &font)
+    {
+        menu_font_ = menu_fonts_[font_index_(font.value)];
+    }
+
+    void
+    font_combo_()
+    {
+        auto &settings = game()->settings;
+
+        const char *fonts[] = { "Arial", "Comic Sans", "DejaVu Sans" };
+
+        int current = font_index_(settings.get<settings::ui::TextFont>().value);
+        if (ImGui::Combo("Text font", &current, fonts, IM_ARRAYSIZE(fonts)))
+        {
+            settings.set(settings::ui::TextFont{ static_cast<TextFont>(current) });
+        }
+    }
+
     void
     main_screen_()
     {
@@ -180,6 +208,7 @@ class SettingsHudNode : public SoccernoidNode<>
         slider_<settings::camera::MovementSpeed>("Movement speed", 0.0f, 20.0f, "%.1f");
 
         ImGui::SeparatorText("Render");
+        font_combo_();
         checkbox_<settings::render::ShowWireframes>("Wireframe");
 
         if (ImGui::CollapsingHeader("Global light"))
@@ -267,8 +296,17 @@ class SettingsHudNode : public SoccernoidNode<>
         auto *fonts = ImGui::GetIO().Fonts;
         fonts->AddFontDefault();
 
-        const auto font_path = (FilesystemPaths::assets / "fonts" / "comici.ttf").string();
-        menu_font_           = fonts->AddFontFromFileTTF(font_path.c_str(), menu_font_size_);
+        const auto comic_sans_path = (FilesystemPaths::assets / "fonts" / "comici.ttf").string();
+
+        menu_fonts_[font_index_(TextFont::Arial)] = fonts->AddFontFromFileTTF(
+            "/usr/share/fonts/gsfonts/NimbusSans-Regular.otf", menu_font_size_);
+        menu_fonts_[font_index_(TextFont::ComicSans)]
+            = fonts->AddFontFromFileTTF(comic_sans_path.c_str(), menu_font_size_);
+        menu_fonts_[font_index_(TextFont::DejaVuSans)]
+            = fonts->AddFontFromFileTTF("/usr/share/fonts/TTF/DejaVuSans.ttf", menu_font_size_);
+
+        update_menu_font_(game()->settings.get<settings::ui::TextFont>());
+        hold(game()->settings.bind(&SettingsHudNode::update_menu_font_, this));
 
         hold(game()->input.bind(Action::ToggleHud, [this] { toggle_(); }));
     }

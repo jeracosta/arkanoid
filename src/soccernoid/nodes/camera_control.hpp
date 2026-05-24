@@ -5,6 +5,7 @@
 #include "oh-my-engine/input.hpp"
 #include "oh-my-engine/interpolation.hpp"
 #include "soccernoid/input.hpp"
+#include "soccernoid/nodes/player.hpp"
 #include "soccernoid/nodes/soccernoid_node.hpp"
 #include "soccernoid/settings.hpp"
 
@@ -47,6 +48,10 @@ class CameraControlNode : public SoccernoidNode<>
     using MovementSpeed    = settings::camera::MovementSpeed;
     using View             = settings::camera::View;
 
+    static constexpr float first_person_eye_height_ = 1.4f;
+    static constexpr float first_person_lookahead_  = 0.8f;
+    static constexpr float first_person_distance_   = 2.4f;
+
     ome::Camera *camera_;
     Settings     settings_;
     CameraView   view_ = CameraView::ThirdPerson;
@@ -72,7 +77,7 @@ class CameraControlNode : public SoccernoidNode<>
         auto mouse_sensitivity        = game()->settings.get<MouseSensitivity>().value;
         auto [delta_yaw, delta_pitch] = -input.delta * mouse_sensitivity;
 
-        auto yaw_axis = view_ == CameraView::FirstPerson ? ome::up : camera_->up();
+        auto yaw_axis = view_ == CameraView::ThirdPerson ? camera_->up() : ome::up;
         camera_->rotate(delta_yaw, yaw_axis);
 
         camera_->rotate(delta_pitch, camera_->right());
@@ -91,13 +96,49 @@ class CameraControlNode : public SoccernoidNode<>
     }
 
     CameraShot
-    shot_for_view_(CameraView view) const
+    current_shot_() const
+    {
+        return { camera_->target(), camera_->distance(), camera_->orientation() };
+    }
+
+    CameraShot
+    first_person_shot_()
+    {
+        auto *player = ome::find_descendant<PlayerNode>(game()->root_node());
+
+        if (!player)
+        {
+            return current_shot_();
+        }
+
+        auto eye
+            = player->transform<ome::Space::World>().position + ome::up * first_person_eye_height_;
+
+        return { eye + camera_->forward() * first_person_lookahead_,
+                 first_person_distance_,
+                 camera_->orientation() };
+    }
+
+    void
+    follow_player_()
+    {
+        auto shot = first_person_shot_();
+
+        camera_->target(shot.target);
+        camera_->distance(shot.distance);
+    }
+
+    CameraShot
+    shot_for_view_(CameraView view)
     {
         switch (view)
         {
         case CameraView::FirstPerson:
         {
-            // Camera at field center eye level, looking horizontally at the goalkeeper
+            return first_person_shot_();
+        }
+        case CameraView::Freecam:
+        {
             return { { 0.0f, 1.7f, 0.0f }, 0.1f, {} };
         }
         case CameraView::ThirdPerson:
@@ -149,7 +190,7 @@ class CameraControlNode : public SoccernoidNode<>
     void
     process_movement_()
     {
-        if (is_transitioning_() || view_ != CameraView::FirstPerson)
+        if (is_transitioning_() || view_ != CameraView::Freecam)
         {
             return;
         }
@@ -218,9 +259,9 @@ class CameraControlNode : public SoccernoidNode<>
     {
         camera_ = &game()->camera;
 
-        hold(game()->input.bind(Action::ChangeView,
-                                [this]
-        { game()->settings.set<View>(succesor(game()->settings.get<View>().value)); }));
+        hold(game()->input.bind(Action::ChangeView, [this] {
+            game()->settings.set<View>(succesor(game()->settings.get<View>().value));
+        }));
 
         auto mouse_motion_handler = &CameraControlNode::on_mouse_motion_;
         hold(game()->input.bind(mouse_motion_handler, this));
@@ -250,23 +291,26 @@ class CameraControlNode : public SoccernoidNode<>
     {
         process_movement_();
 
-        if (!transition_)
+        if (transition_)
         {
-            return;
+            transition_->update(game()->time.unscaled.delta());
+
+            auto shot        = transition_->value();
+            shot.orientation = ome::Orientation(glm::normalize(glm::quat(shot.orientation)));
+
+            camera_->target(shot.target);
+            camera_->distance(shot.distance);
+            camera_->orientate(shot.orientation);
+
+            if (transition_->is_completed())
+            {
+                transition_.reset();
+            }
         }
 
-        transition_->update(game()->time.unscaled.delta());
-
-        auto shot        = transition_->value();
-        shot.orientation = ome::Orientation(glm::normalize(glm::quat(shot.orientation)));
-
-        camera_->target(shot.target);
-        camera_->distance(shot.distance);
-        camera_->orientate(shot.orientation);
-
-        if (transition_->is_completed())
+        if (!transition_ && view_ == CameraView::FirstPerson)
         {
-            transition_.reset();
+            follow_player_();
         }
     }
 };

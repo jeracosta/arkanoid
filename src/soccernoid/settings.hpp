@@ -86,6 +86,7 @@ enum class CameraView
 {
     FirstPerson,
     ThirdPerson,
+    Freecam,
     Count_,
 };
 

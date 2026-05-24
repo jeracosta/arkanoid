@@ -118,7 +118,7 @@ class SettingsHudNode : public SoccernoidNode<>
     {
         auto &settings = game()->settings;
 
-        const char *views[] = { "First person", "Third person" };
+        const char *views[] = { "First person", "Third person", "Freecam" };
 
         int current = static_cast<int>(settings.get<settings::camera::View>().value);
         if (ImGui::Combo("View", &current, views, IM_ARRAYSIZE(views)))

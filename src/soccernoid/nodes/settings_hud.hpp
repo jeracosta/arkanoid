@@ -296,14 +296,16 @@ class SettingsHudNode : public SoccernoidNode<>
         auto *fonts = ImGui::GetIO().Fonts;
         fonts->AddFontDefault();
 
-        const auto comic_sans_path = (FilesystemPaths::assets / "fonts" / "comici.ttf").string();
+        const auto font_path = FilesystemPaths::assets / "fonts";
 
-        menu_fonts_[font_index_(TextFont::Arial)] = fonts->AddFontFromFileTTF(
-            "/usr/share/fonts/gsfonts/NimbusSans-Regular.otf", menu_font_size_);
+        menu_fonts_[font_index_(TextFont::Arial)]
+            = fonts->AddFontFromFileTTF((font_path / "NimbusSans-Regular.otf").string().c_str(),
+                                        menu_font_size_);
         menu_fonts_[font_index_(TextFont::ComicSans)]
-            = fonts->AddFontFromFileTTF(comic_sans_path.c_str(), menu_font_size_);
+            = fonts->AddFontFromFileTTF((font_path / "comici.ttf").string().c_str(), menu_font_size_);
         menu_fonts_[font_index_(TextFont::DejaVuSans)]
-            = fonts->AddFontFromFileTTF("/usr/share/fonts/TTF/DejaVuSans.ttf", menu_font_size_);
+            = fonts->AddFontFromFileTTF((font_path / "DejaVuSans.ttf").string().c_str(),
+                                        menu_font_size_);
 
         update_menu_font_(game()->settings.get<settings::ui::TextFont>());
         hold(game()->settings.bind(&SettingsHudNode::update_menu_font_, this));

@@ -50,6 +50,8 @@ class TeapotNode : public SoccernoidNode<ome::TransformNode>
                 teapot->game()->events.emit(
                     ScoreAwarded{ static_cast<int>(std::round(damage * 100.0f)) });
 
+                teapot->lifebar_->set_progress(teapot->life_);
+
                 teapot->size_process_->restart();
                 teapot->color_process_->restart();
             }
@@ -162,9 +164,8 @@ class TeapotNode : public SoccernoidNode<ome::TransformNode>
         });
 
         lifebar_->position({ 0.0f, vertical + mesh_size_[1] / 2.0f + 3.5f, 0.0f });
-        lifebar_->set_progress(life_);
 
-        if (life_ == 0.0f && lifebar_->is_progress_completed() && !won_)
+        if (life_ <= 0.0f && lifebar_->is_progress_completed() && !won_)
         {
             won_ = true;
             game()->events.emit(PlayerVictorious{});

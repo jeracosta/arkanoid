@@ -9,17 +9,37 @@ namespace soccernoid {
 
 class TerrainNode : public ome::HitboxNode
 {
+  private:
+    ome::Box mesh_region_;
+
+    // The hitbox is 10x deeper than the visible mesh to catch collisions of fast falling
+    // projectiles that would otherwise tunnel through the thin floor in a single frame.
+    static ome::Box
+    deepened_hitbox_(const ome::Box &mesh_region)
+    {
+        auto  min   = mesh_region.min();
+        auto  max   = mesh_region.max();
+        float depth = (max[1] - min[1]) * 10.0f;
+
+        return ome::Box::from_bounds(ome::Vec3f{ min[0], max[1] - depth, min[2] }, max);
+    }
+
+    TerrainNode(const ome::Box &mesh_region, const ome::Box &hitbox)
+        : ome::HitboxNode(hitbox.size(), hitbox.center()),
+          mesh_region_(mesh_region)
+    {
+    }
+
   public:
     TerrainNode(ome::Box region)
-        : HitboxNode(region.size())
+        : TerrainNode(region, deepened_hitbox_(region))
     {
-        update_transform<ome::Space::Local>([&](auto &t) { t.position = region.center(); });
     }
 
     void
     on_render_(ome::RenderFrame &frame) override
     {
-        auto region = hitbox<ome::Space::World>();
+        auto region = mesh_region_;
 
         auto materials = std::vector<ome::Material>{
             { .texture = textures.dirt },                           // 0

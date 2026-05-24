@@ -1,5 +1,6 @@
 #include <filesystem>
 #include <memory>
+#include <numbers>
 #include <random>
 #include <string>
 #include <vector>
@@ -144,9 +145,9 @@ Level::standard()
 {
     return { [](LevelNode &level)
     {
-        constexpr auto   map_area = ome::Vec2f{ 9, 10.5f };
-        constexpr uint   grid_n   = 7;
-        constexpr float  padding  = 0.1f;
+        constexpr auto  map_area = ome::Vec2f{ 9, 10.5f };
+        constexpr uint  grid_n   = 7;
+        constexpr float padding  = 0.1f;
 
         level.emplace_child<SceneLightNode>().rename("Light");
         level.emplace_child<SkyboxNode>().rename("Skybox");
@@ -185,11 +186,11 @@ Level::standard()
         {
             // Inner zone: exclude padding fraction from each side of the map area
             float inner_min_x = -map_area[0] * (1.0f - 2.0f * padding);
-            float inner_max_x =  map_area[0] * (1.0f - 2.0f * padding);
+            float inner_max_x = map_area[0] * (1.0f - 2.0f * padding);
             float inner_min_z = -map_area[1] * (1.0f - 2.0f * padding);
-            float inner_max_z =  map_area[1] * (1.0f - 2.0f * padding);
+            float inner_max_z = map_area[1] * (1.0f - 2.0f * padding);
 
-            static std::mt19937 rng{ std::random_device{}() };
+            static std::mt19937                rng{ std::random_device{}() };
             std::uniform_int_distribution<int> pick(0, 3); // 0=barrel,1=transformer,2=moai,3=moai
 
             int idx = 0;
@@ -197,27 +198,33 @@ Level::standard()
             {
                 for (uint j = 0; j < grid_n; ++j)
                 {
-                    float x = ome::lerp(inner_min_x, inner_max_x,
-                                        (static_cast<float>(i) + 0.5f) / grid_n);
-                    float z = ome::lerp(inner_min_z, inner_max_z,
-                                        (static_cast<float>(j) + 0.5f) / grid_n);
+                    float x = ome::lerp(
+                        inner_min_x, inner_max_x, (static_cast<float>(i) + 0.5f) / grid_n);
+                    float z = ome::lerp(
+                        inner_min_z, inner_max_z, (static_cast<float>(j) + 0.5f) / grid_n);
+
+                    auto turn_around
+                        = ome::Orientation().rotate(std::numbers::phi_v<float>, ome::up);
 
                     switch (pick(rng))
                     {
                     case 0:
                         level.emplace_child<ExplosiveBarrelNode>()
                             .position({ x, 0.0f, z })
+                            .orientation(turn_around)
                             .rename(std::format("Barrel{}", idx++));
                         break;
                     case 1:
                         level.emplace_child<CurrentTransformerNode>()
                             .position({ x, 0.0f, z })
+                            .orientation(turn_around)
                             .rename(std::format("Transformer{}", idx++));
                         break;
                     case 2:
                     case 3:
                         level.emplace_child<MoaiNode>()
                             .position({ x, 0.0f, z })
+                            .orientation(turn_around)
                             .rename(std::format("Moai{}", idx++));
                         break;
                     }

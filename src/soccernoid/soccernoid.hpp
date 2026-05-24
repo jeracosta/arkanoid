@@ -15,6 +15,7 @@ class Soccernoid : public ome::Game
     explicit Soccernoid(const Configuration &config)
         : Game(config)
     {
+        hold(events.bind([this](const AppTerminated &) { stop(); }));
     }
 
     static void

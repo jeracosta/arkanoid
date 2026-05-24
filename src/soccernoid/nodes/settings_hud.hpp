@@ -2,24 +2,56 @@
 
 #include <imgui.h>
 
+#include "soccernoid/constants.hpp"
+#include "soccernoid/events.hpp"
 #include "soccernoid/input.hpp"
 #include "soccernoid/nodes/soccernoid_node.hpp"
 #include "soccernoid/settings.hpp"
 
 namespace soccernoid {
 
-// In-game overlay for inspecting and editing game settings
+// In-game menu: a main screen with credits, leading to settings, controls or quitting.
 class SettingsHudNode : public SoccernoidNode<>
 {
   private:
-    bool visible_ = false;
+    enum class Screen
+    {
+        Main,
+        Settings,
+        Controls,
+    };
+
+    static constexpr float menu_font_size_   = 40.0f;
+    static constexpr float panel_font_scale_ = 1.0f;
+
+    ImFont *menu_font_ = nullptr;
+
+    bool   visible_ = false;
+    Screen screen_  = Screen::Main;
 
     void
     toggle_()
     {
         visible_ = !visible_;
+        screen_  = Screen::Main;
         game()->window.set_relative_mouse_mode(!visible_);
         game()->settings.set(settings::time::Paused{ visible_ });
+    }
+
+    void
+    begin_centered_panel_(const char *title, bool *open = nullptr)
+    {
+        const auto *viewport = ImGui::GetMainViewport();
+
+        ImGui::SetNextWindowPos(viewport->GetCenter(), ImGuiCond_Always, ImVec2{ 0.5f, 0.5f });
+        ImGui::SetNextWindowSize(ImVec2{ viewport->Size.x * 0.8f, viewport->Size.y * 0.8f },
+                                 ImGuiCond_Always);
+
+        constexpr auto flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
+                               | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
+
+        ImGui::Begin(title, open, flags);
+        ImGui::SetWindowFontScale(panel_font_scale_);
     }
 
     template <class T>
@@ -60,8 +92,8 @@ class SettingsHudNode : public SoccernoidNode<>
 
         auto color_edit = [&](const char *label, ome::Color &color)
         {
-            auto  rgb    = color.rgb_f();
-            float c[3]   = { rgb[0], rgb[1], rgb[2] };
+            auto  rgb  = color.rgb_f();
+            float c[3] = { rgb[0], rgb[1], rgb[2] };
             if (ImGui::ColorEdit3(label, c))
             {
                 color   = ome::Color::rgb(c[0], c[1], c[2]);
@@ -93,22 +125,48 @@ class SettingsHudNode : public SoccernoidNode<>
         }
     }
 
-  public:
     void
-    on_mount_() override
+    main_screen_()
     {
-        hold(game()->input.bind(Action::ToggleHud, [this] { toggle_(); }));
+        begin_centered_panel_("Soccernoid");
+
+        ImGui::SetWindowFontScale(panel_font_scale_ * 1.4f);
+        ImGui::TextUnformatted("Soccernoid");
+        ImGui::SetWindowFontScale(panel_font_scale_);
+
+        ImGui::TextDisabled("Introducción a la Computación Gráfica - FING, UdelaR - 2026");
+        ImGui::Spacing();
+        ImGui::TextDisabled("Desarrollado por Jerónimo Acosta, Florencia Artucio, Joaquín Sande");
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        const ImVec2 button_size{ ImGui::GetContentRegionAvail().x, 0.0f };
+
+        if (ImGui::Button("Configuración", button_size))
+        {
+            screen_ = Screen::Settings;
+        }
+        if (ImGui::Button("Controles", button_size))
+        {
+            screen_ = Screen::Controls;
+        }
+        if (ImGui::Button("Salir", button_size))
+        {
+            game()->events.emit(AppTerminated{});
+        }
+
+        ImGui::End();
     }
 
     void
-    on_tick_() override
+    settings_screen_()
     {
-        if (!visible_)
-        {
-            return;
-        }
+        ImGui::SetNextWindowSize(ImVec2{ 760.0f, 0.0f }, ImGuiCond_FirstUseEver);
 
-        ImGui::Begin("Soccernoid");
+        bool open = true;
+        ImGui::Begin("Configuración", &open, ImGuiWindowFlags_NoSavedSettings);
 
         ImGui::Text("FPS: %.0f", game()->instant_frame_rate());
 
@@ -134,6 +192,117 @@ class SettingsHudNode : public SoccernoidNode<>
         checkbox_<settings::render::ShowFrameRate>("Show frame rate");
 
         ImGui::End();
+
+        if (!open)
+        {
+            toggle_();
+        }
+    }
+
+    void
+    controls_screen_()
+    {
+        struct Control
+        {
+            const char *keys;
+            const char *action;
+        };
+
+        static constexpr Control controls[] = {
+            { "Flechas Izq / Der", "Mover al jugador" },
+            { "Flecha Arriba", "Apuntar y disparar" },
+            { "Mouse", "Rotar la cámara" },
+            { "Rueda del mouse", "Acercar / alejar (FOV)" },
+            { "W A S D", "Mover la cámara (primera persona)" },
+            { "Espacio / Ctrl", "Subir / bajar la cámara" },
+            { "Shift", "Acelerar la cámara" },
+            { "V", "Cambiar vista" },
+            { "P", "Pausar / reanudar" },
+            { "+ / -", "Velocidad del juego" },
+            { "F11", "Pantalla completa" },
+            { "Esc", "Abrir / cerrar el menú" },
+            { "Q", "Salir del juego" },
+        };
+
+        bool open = true;
+        begin_centered_panel_("Controles", &open);
+
+        ImGui::SeparatorText("Controles");
+
+        constexpr auto table_flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerH
+                                     | ImGuiTableFlags_SizingStretchProp;
+
+        if (ImGui::BeginTable("controls", 2, table_flags))
+        {
+            ImGui::TableSetupColumn("Tecla", ImGuiTableColumnFlags_WidthFixed, 540.0f);
+            ImGui::TableSetupColumn("Acción");
+            ImGui::TableHeadersRow();
+
+            for (const auto &control : controls)
+            {
+                ImGui::TableNextRow();
+
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextUnformatted(control.keys);
+
+                ImGui::TableSetColumnIndex(1);
+                ImGui::TextUnformatted(control.action);
+            }
+
+            ImGui::EndTable();
+        }
+
+        ImGui::End();
+
+        if (!open)
+        {
+            toggle_();
+        }
+    }
+
+  public:
+    void
+    on_mount_() override
+    {
+        auto *fonts = ImGui::GetIO().Fonts;
+        fonts->AddFontDefault();
+
+        const auto font_path = (FilesystemPaths::assets / "fonts" / "comici.ttf").string();
+        menu_font_           = fonts->AddFontFromFileTTF(font_path.c_str(), menu_font_size_);
+
+        hold(game()->input.bind(Action::ToggleHud, [this] { toggle_(); }));
+    }
+
+    void
+    on_tick_() override
+    {
+        if (!visible_)
+        {
+            return;
+        }
+
+        if (menu_font_)
+        {
+            ImGui::PushFont(menu_font_);
+        }
+
+        switch (screen_)
+        {
+        case Screen::Main:
+            main_screen_();
+            break;
+        case Screen::Settings:
+            settings_screen_();
+            break;
+        case Screen::Controls:
+            controls_screen_();
+            break;
+        }
+
+        if (menu_font_)
+        {
+            ImGui::PopFont();
+        }
     }
 };
 

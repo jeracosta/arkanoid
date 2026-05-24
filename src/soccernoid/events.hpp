@@ -29,11 +29,16 @@ struct PlayerVictorious
 {
 };
 
+struct AppTerminated
+{
+};
+
 using GameEventBus = ome::EventBus<ProjectileSpawned,
                                    ProjectileDespawned,
                                    PlayerDefeated,
                                    ObstacleDestroyed,
                                    GoalHit,
-                                   PlayerVictorious>;
+                                   PlayerVictorious,
+                                   AppTerminated>;
 
 } // namespace soccernoid

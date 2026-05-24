@@ -297,8 +297,8 @@ Mesh::Surface::quad(Vec3f a, Vec3f b, Vec3f c, Vec3f d)
 std::shared_ptr<Mesh>
 Mesh::billboard(Vec3f position, Vec2f size, const Camera &camera)
 {
-    return std::make_shared<Mesh>(std::vector<Surface>{ Surface::billboard(position, size, camera) },
-                                  Node{ { 0 } });
+    return std::make_shared<Mesh>(
+        std::vector<Surface>{ Surface::billboard(position, size, camera) }, Node{ { 0 } });
 }
 
 Mesh::Surface
@@ -373,7 +373,7 @@ Mesh::load(const std::filesystem::path &path)
 
     constexpr unsigned import_flags = aiProcess_Triangulate | aiProcess_GenSmoothNormals
                                       | aiProcess_ImproveCacheLocality
-                                      | aiProcess_JoinIdenticalVertices | aiProcess_FlipUVs;
+                                      | aiProcess_JoinIdenticalVertices;
 
     const aiScene *scene = importer.ReadFile(path.string(), import_flags);
 

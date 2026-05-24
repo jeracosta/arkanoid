@@ -1,5 +1,6 @@
 #pragma once
 
+#include "oh-my-engine/draw_command.hpp"
 #include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/nodes/hitbox_node.hpp"
 #include "oh-my-engine/texture.hpp"
@@ -30,6 +31,23 @@ class TerrainNode : public ome::HitboxNode
     {
     }
 
+    ome::DrawCommand draw_command_
+        = ome::DrawCommand::box(mesh_region_,
+                                std::vector<ome::Material>{
+                                    { .texture = textures.dirt },                           // 0
+                                    { .texture = textures.cobblestone, .shininess = 1.0f }, // 1
+                                    { .texture = ome::Texture::placeholder() },             // 2
+                                },
+                                ome::BoxFaces<std::size_t>{
+                                    .front  = 0,
+                                    .back   = 0,
+                                    .left   = 0,
+                                    .right  = 0,
+                                    .top    = 1,
+                                    .bottom = 2,
+                                },
+                                36);
+
   public:
     TerrainNode(ome::Box region)
         : TerrainNode(region, deepened_hitbox_(region))
@@ -39,25 +57,7 @@ class TerrainNode : public ome::HitboxNode
     void
     on_render_(ome::RenderFrame &frame) override
     {
-        auto region = mesh_region_;
-
-        auto materials = std::vector<ome::Material>{
-            { .texture = textures.dirt },                           // 0
-            { .texture = textures.cobblestone, .shininess = 1.0f }, // 1
-            { .texture = ome::Texture::placeholder() },             // 2
-        };
-
-        auto material_indices = ome::BoxFaces<std::size_t>{
-            .front  = 0,
-            .back   = 0,
-            .left   = 0,
-            .right  = 0,
-            .top    = 1,
-            .bottom = 2,
-        };
-
-        frame.draw_commands.push_back(
-            ome::DrawCommand::box(region, materials, material_indices, 36));
+        frame.draw_commands.push_back(draw_command_);
     }
 };
 

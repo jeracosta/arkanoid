@@ -56,7 +56,7 @@ configure_default_controls(ome::input::InputMapper *input_mapper)
         { ToggleFullscreen, SDLK_F11,      { Press }        },
         { TogglePause,      SDLK_p,        { Press }        },
         { ChangeView,       SDLK_v,        { Press }        },
-        { Reset,            SDLK_r,        { Press }        },
+        { Reset,            SDLK_r,        { Press, Repeat }},
         { PrintTree,        SDLK_i,        { Press }        },
         { TimeSpeedUp,      SDLK_PLUS,     { Press, Repeat }},
         { TimeSpeedUp,      SDLK_EQUALS,   { Press, Repeat }},

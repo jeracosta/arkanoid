@@ -2,6 +2,9 @@
 
 #include <memory>
 
+#include "oh-my-engine/constants.hpp"
+#include "oh-my-engine/math/orientation.hpp"
+#include "oh-my-engine/math/vector.hpp"
 #include "oh-my-engine/mesh.hpp"
 #include "oh-my-engine/nodes/hitbox_node.hpp"
 #include "oh-my-engine/nodes/mesh_node.hpp"
@@ -26,7 +29,11 @@ class ExplosiveBarrelNode : public ome::TransformNode
                 return;
             }
 
-            projectile->update_kinematic([](auto &k) { k.velocity *= 2.0f; });
+            projectile->update_kinematic([](auto &kinematic)
+            {
+                kinematic.velocity += 0.1 * kinematic.velocity * (ome::Vec3f{ 1 } - ome::up);
+                kinematic.velocity += 8.0 * ome::up;
+            });
 
             auto world_position = hitbox<ome::Space::World>().center();
 

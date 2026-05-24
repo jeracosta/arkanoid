@@ -1,5 +1,7 @@
 #pragma once
 
+#include <format>
+#include <functional>
 #include <memory>
 #include <numbers>
 #include <random>
@@ -115,6 +117,7 @@ class LevelNode : public SoccernoidNode<>
             {
                 return;
             }
+
             game_over_    = true;
             pending_swap_ = PendingSwap::Defeat;
         }));
@@ -130,6 +133,7 @@ class LevelNode : public SoccernoidNode<>
             {
                 return;
             }
+
             game_over_    = true;
             pending_swap_ = PendingSwap::Victory;
         }));
@@ -181,10 +185,11 @@ Level::standard()
 
         // Teapot at forward side
         {
-            constexpr float scale  = 0.5f;
-            auto            mesh   = static_cast<std::shared_ptr<ome::Mesh>>(meshes.teapot);
-            auto            size   = mesh->size();
-            auto            center = mesh->center();
+            constexpr float scale = 0.5f;
+
+            auto mesh   = static_cast<std::shared_ptr<ome::Mesh>>(meshes.teapot);
+            auto size   = mesh->size();
+            auto center = mesh->center();
 
             float teapot_y = scale * (size[1] / 2.0f - center[1] + 1.0f);
 
@@ -195,56 +200,93 @@ Level::standard()
                 { 0.0f, teapot_y, teapot_z });
         }
 
-        // Player at backward border (centered)
-        constexpr float player_y = 1.5f;
-        level.emplace_child<PlayerNode>(PlayerNode::Configuration::make_harry())
-            .position({ 0.0f, player_y, map_area[1] })
-            .rename("Harry");
-
-        // Grid-based enemy placement
+        // Player at backward border
         {
-            // Inner zone: exclude padding fraction from each side of the map area
-            float inner_min_x = -map_area[0] * (1.0f - 2.0f * padding);
-            float inner_max_x = map_area[0] * (1.0f - 2.0f * padding);
-            float inner_min_z = -map_area[1] * (1.0f - 2.0f * padding);
-            float inner_max_z = map_area[1] * (1.0f - 2.0f * padding);
+            constexpr float player_y = 1.5f;
 
-            static std::mt19937                rng{ std::random_device{}() };
-            std::uniform_int_distribution<int> pick(0, 3); // 0=barrel,1=transformer,2=moai,3=moai
+            level.emplace_child<PlayerNode>(PlayerNode::Configuration::make_harry())
+                .position({ 0.0f, player_y, map_area[1] })
+                .rename("Player");
+        }
+
+        // Grid-based obstacle placement
+        {
+            struct ObstacleSpawn
+            {
+                float                                             percentage;
+                std::function<void(LevelNode &, ome::Vec3f, int)> spawn;
+            };
+
+            const std::vector<ObstacleSpawn> obstacle_spawns = {
+                {
+                    .percentage = 33.5f,
+                    .spawn =
+                        [](LevelNode &level, ome::Vec3f position, int idx)
+            {
+                level.emplace_child<ExplosiveBarrelNode>().position(position).rename(
+                    std::format("Barrel{}", idx));
+            },
+                },
+                {
+                    .percentage = 7.5f,
+                    .spawn =
+                        [](LevelNode &level, ome::Vec3f position, int idx)
+            {
+                constexpr float phi = std::numbers::phi_v<float>;
+
+                level.emplace_child<CurrentTransformerNode>()
+                    .position(position)
+                    .orientation(ome::Orientation().steer_yaw(-phi))
+                    .rename(std::format("Transformer{}", idx));
+            },
+                },
+                {
+                    .percentage = 60.0f,
+                    .spawn =
+                        [](LevelNode &level, ome::Vec3f position, int idx)
+            {
+                constexpr float phi = std::numbers::phi_v<float>;
+
+                level.emplace_child<MoaiNode>()
+                    .position(position)
+                    .orientation(ome::Orientation().steer_yaw(2.0f * phi))
+                    .rename(std::format("Moai{}", idx));
+            },
+                },
+            };
+
+            std::vector<float> percentages;
+            percentages.reserve(obstacle_spawns.size());
+
+            for (const auto &obstacle_spawn : obstacle_spawns)
+            {
+                percentages.push_back(obstacle_spawn.percentage);
+            }
+
+            static std::mt19937                     rng{ std::random_device{}() };
+            std::discrete_distribution<std::size_t> pick(percentages.begin(), percentages.end());
+
+            constexpr float inner_min_x = -map_area[0] * (1.0f - 2.0f * padding);
+            constexpr float inner_max_x = map_area[0] * (1.0f - 2.0f * padding);
+            constexpr float inner_min_z = -map_area[1] * (1.0f - 2.0f * padding);
+            constexpr float inner_max_z = map_area[1] * (1.0f - 2.0f * padding);
 
             int idx = 0;
+
             for (uint i = 0; i < grid_n; ++i)
             {
                 for (uint j = 0; j < grid_n; ++j)
                 {
-                    float x = ome::lerp(
+                    const float x = ome::lerp(
                         inner_min_x, inner_max_x, (static_cast<float>(i) + 0.5f) / grid_n);
-                    float z = ome::lerp(
+
+                    const float z = ome::lerp(
                         inner_min_z, inner_max_z, (static_cast<float>(j) + 0.5f) / grid_n);
 
-                    constexpr float phi = std::numbers::phi_v<float>;
+                    const auto position = ome::Vec3f{ x, 0.0f, z };
+                    const auto selected = pick(rng);
 
-                    switch (pick(rng))
-                    {
-                    case 0:
-                        level.emplace_child<ExplosiveBarrelNode>()
-                            .position({ x, 0.0f, z })
-                            .rename(std::format("Barrel{}", idx++));
-                        break;
-                    case 1:
-                        level.emplace_child<CurrentTransformerNode>()
-                            .position({ x, 0.0f, z })
-                            .orientation(ome::Orientation().steer_yaw(-phi))
-                            .rename(std::format("Transformer{}", idx++));
-                        break;
-                    case 2:
-                    case 3:
-                        level.emplace_child<MoaiNode>()
-                            .position({ x, 0.0f, z })
-                            .orientation(ome::Orientation().steer_yaw(2 * phi))
-                            .rename(std::format("Moai{}", idx++));
-                        break;
-                    }
+                    obstacle_spawns[selected].spawn(level, position, idx++);
                 }
             }
         }

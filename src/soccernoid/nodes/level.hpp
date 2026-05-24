@@ -1,20 +1,13 @@
 #pragma once
 
-#include <filesystem>
 #include <memory>
 #include <numbers>
 #include <random>
 #include <string>
 #include <vector>
 
-#include "oh-my-engine/constants.hpp"
-#include "oh-my-engine/material.hpp"
-#include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/math/orientation.hpp"
 #include "oh-my-engine/node.hpp"
-#include "oh-my-engine/nodes/hitbox_node.hpp"
-#include "oh-my-engine/nodes/mesh_node.hpp"
-#include "oh-my-engine/texture.hpp"
 #include "soccernoid/constants.hpp"
 #include "soccernoid/events.hpp"
 #include "soccernoid/input.hpp"
@@ -25,12 +18,10 @@
 #include "soccernoid/nodes/map.hpp"
 #include "soccernoid/nodes/moai.hpp"
 #include "soccernoid/nodes/player.hpp"
-#include "soccernoid/nodes/projectile.hpp"
 #include "soccernoid/nodes/scene_light.hpp"
 #include "soccernoid/nodes/skybox.hpp"
 #include "soccernoid/nodes/snail.hpp"
 #include "soccernoid/nodes/teapot.hpp"
-#include "soccernoid/nodes/terrain.hpp"
 #include "soccernoid/nodes/victory_screen.hpp"
 
 namespace soccernoid {

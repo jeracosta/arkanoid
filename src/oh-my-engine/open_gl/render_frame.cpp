@@ -79,6 +79,7 @@ struct RenderStateGuard_
         glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glShadeModel(GL_SMOOTH);
         glDisable(GL_TEXTURE_2D);
         glDisable(GL_BLEND);
         glEnable(GL_COLOR_MATERIAL);
@@ -101,6 +102,7 @@ render(const RenderFrame &frame)
     RenderStateGuard_ render_state_guard;
 
     glPolygonMode(GL_FRONT_AND_BACK, frame.wireframe ? GL_LINE : GL_FILL);
+    glShadeModel(frame.smooth_shading ? GL_SMOOTH : GL_FLAT);
 
     for (const auto &draw_command : draw_commands)
     {
@@ -141,6 +143,11 @@ render(const RenderFrame &frame)
                     material = materials[*surface.material_index];
                 }
 
+                if (!frame.textures_enabled)
+                {
+                    material.texture = nullptr;
+                }
+
                 bind(material);
 
                 glDepthFunc(GL_LESS);
@@ -151,8 +158,7 @@ render(const RenderFrame &frame)
                 glDepthMask(GL_FALSE);
                 glDepthFunc(GL_LEQUAL);
 
-                material.color.ambient = Color::black();
-                material.blend_mode    = { GL_ONE, GL_ONE };
+                material.blend_mode = { GL_ONE, GL_ONE };
                 bind(material);
 
                 constexpr auto light_slot = GL_LIGHT1;

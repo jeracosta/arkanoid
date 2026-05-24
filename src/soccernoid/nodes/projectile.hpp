@@ -16,17 +16,14 @@
 
 namespace soccernoid {
 
-class PlayerNode;
-class MapNode;
-
 class ProjectileNode : public SoccernoidNode<DistanceCulled<Falling<ome::KinematicNode>>>
 {
   public:
     struct Configuration
     {
         float radius          = 0.10f;
-        float elasticity      = 0.98f;
-        float speed_threshold = 0.1f;
+        float elasticity      = 0.75f;
+        float speed_threshold = 0.10f;
     };
 
   private:
@@ -34,21 +31,9 @@ class ProjectileNode : public SoccernoidNode<DistanceCulled<Falling<ome::Kinemat
 
     Configuration config_;
 
-    PlayerNode *player_;
-    MapNode    *map_;
-
     ome::HitboxNode *hitbox_;
 
-    // when a projectile goes of bounds towards the forward end of the map, it wraps around
-    bool wrapped_ = false;
-
     static constexpr ome::Vec3f spawn_position = { 0.0f, 7.0f, -3.0f };
-
-    ome::Vec3f
-    position_in_map_();
-
-    ome::Vec3f
-    force_();
 
     void
     bounce_from_(ome::HitboxNode &other);
@@ -165,9 +150,6 @@ class ProjectileNode : public SoccernoidNode<DistanceCulled<Falling<ome::Kinemat
         : ProjectileNode(Configuration{})
     {
     }
-
-    void
-    on_tick_() override;
 
     void
     on_mount_() override;

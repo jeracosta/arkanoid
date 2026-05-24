@@ -13,7 +13,9 @@ class RenderControlNode : public SoccernoidNode<>
     void
     on_render_(ome::RenderFrame &frame) override
     {
-        frame.wireframe = game()->settings.get<settings::render::ShowWireframes>();
+        frame.wireframe        = game()->settings.get<settings::render::ShowWireframes>();
+        frame.textures_enabled = game()->settings.get<settings::render::ShowTextures>();
+        frame.smooth_shading   = game()->settings.get<settings::render::SmoothShading>();
     }
 };
 

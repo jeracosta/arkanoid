@@ -6,6 +6,7 @@
 #include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/math/vector.hpp"
 #include "oh-my-engine/node.hpp"
+#include "oh-my-engine/nodes/hitbox_node.hpp"
 #include "oh-my-engine/nodes/transform_node.hpp"
 #include "soccernoid/nodes/column.hpp"
 #include "soccernoid/nodes/terrain.hpp"
@@ -38,6 +39,27 @@ class MapNode : public ome::TransformNode
             ome::Vec3f{ -area_[0], -3.0f, -area_[1] },
             ome::Vec3f{ area_[0], 0.0f, area_[1] });
         emplace_child<TerrainNode>(region).rename("Suelo");
+
+        // Giant invisible walls, each with one face sitting exactly on an edge of the terrain,
+        // so projectiles bounce off them. They enclose the forward and both side edges; the
+        // backward edge is left open.
+        constexpr float wall_extent = 1000.0f;
+
+        auto forward_wall = ome::Box::from_bounds(
+            ome::Vec3f{ -wall_extent, -wall_extent, -area_[1] - wall_extent },
+            ome::Vec3f{ wall_extent, wall_extent, -area_[1] });
+        emplace_child<ome::HitboxNode>(forward_wall.size(), forward_wall.center())
+            .rename("ForwardWall");
+
+        auto right_wall = ome::Box::from_bounds(
+            ome::Vec3f{ area_[0], -wall_extent, -wall_extent },
+            ome::Vec3f{ area_[0] + wall_extent, wall_extent, wall_extent });
+        emplace_child<ome::HitboxNode>(right_wall.size(), right_wall.center()).rename("RightWall");
+
+        auto left_wall = ome::Box::from_bounds(
+            ome::Vec3f{ -area_[0] - wall_extent, -wall_extent, -wall_extent },
+            ome::Vec3f{ -area_[0], wall_extent, wall_extent });
+        emplace_child<ome::HitboxNode>(left_wall.size(), left_wall.center()).rename("LeftWall");
 
         constexpr float margin = 1.5f;
         uint            count  = config.column_count;

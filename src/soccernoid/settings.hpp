@@ -200,6 +200,45 @@ struct ShowWireframes
     operator==(const ShowWireframes &) const = default;
 };
 
+struct ShowTextures
+{
+    bool value = true;
+
+    constexpr ShowTextures(bool value = true)
+        : value(value)
+    {
+    }
+
+    constexpr
+    operator bool() const
+    {
+        return value;
+    }
+
+    constexpr bool
+    operator==(const ShowTextures &) const = default;
+};
+
+// true: interpolado (GL_SMOOTH) · false: facetado (GL_FLAT)
+struct SmoothShading
+{
+    bool value = true;
+
+    constexpr SmoothShading(bool value = true)
+        : value(value)
+    {
+    }
+
+    constexpr
+    operator bool() const
+    {
+        return value;
+    }
+
+    constexpr bool
+    operator==(const SmoothShading &) const = default;
+};
+
 } // namespace soccernoid::settings::render
 
 namespace soccernoid::settings::ui {
@@ -252,6 +291,8 @@ using SettingsEventBus = ome::EventBus<settings::window::Fullscreen,
                                        settings::render::ShowFrameRate,
                                        settings::render::ShowWireframes,
                                        settings::ui::TextFont,
+                                       settings::render::ShowTextures,
+                                       settings::render::SmoothShading,
                                        settings::GlobalLight>;
 
 class Settings : private SettingsEventBus

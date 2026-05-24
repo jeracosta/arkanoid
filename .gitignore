@@ -47,4 +47,5 @@ practicos/
 
 # Claude files
 .CLAUDE
+DOCUMENTACION.md
 CLAUDE.md

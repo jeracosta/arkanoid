@@ -78,6 +78,7 @@ struct RenderStateGuard_
         glDisableClientState(GL_NORMAL_ARRAY);
         glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         glDisable(GL_TEXTURE_2D);
         glDisable(GL_BLEND);
         glEnable(GL_COLOR_MATERIAL);
@@ -98,6 +99,8 @@ render(const RenderFrame &frame)
     auto  draw_commands = sorted_(frame.draw_commands);
 
     RenderStateGuard_ render_state_guard;
+
+    glPolygonMode(GL_FRONT_AND_BACK, frame.wireframe ? GL_LINE : GL_FILL);
 
     for (const auto &draw_command : draw_commands)
     {

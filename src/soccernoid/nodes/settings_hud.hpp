@@ -90,6 +90,9 @@ class SettingsHudNode : public SoccernoidNode<>
         slider_<settings::camera::MouseSensitivity>("Mouse sensitivity", 0.001f, 0.1f);
         slider_<settings::camera::MovementSpeed>("Movement speed", 0.0f, 20.0f, "%.1f");
 
+        ImGui::SeparatorText("Render");
+        checkbox_<settings::render::ShowWireframes>("Wireframe");
+
         ImGui::SeparatorText("Window");
         checkbox_<settings::window::Fullscreen>("Fullscreen");
         checkbox_<settings::render::ShowFrameRate>("Show frame rate");

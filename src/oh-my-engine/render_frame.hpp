@@ -19,6 +19,9 @@ struct RenderFrame
 
     std::vector<DrawCommand> draw_commands;
 
+    // When true, scene geometry is drawn as wireframe (skybox and overlays stay solid).
+    bool wireframe = false;
+
     void
     clear()
     {

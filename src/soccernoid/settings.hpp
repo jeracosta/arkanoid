@@ -170,6 +170,25 @@ struct ShowFrameRate
     operator==(const ShowFrameRate &) const = default;
 };
 
+struct ShowWireframes
+{
+    bool value = false;
+
+    constexpr ShowWireframes(bool value = false)
+        : value(value)
+    {
+    }
+
+    constexpr
+    operator bool() const
+    {
+        return value;
+    }
+
+    constexpr bool
+    operator==(const ShowWireframes &) const = default;
+};
+
 } // namespace soccernoid::settings::render
 
 namespace soccernoid {
@@ -180,7 +199,8 @@ using SettingsEventBus = ome::EventBus<settings::window::Fullscreen,
                                        settings::camera::View,
                                        settings::camera::MouseSensitivity,
                                        settings::camera::MovementSpeed,
-                                       settings::render::ShowFrameRate>;
+                                       settings::render::ShowFrameRate,
+                                       settings::render::ShowWireframes>;
 
 class Settings : private SettingsEventBus
 {

@@ -202,7 +202,7 @@ Level::standard()
 
         // Player at backward border
         {
-            constexpr float player_y = 1.5f;
+            constexpr float player_y = 0.25f;
 
             level.emplace_child<PlayerNode>(PlayerNode::Configuration::make_harry())
                 .position({ 0.0f, player_y, map_area[1] })

@@ -174,34 +174,22 @@ struct ShowFrameRate
 
 namespace soccernoid {
 
-class Settings : private ome::EventBus<settings::window::Fullscreen,
+using SettingsEventBus = ome::EventBus<settings::window::Fullscreen,
                                        settings::time::Paused,
                                        settings::time::Speed,
                                        settings::camera::View,
                                        settings::camera::MouseSensitivity,
                                        settings::camera::MovementSpeed,
-                                       settings::render::ShowFrameRate>
+                                       settings::render::ShowFrameRate>;
+
+class Settings : private SettingsEventBus
 {
   private:
-    using EventBus_ = ome::EventBus<settings::window::Fullscreen,
-                                    settings::time::Paused,
-                                    settings::time::Speed,
-                                    settings::camera::View,
-                                    settings::camera::MouseSensitivity,
-                                    settings::camera::MovementSpeed,
-                                    settings::render::ShowFrameRate>;
 
-    std::tuple<settings::window::Fullscreen,
-               settings::time::Paused,
-               settings::time::Speed,
-               settings::camera::View,
-               settings::camera::MouseSensitivity,
-               settings::camera::MovementSpeed,
-               settings::render::ShowFrameRate>
-        values_;
+    SettingsEventBus::EventTuple values_;
 
   public:
-    using EventBus_::bind;
+    using SettingsEventBus::bind;
 
     template <class T>
     const T &
@@ -221,7 +209,7 @@ class Settings : private ome::EventBus<settings::window::Fullscreen,
         }
 
         current = std::move(value);
-        EventBus_::emit(current);
+        emit(current);
     }
 };
 

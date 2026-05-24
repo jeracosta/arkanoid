@@ -84,6 +84,9 @@ class EventBus
     using arg0_t_ = std::tuple_element_t<0, boost::callable_traits::args_t<TCallback>>;
 
   public:
+
+    using EventTuple = std::tuple<TEvents...>;
+
     // Registers a callback for an event and returns ownership of a handle to the connection.
     // While that handle remains alive, the callback is invoked whenever the event is emitted.
     template <class TCallback, class TEvent = std::remove_cvref_t<arg0_t_<TCallback>>>

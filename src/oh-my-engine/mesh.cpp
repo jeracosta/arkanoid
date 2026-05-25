@@ -8,8 +8,10 @@
 #include <format>
 #include <generator>
 #include <limits>
+#include <map>
 #include <ranges>
 #include <stdexcept>
+#include <tuple>
 
 #include "oh-my-engine/camera.hpp"
 
@@ -90,6 +92,45 @@ Mesh::rotate(const Orientation &orientation)
         {
             vertex.position = orientation * vertex.position;
             vertex.normal   = orientation * vertex.normal;
+        }
+    }
+}
+
+void
+Mesh::recompute_smooth_normals()
+{
+    using Key = std::tuple<long, long, long>;
+
+    constexpr float quantum = 1e4f;
+
+    auto key = [&](const Vec3f &p)
+    {
+        return Key{ std::lround(p[0] * quantum),
+                    std::lround(p[1] * quantum),
+                    std::lround(p[2] * quantum) };
+    };
+
+    std::map<Key, Vec3f> accumulated;
+
+    for (auto &primitive : primitives_)
+    {
+        for (auto &vertex : primitive.vertices)
+        {
+            accumulated[key(vertex.position)] += vertex.normal;
+        }
+    }
+
+    for (auto &primitive : primitives_)
+    {
+        for (auto &vertex : primitive.vertices)
+        {
+            const auto &sum    = accumulated[key(vertex.position)];
+            const float length = norm(sum);
+
+            if (length > 1e-6f)
+            {
+                vertex.normal = sum / length;
+            }
         }
     }
 }

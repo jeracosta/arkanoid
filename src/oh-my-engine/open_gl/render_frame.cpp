@@ -199,7 +199,8 @@ render(const RenderFrame &frame)
                 glDepthMask(GL_FALSE);
                 glDepthFunc(GL_LEQUAL);
 
-                material.blend_mode = { GL_ONE, GL_ONE };
+                material.blend_mode     = { GL_ONE, GL_ONE };
+                material.color.emission = ome::Color::transparent();
                 bind(material);
 
                 constexpr auto light_slot = GL_LIGHT1;

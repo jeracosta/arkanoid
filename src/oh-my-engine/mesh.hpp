@@ -114,6 +114,11 @@ class Mesh
     void
     rotate(const Orientation &orientation);
 
+    // Averages normals across vertices that share a position, turning per-face (flat) normals
+    // into smooth ones so Gouraud shading looks interpolated instead of faceted.
+    void
+    recompute_smooth_normals();
+
     GLsizei
     index_count() const noexcept
     {

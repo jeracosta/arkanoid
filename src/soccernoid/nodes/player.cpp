@@ -38,16 +38,21 @@ PlayerNode::character_mesh_()
     auto            sz            = mesh->size();
     float           max_dim       = std::max({ sz[0], sz[1], sz[2] });
     mesh->resize(sz * (target_extent / max_dim));
+    mesh->recompute_smooth_normals();
     return mesh;
 }
 
 ome::Material
 PlayerNode::character_material_()
 {
+    // The racoon texture is almost entirely pure white, so the material tints the fur. To make the
+    // lights affect it less, most of its tone comes from emission (a constant, light-independent
+    // base) and only a little from diffuse, so passing lights barely change its brightness.
     return {
         .color = {
-            .ambient  = ome::Color::hex(0x111111FF),
-            .diffuse  = ome::Color::hex(0x111111FF),
+            .ambient  = ome::Color::hex(0x080808FF), // ~0.03
+            .diffuse  = ome::Color::hex(0x141414FF), // ~0.08 (small light response)
+            .emission = ome::Color::hex(0x161616FF), // ~0.09 constant base, independent of lights
         },
         .texture = textures.racoon,
     };

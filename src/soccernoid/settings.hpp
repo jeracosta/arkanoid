@@ -85,7 +85,7 @@ enum class TextFont
 enum class CameraView
 {
     ThirdPerson,
-    FirstPerson,
+    ChaseCamera,
     Freecam,
     Count_,
 };

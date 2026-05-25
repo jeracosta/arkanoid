@@ -50,11 +50,11 @@ class CameraControlNode : public SoccernoidNode<>
     using MovementSpeed    = settings::camera::MovementSpeed;
     using View             = settings::camera::View;
 
-    // "First person" is actually a chase cam: behind the player, above, wider FOV, looking down.
-    static constexpr float chase_height_       = 1.5f;     // target height above the player
-    static constexpr float chase_distance_     = 15.0f;    // how far behind/above
-    static constexpr float chase_pitch_        = 0.2f;     // downward tilt (radians)
-    static constexpr float first_person_fov_x_ = 1 / 1.5f; // FOV multiplier for the chase cam
+    // The chase cam: behind the player, above, wider FOV, looking down.
+    static constexpr float chase_height_   = 1.5f;     // target height above the player
+    static constexpr float chase_distance_ = 15.0f;    // how far behind/above
+    static constexpr float chase_pitch_    = 0.2f;     // downward tilt (radians)
+    static constexpr float chase_fov_x_    = 1 / 1.5f; // FOV multiplier for the chase cam
 
     ome::Camera *camera_;
     Settings     settings_;
@@ -128,7 +128,7 @@ class CameraControlNode : public SoccernoidNode<>
 
         auto target = player->transform<ome::Space::World>().position + ome::up * chase_height_;
 
-        return { target, chase_distance_, chase_orientation_(), base_fov_ * first_person_fov_x_ };
+        return { target, chase_distance_, chase_orientation_(), base_fov_ * chase_fov_x_ };
     }
 
     void
@@ -151,7 +151,7 @@ class CameraControlNode : public SoccernoidNode<>
     {
         switch (view)
         {
-        case CameraView::FirstPerson:
+        case CameraView::ChaseCamera:
         {
             return chase_shot_();
         }
@@ -330,7 +330,7 @@ class CameraControlNode : public SoccernoidNode<>
             }
         }
 
-        if (!transition_ && view_ == CameraView::FirstPerson)
+        if (!transition_ && view_ == CameraView::ChaseCamera)
         {
             follow_player_();
         }

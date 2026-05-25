@@ -118,7 +118,7 @@ Game::initialize_()
 
         GLfloat global_ambient[] = { 0, 0, 0, 1 }; // no global ambient
         glLightModelfv(GL_LIGHT_MODEL_AMBIENT, global_ambient);
-        glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+        glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_FALSE);
 
         glEnable(GL_NORMALIZE);
     }

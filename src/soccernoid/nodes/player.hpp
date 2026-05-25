@@ -33,8 +33,6 @@ class PlayerNode : public ome::KinematicNode
                                       .materials = { character_material_() },
                                       .transform = {} };
 
-    static constexpr float player_radius_ = 0.2f;
-
     Configuration config_;
 
     bool aiming_;

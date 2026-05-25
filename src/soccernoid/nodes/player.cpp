@@ -23,9 +23,9 @@ PlayerNode::Configuration
 PlayerNode::Configuration::make_harry()
 {
     return {
-        .movement_force = 15.0f,
-        .max_speed      = 7.0f,
-        .speed_decay    = 2.0f,
+        .movement_force = 20.0f,
+        .max_speed      = 10.0f,
+        .speed_decay    = 1.0f,
     };
 }
 

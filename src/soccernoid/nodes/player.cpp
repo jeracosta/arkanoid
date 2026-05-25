@@ -111,7 +111,7 @@ PlayerNode::on_render_(ome::RenderFrame &frame)
     transform.orientation = transform.orientation * face_align;
 
     transform.position += ome::Vec3f{ 0.0f, 0.1f, 0.0f };
-    transform.orientation.steer_pitch(-ome::pi / 2.0f);
+    transform.orientation.steer_pitch(-ome::pi / 4.0f);
 
     character_draw_.transform = transform;
     frame.draw_commands.push_back(character_draw_);

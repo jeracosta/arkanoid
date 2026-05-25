@@ -56,18 +56,25 @@ class BoardNode : public ome::MeshNode
     static std::shared_ptr<ome::Mesh>
     board_mesh_()
     {
-        auto mesh = static_cast<std::shared_ptr<ome::Mesh>>(meshes.skateboard);
-        mesh->recenter();
+        // Prepared once: the palette mesh is shared and rotate() is not idempotent, so re-running
+        // this on every reset would keep flipping the (cached) board mesh by 90 degrees.
+        static const std::shared_ptr<ome::Mesh> mesh = []
+        {
+            auto m = static_cast<std::shared_ptr<ome::Mesh>>(meshes.skateboard);
+            m->recenter();
 
-        constexpr float target_extent = 1.5f;
-        auto            size          = mesh->size();
-        float           max_dim       = std::max({ size[0], size[1], size[2] });
-        mesh->resize(size * (target_extent / max_dim));
+            constexpr float target_extent = 1.5f;
+            auto            size          = m->size();
+            float           max_dim       = std::max({ size[0], size[1], size[2] });
+            m->resize(size * (target_extent / max_dim));
 
-        mesh->rotate(ome::Orientation()
-                         .steer_pitch(-ome::pi / 2.0f)
-                         .steer_roll(-ome::pi / 2.0f)
-                         .steer_yaw(-ome::pi / 2.0f));
+            m->rotate(ome::Orientation()
+                          .steer_pitch(-ome::pi / 2.0f)
+                          .steer_roll(-ome::pi / 2.0f)
+                          .steer_yaw(-ome::pi / 2.0f));
+
+            return m;
+        }();
 
         return mesh;
     }

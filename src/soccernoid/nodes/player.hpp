@@ -61,7 +61,7 @@ class PlayerNode : public ome::KinematicNode
     };
 
     // The board can hover between its starting height and hover_range_ above it.
-    static constexpr float hover_range_ = 2.0f;
+    static constexpr float hover_range_ = 4.0f;
     std::optional<float>   base_height_;
 
     void

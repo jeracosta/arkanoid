@@ -211,43 +211,45 @@ Level::standard()
         {
             struct ObstacleSpawn
             {
-                float                                             percentage;
-                std::function<void(LevelNode &, ome::Vec3f, int)> spawn;
+                float                                                    percentage;
+                std::function<void(LevelNode &, ome::Vec3f, float, int)> spawn;
             };
 
             const std::vector<ObstacleSpawn> obstacle_spawns = {
                 {
                     .percentage = 33.5f,
                     .spawn =
-                        [](LevelNode &level, ome::Vec3f position, int idx)
+                        [](LevelNode &level, ome::Vec3f position, float yaw, int idx)
             {
-                level.emplace_child<ExplosiveBarrelNode>().position(position).rename(
-                    std::format("Barrel{}", idx));
+                level.emplace_child<ExplosiveBarrelNode>()
+                    .position(position)
+                    .orientation(ome::Orientation().steer_yaw(yaw))
+                    .rename(std::format("Barrel{}", idx));
             },
                 },
                 {
                     .percentage = 7.5f,
                     .spawn =
-                        [](LevelNode &level, ome::Vec3f position, int idx)
+                        [](LevelNode &level, ome::Vec3f position, float yaw, int idx)
             {
                 constexpr float phi = std::numbers::phi_v<float>;
 
                 level.emplace_child<CurrentTransformerNode>()
                     .position(position)
-                    .orientation(ome::Orientation().steer_yaw(-phi))
+                    .orientation(ome::Orientation().steer_yaw(-phi).steer_yaw(yaw))
                     .rename(std::format("Transformer{}", idx));
             },
                 },
                 {
                     .percentage = 60.0f,
                     .spawn =
-                        [](LevelNode &level, ome::Vec3f position, int idx)
+                        [](LevelNode &level, ome::Vec3f position, float yaw, int idx)
             {
                 constexpr float phi = std::numbers::phi_v<float>;
 
                 level.emplace_child<MoaiNode>()
                     .position(position)
-                    .orientation(ome::Orientation().steer_yaw(2.0f * phi))
+                    .orientation(ome::Orientation().steer_yaw(2.0f * phi).steer_yaw(yaw))
                     .rename(std::format("Moai{}", idx));
             },
                 },
@@ -269,6 +271,19 @@ Level::standard()
             constexpr float inner_min_z = -map_area[1] * (1.0f - 2.0f * padding);
             constexpr float inner_max_z = map_area[1] * (1.0f - 2.0f * padding);
 
+            auto rand_angle = []
+            {
+                float apercent = std::uniform_real_distribution<float>(-0.1f, 0.1f)(rng);
+                return apercent * ome::pi * 2.0f;
+            };
+
+            auto rand_position_offset = []
+            {
+                auto offset = ome::Box::from_size(1.0f).sample_uniform(rng);
+                offset[1]   = 0.0f;
+                return offset;
+            };
+
             int idx = 0;
 
             for (uint i = 0; i < grid_n; ++i)
@@ -281,10 +296,10 @@ Level::standard()
                     const float z = ome::lerp(
                         inner_min_z, inner_max_z, (static_cast<float>(j) + 0.5f) / grid_n);
 
-                    const auto position = ome::Vec3f{ x, 0.0f, z };
+                    const auto position = ome::Vec3f{ x, 0.0f, z } + rand_position_offset();
                     const auto selected = pick(rng);
 
-                    obstacle_spawns[selected].spawn(level, position, idx++);
+                    obstacle_spawns[selected].spawn(level, position, rand_angle(), idx++);
                 }
             }
         }

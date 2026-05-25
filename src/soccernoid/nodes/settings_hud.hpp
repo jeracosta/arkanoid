@@ -242,7 +242,8 @@ class SettingsHudNode : public SoccernoidNode<>
 
         static constexpr Control controls[] = {
             { "Flechas Izq / Der", "Mover al jugador" },
-            { "Flecha Arriba", "Apuntar y disparar" },
+            { "Flechas Arr / Ab", "Levitar más alto / más bajo" },
+            { "Enter", "Apuntar y disparar" },
             { "Mouse", "Rotar la cámara" },
             { "Rueda del mouse", "Acercar / alejar (FOV)" },
             { "W A S D", "Mover la cámara (primera persona)" },

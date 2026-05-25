@@ -141,6 +141,8 @@ PlayerNode::process_movement_()
     static auto moves = std::to_array<MoveSpecification>({
         { Action::PlayerLeft, ome::left },
         { Action::PlayerRight, ome::right },
+        { Action::PlayerUp, ome::up },
+        { Action::PlayerDown, ome::down },
     });
 
     auto is_active
@@ -208,10 +210,33 @@ PlayerNode::shoot(ome::Vec3f direction)
 }
 
 void
+PlayerNode::clamp_hover_height_()
+{
+    if (!base_height_)
+    {
+        base_height_ = transform<ome::Space::Local>().position[1];
+    }
+
+    const float min_y = *base_height_;
+    const float max_y = *base_height_ + hover_range_;
+
+    float y = transform<ome::Space::Local>().position[1];
+
+    if (y < min_y || y > max_y)
+    {
+        update_transform<ome::Space::Local>([&](auto &t)
+        { t.position[1] = std::clamp(y, min_y, max_y); });
+
+        update_kinematic<ome::Space::Local>([](auto &k) { k.velocity[1] = 0.0f; });
+    }
+}
+
+void
 PlayerNode::on_tick_()
 {
     process_movement_();
     ome::KinematicNode::on_tick_();
+    clamp_hover_height_();
 }
 
 } // namespace soccernoid

@@ -26,7 +26,8 @@ enum class ome::input::Action
     CameraFovDown,
     PlayerLeft,
     PlayerRight,
-    PlayerJump,
+    PlayerUp,
+    PlayerDown,
     PlayerShoot,
     ToggleHud,
 };
@@ -72,8 +73,10 @@ configure_default_controls(ome::input::InputMapper *input_mapper)
         { CameraSprint,     SDLK_LSHIFT,   { Press }        },
         { PlayerLeft,       SDLK_LEFT,     { Press }        },
         { PlayerRight,      SDLK_RIGHT,    { Press }        },
-        { PlayerJump,       SDLK_UP,       { Press }        },
-        { PlayerShoot,      SDLK_UP,       { Press, Repeat }},
+        { PlayerUp,         SDLK_UP,       { Press }        },
+        { PlayerDown,       SDLK_DOWN,     { Press }        },
+        { PlayerShoot,      SDLK_RETURN,   { Press, Repeat }},
+        { PlayerShoot,      SDLK_KP_ENTER, { Press, Repeat }},
         { ToggleHud,        SDLK_ESCAPE,   { Press }        },
     });
 

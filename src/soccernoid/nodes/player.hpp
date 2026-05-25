@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include "oh-my-engine/draw_command.hpp"
 #include "oh-my-engine/nodes/kinematic_node.hpp"
 #include "oh-my-engine/nodes/mesh_node.hpp"
@@ -60,11 +62,18 @@ class PlayerNode : public ome::KinematicNode
         on_tick_() override;
     };
 
+    // The board can hover between its starting height and hover_range_ above it.
+    static constexpr float hover_range_ = 2.0f;
+    std::optional<float>   base_height_;
+
     void
     on_render_(ome::RenderFrame &frame) override;
 
     void
     process_movement_();
+
+    void
+    clamp_hover_height_();
 
   public:
     PlayerNode(const Configuration &config);

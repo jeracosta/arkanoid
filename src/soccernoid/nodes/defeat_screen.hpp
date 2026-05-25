@@ -6,9 +6,6 @@
 
 namespace soccernoid {
 
-// Renders a centered, non-interactive "DEFEATED" overlay using ImGui.
-// Lives inside the defeat-level subtree, so it appears only after the
-// LevelNode has swapped over.
 class DefeatScreenNode : public SoccernoidNode<>
 {
   public:
@@ -17,22 +14,17 @@ class DefeatScreenNode : public SoccernoidNode<>
     {
         const auto *viewport = ImGui::GetMainViewport();
 
-        ImGui::SetNextWindowPos(viewport->GetCenter(),
-                                ImGuiCond_Always,
-                                ImVec2{ 0.5f, 0.5f });
+        ImGui::SetNextWindowPos(viewport->GetCenter(), ImGuiCond_Always, ImVec2{ 0.5f, 0.5f });
 
-        constexpr auto flags = ImGuiWindowFlags_NoDecoration
-                               | ImGuiWindowFlags_AlwaysAutoResize
-                               | ImGuiWindowFlags_NoMove
-                               | ImGuiWindowFlags_NoSavedSettings
-                               | ImGuiWindowFlags_NoFocusOnAppearing
-                               | ImGuiWindowFlags_NoInputs;
+        constexpr auto flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize
+                               | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings
+                               | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoInputs;
 
         ImGui::Begin("##defeat-screen", nullptr, flags);
 
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 1.0f, 0.15f, 0.15f, 1.0f });
         ImGui::SetWindowFontScale(4.0f);
-        ImGui::Text("DEFEATED");
+        ImGui::Text("DERROTA");
         ImGui::SetWindowFontScale(1.0f);
         ImGui::PopStyleColor();
 

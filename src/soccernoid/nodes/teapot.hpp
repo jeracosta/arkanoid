@@ -27,7 +27,7 @@ class TeapotNode : public SoccernoidNode<ome::TransformNode>
         TeapotNode *
         teapot()
         {
-            return static_cast<TeapotNode *>(parent()->parent());
+            return static_cast<TeapotNode *>(parent());
         }
 
       protected:
@@ -65,7 +65,7 @@ class TeapotNode : public SoccernoidNode<ome::TransformNode>
     ome::MeshNode *mesh_node_ = nullptr;
     ome::Vec3f     mesh_size_ = {};
 
-    float            life_    = 1.0f;
+    float            life_    = 0.9f;
     bool             won_     = false;
     ProgressBarNode *lifebar_ = nullptr;
 
@@ -88,9 +88,11 @@ class TeapotNode : public SoccernoidNode<ome::TransformNode>
         color_process_   = std::make_unique<ome::CurveProcess<float>>(color_curve, 0.5f);
 
         auto &node = emplace_child<ome::MeshNode>(mesh, ome::Material{ .shininess = 25.0f });
-        node.emplace_child<HitboxNode>(mesh_size_, mesh->center());
-
         mesh_node_ = &node;
+
+        // Hitbox hangs off the teapot (static), not the mesh node, whose per-frame spin and
+        // pulse scale would otherwise make the hitbox's world AABB constantly change size.
+        emplace_child<HitboxNode>(mesh_size_, mesh->center());
 
         auto &lifebar = emplace_child<ProgressBarNode>(ProgressBarNode::Configuration{
             .materials = {

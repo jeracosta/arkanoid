@@ -22,7 +22,7 @@ class ProjectileNode : public SoccernoidNode<DistanceCulled<Falling<ome::Kinemat
     struct Configuration
     {
         float radius          = 0.10f;
-        float elasticity      = 0.60f;
+        float elasticity      = 0.95f;
         float speed_threshold = 0.10f;
     };
 

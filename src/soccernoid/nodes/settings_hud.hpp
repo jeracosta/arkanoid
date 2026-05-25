@@ -212,6 +212,7 @@ class SettingsHudNode : public SoccernoidNode<>
         checkbox_<settings::render::ShowWireframes>("Wireframe");
         checkbox_<settings::render::ShowTextures>("Textures");
         checkbox_<settings::render::SmoothShading>("Smooth shading");
+        checkbox_<settings::render::ShowHitboxes>("Show hitboxes");
 
         if (ImGui::CollapsingHeader("Global light"))
         {

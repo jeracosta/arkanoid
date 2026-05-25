@@ -3,6 +3,7 @@
 #include "oh-my-engine/draw_command.hpp"
 #include "oh-my-engine/fog.hpp"
 #include "oh-my-engine/light.hpp"
+#include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/skybox.hpp"
 
 namespace ome {
@@ -27,6 +28,10 @@ struct RenderFrame
 
     // true: smooth (GL_SMOOTH) per-vertex shading · false: flat (GL_FLAT) per-face shading.
     bool smooth_shading = true;
+
+    // Debug overlay: world-space hitbox boxes, drawn as wireframe only when show_hitboxes is set.
+    bool             show_hitboxes = false;
+    std::vector<Box> hitboxes;
 
     void
     clear()

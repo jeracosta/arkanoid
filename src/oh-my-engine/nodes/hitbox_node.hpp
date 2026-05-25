@@ -57,6 +57,12 @@ class HitboxNode : public TransformNode
     {
     }
 
+    void
+    on_render_(RenderFrame &frame) override
+    {
+        frame.hitboxes.push_back(hitbox<Space::World>());
+    }
+
   private:
     friend class CollisionServer;
 

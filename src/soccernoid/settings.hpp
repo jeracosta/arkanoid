@@ -239,6 +239,25 @@ struct SmoothShading
     operator==(const SmoothShading &) const = default;
 };
 
+struct ShowHitboxes
+{
+    bool value = false;
+
+    constexpr ShowHitboxes(bool value = false)
+        : value(value)
+    {
+    }
+
+    constexpr
+    operator bool() const
+    {
+        return value;
+    }
+
+    constexpr bool
+    operator==(const ShowHitboxes &) const = default;
+};
+
 } // namespace soccernoid::settings::render
 
 namespace soccernoid::settings::ui {
@@ -293,6 +312,7 @@ using SettingsEventBus = ome::EventBus<settings::window::Fullscreen,
                                        settings::ui::TextFont,
                                        settings::render::ShowTextures,
                                        settings::render::SmoothShading,
+                                       settings::render::ShowHitboxes,
                                        settings::GlobalLight>;
 
 class Settings : private SettingsEventBus

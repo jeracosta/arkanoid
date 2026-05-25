@@ -16,6 +16,7 @@ class RenderControlNode : public SoccernoidNode<>
         frame.wireframe        = game()->settings.get<settings::render::ShowWireframes>();
         frame.textures_enabled = game()->settings.get<settings::render::ShowTextures>();
         frame.smooth_shading   = game()->settings.get<settings::render::SmoothShading>();
+        frame.show_hitboxes    = game()->settings.get<settings::render::ShowHitboxes>();
     }
 };
 

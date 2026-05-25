@@ -198,12 +198,12 @@ Level::standard()
                 { 0.0f, teapot_y, teapot_z });
         }
 
-        // Player at backward border
+        // Player hovering just above the ground, centered a bit inside the backward border
         {
-            constexpr float player_y = 0.25f;
+            constexpr float player_y = 0.6f;
 
             level.emplace_child<PlayerNode>(PlayerNode::Configuration::make_harry())
-                .position({ 0.0f, player_y, map_area[1] })
+                .position({ 0.0f, player_y, map_area[1] - 1.0f })
                 .rename("Player");
         }
 

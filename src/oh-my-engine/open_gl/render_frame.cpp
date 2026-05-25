@@ -88,6 +88,47 @@ struct RenderStateGuard_
     }
 };
 
+static void
+render_hitboxes_(const std::vector<Box> &boxes)
+{
+    glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glDisable(GL_LIGHTING);
+    glDisable(GL_TEXTURE_2D);
+    glDisable(GL_DEPTH_TEST); // make hitboxes visible through scene geometry
+    glColor3f(0.0f, 1.0f, 0.2f);
+
+    constexpr int edges[12][2] = {
+        { 0, 1 }, { 1, 2 }, { 2, 3 }, { 3, 0 }, // bottom
+        { 4, 5 }, { 5, 6 }, { 6, 7 }, { 7, 4 }, // top
+        { 0, 4 }, { 1, 5 }, { 2, 6 }, { 3, 7 }, // verticals
+    };
+
+    for (const auto &box : boxes)
+    {
+        auto lo = box.min();
+        auto hi = box.max();
+
+        const Vec3f corners[8] = {
+            { lo[0], lo[1], lo[2] }, { hi[0], lo[1], lo[2] }, { hi[0], hi[1], lo[2] },
+            { lo[0], hi[1], lo[2] }, { lo[0], lo[1], hi[2] }, { hi[0], lo[1], hi[2] },
+            { hi[0], hi[1], hi[2] }, { lo[0], hi[1], hi[2] },
+        };
+
+        glBegin(GL_LINES);
+        for (const auto &edge : edges)
+        {
+            const auto &a = corners[edge[0]];
+            const auto &b = corners[edge[1]];
+            glVertex3f(a[0], a[1], a[2]);
+            glVertex3f(b[0], b[1], b[2]);
+        }
+        glEnd();
+    }
+
+    glPopAttrib();
+}
+
 void
 render(const RenderFrame &frame)
 {
@@ -176,6 +217,11 @@ render(const RenderFrame &frame)
         };
 
         visit_dfs_(mesh.root(), mesh_node_visitor);
+    }
+
+    if (frame.show_hitboxes)
+    {
+        render_hitboxes_(frame.hitboxes);
     }
 }
 

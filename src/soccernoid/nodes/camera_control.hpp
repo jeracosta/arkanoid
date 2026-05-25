@@ -16,11 +16,12 @@ struct CameraShot
     ome::Vec3f       target;
     float            distance;
     ome::Orientation orientation;
+    float            fov;
 
     CameraShot
     operator*(float s) const
     {
-        return { target * s, distance * s, orientation * s };
+        return { target * s, distance * s, orientation * s, fov * s };
     }
 
     CameraShot
@@ -28,7 +29,8 @@ struct CameraShot
     {
         return { target + other.target,
                  distance + other.distance,
-                 orientation + other.orientation };
+                 orientation + other.orientation,
+                 fov + other.fov };
     }
 };
 
@@ -40,7 +42,7 @@ class CameraControlNode : public SoccernoidNode<>
     struct Settings
     {
         float sprint_multiplier   = 2.0f;
-        float transition_duration = 0.5f;
+        float transition_duration = 0.22f;
     };
 
   private:
@@ -48,13 +50,16 @@ class CameraControlNode : public SoccernoidNode<>
     using MovementSpeed    = settings::camera::MovementSpeed;
     using View             = settings::camera::View;
 
-    static constexpr float first_person_eye_height_ = 1.4f;
-    static constexpr float first_person_lookahead_  = 0.8f;
-    static constexpr float first_person_distance_   = 2.4f;
+    // "First person" is actually a chase cam: behind the player, above, wider FOV, looking down.
+    static constexpr float chase_height_       = 1.5f;     // target height above the player
+    static constexpr float chase_distance_     = 15.0f;    // how far behind/above
+    static constexpr float chase_pitch_        = 0.2f;     // downward tilt (radians)
+    static constexpr float first_person_fov_x_ = 1 / 1.5f; // FOV multiplier for the chase cam
 
     ome::Camera *camera_;
     Settings     settings_;
-    CameraView   view_ = CameraView::ThirdPerson;
+    CameraView   view_     = CameraView::ThirdPerson;
+    float        base_fov_ = 45.0f; // captured from the camera on mount; used by every other view
 
     std::optional<CameraTransition> transition_;
 
@@ -98,11 +103,21 @@ class CameraControlNode : public SoccernoidNode<>
     CameraShot
     current_shot_() const
     {
-        return { camera_->target(), camera_->distance(), camera_->orientation() };
+        return {
+            camera_->target(), camera_->distance(), camera_->orientation(), camera_->fov_degrees()
+        };
+    }
+
+    ome::Orientation
+    chase_orientation_() const
+    {
+        ome::Orientation orientation;
+        orientation.steer_pitch(-chase_pitch_); // look down towards the player
+        return orientation;
     }
 
     CameraShot
-    first_person_shot_(ome::Orientation orientation)
+    chase_shot_()
     {
         auto *player = ome::find_descendant<PlayerNode>(game()->root_node());
 
@@ -111,21 +126,24 @@ class CameraControlNode : public SoccernoidNode<>
             return current_shot_();
         }
 
-        auto eye
-            = player->transform<ome::Space::World>().position + ome::up * first_person_eye_height_;
+        auto target = player->transform<ome::Space::World>().position + ome::up * chase_height_;
 
-        return { eye + orientation.forward() * first_person_lookahead_,
-                 first_person_distance_,
-                 orientation };
+        return { target, chase_distance_, chase_orientation_(), base_fov_ * first_person_fov_x_ };
     }
 
     void
     follow_player_()
     {
-        auto shot = first_person_shot_(camera_->orientation());
+        auto *player = ome::find_descendant<PlayerNode>(game()->root_node());
 
-        camera_->target(shot.target);
-        camera_->distance(shot.distance);
+        if (!player)
+        {
+            return;
+        }
+
+        // Only the target follows; the orientation stays fixed (no mouse in this view).
+        camera_->target(player->transform<ome::Space::World>().position + ome::up * chase_height_);
+        camera_->distance(chase_distance_);
     }
 
     CameraShot
@@ -135,18 +153,18 @@ class CameraControlNode : public SoccernoidNode<>
         {
         case CameraView::FirstPerson:
         {
-            return first_person_shot_({});
+            return chase_shot_();
         }
         case CameraView::Freecam:
         {
-            return { { 0.0f, 1.7f, 0.0f }, 0.1f, {} };
+            return { { 0.0f, 1.7f, 0.0f }, 0.1f, {}, base_fov_ };
         }
         case CameraView::ThirdPerson:
         {
             ome::Orientation orientation;
             orientation.steer_pitch(-1.0f);
 
-            return { { 0, 0, 0 }, 25.0f, orientation };
+            return { { 0, 0, 0 }, 25.0f, orientation, base_fov_ };
         }
         default:
             throw std::runtime_error("Unsupported camera view");
@@ -174,17 +192,18 @@ class CameraControlNode : public SoccernoidNode<>
         camera_->target(shot.target);
         camera_->distance(shot.distance);
         camera_->orientate(shot.orientation);
+        camera_->fov_degrees(shot.fov);
     }
 
     void
     start_transition_()
     {
-        CameraShot from{ camera_->target(), camera_->distance(), camera_->orientation() };
-        CameraShot to = shot_for_view_(view_);
+        CameraShot from = current_shot_();
+        CameraShot to   = shot_for_view_(view_);
 
         auto curve = std::make_shared<ome::Interpolation<CameraShot>>(
             from, to, ome::EasingCurve::smoothstep());
-        transition_.emplace(curve, 1.0f / settings_.transition_duration);
+        transition_.emplace(curve, settings_.transition_duration);
     }
 
     void
@@ -259,6 +278,8 @@ class CameraControlNode : public SoccernoidNode<>
     {
         camera_ = &game()->camera;
 
+        base_fov_ = camera_->fov_degrees();
+
         hold(game()->input.bind(Action::ChangeView, [this] {
             game()->settings.set<View>(succesor(game()->settings.get<View>().value));
         }));
@@ -301,6 +322,7 @@ class CameraControlNode : public SoccernoidNode<>
             camera_->target(shot.target);
             camera_->distance(shot.distance);
             camera_->orientate(shot.orientation);
+            camera_->fov_degrees(shot.fov);
 
             if (transition_->is_completed())
             {

@@ -100,6 +100,24 @@ class FireExplosionNode : public ome::KinematicNode
         emplace_child<Particles_>().rename("Particles");
         emplace_child<Light_>().rename("Light");
     }
+
+    void
+    on_tick_() override
+    {
+        ome::KinematicNode::on_tick_();
+
+        // Despawn once the effect is over; otherwise the node and its Light_ (which keeps
+        // pushing lights every frame) would leak forever, since explosions live under the root.
+        age_ += game()->time.delta();
+        if (age_ >= lifetime_)
+        {
+            request_unmount();
+        }
+    }
+
+  private:
+    static constexpr float lifetime_ = 1.5f;
+    float                  age_      = 0.0f;
 };
 
 } // namespace soccernoid

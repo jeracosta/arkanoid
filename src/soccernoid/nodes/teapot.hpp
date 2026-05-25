@@ -158,11 +158,13 @@ class TeapotNode : public SoccernoidNode<ome::TransformNode>
 
         auto color_value = color_process_->value();
 
+        auto rainbow = ome::Color::hsv(angle * 60.0f, 0.9f, 0.4f);
+
         mesh_node_->update_material([&](auto &mat)
         {
-            mat.color.ambient  = ome::Color::hsv(angle * 60.0f, 0.9f, 1.0f);
-            mat.color.diffuse  = mat.color.ambient;
-            mat.color.emission = ome::Color::rgb(ome::Vec3f(color_value));
+            mat.color.ambient  = rainbow;
+            mat.color.diffuse  = rainbow;
+            mat.color.emission = rainbow + ome::Color::white() * color_value;
         });
 
         lifebar_->position({ 0.0f, vertical + mesh_size_[1] / 2.0f + 3.5f, 0.0f });

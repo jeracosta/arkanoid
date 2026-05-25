@@ -176,7 +176,7 @@ render(const RenderFrame &frame)
                     render_(surface.vertices, surface.indices, surface.primitive_type);
                 };
 
-                Material material;
+                Material material = materials.empty() ? Material{} : materials.front();
 
                 if (surface.material_index.has_value()
                     && *surface.material_index < materials.size())

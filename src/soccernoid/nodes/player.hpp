@@ -1,5 +1,6 @@
 #pragma once
 
+#include "oh-my-engine/draw_command.hpp"
 #include "oh-my-engine/nodes/kinematic_node.hpp"
 #include "oh-my-engine/nodes/mesh_node.hpp"
 
@@ -22,8 +23,13 @@ class PlayerNode : public ome::KinematicNode
     static std::shared_ptr<ome::Mesh>
     character_mesh_();
 
-    ome::Material
+    static ome::Material
     character_material_();
+
+    // Built once (the mesh is prepared a single time); on_render_ only updates its transform.
+    ome::DrawCommand character_draw_{ .mesh      = character_mesh_(),
+                                      .materials = { character_material_() },
+                                      .transform = {} };
 
     static constexpr float player_radius_ = 0.2f;
 

@@ -113,11 +113,8 @@ PlayerNode::on_render_(ome::RenderFrame &frame)
     transform.position += ome::Vec3f{ 0.0f, 0.1f, 0.0f };
     transform.orientation.steer_pitch(-ome::pi / 2.0f);
 
-    frame.draw_commands.push_back(ome::DrawCommand{
-        .mesh      = character_mesh_(),
-        .materials = { character_material_() },
-        .transform = transform,
-    });
+    character_draw_.transform = transform;
+    frame.draw_commands.push_back(character_draw_);
 }
 
 void

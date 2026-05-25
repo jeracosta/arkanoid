@@ -1,6 +1,10 @@
 #pragma once
 
+#include <algorithm>
 #include <filesystem>
+#include <string>
+#include <string_view>
+#include <vector>
 
 #include "oh-my-engine/color.hpp"
 #include "oh-my-engine/math/vector.hpp"
@@ -130,13 +134,15 @@ struct TexturePalette
 
     struct SkyboxFaces
     {
-        Item front;
-        Item back;
-        Item left;
-        Item right;
-        Item top;
-        Item bottom;
+        std::string name;
+        Item        front;
+        Item        back;
+        Item        left;
+        Item        right;
+        Item        top;
+        Item        bottom;
 
+        // `directory` is relative to the textures root (e.g. "skybox/dawn").
         static SkyboxFaces
         from_directory(const std::filesystem::path &directory)
         {
@@ -148,6 +154,7 @@ struct TexturePalette
             };
 
             return {
+                .name   = directory.filename().string(),
                 .front  = { directory / "front.png", config },
                 .back   = { directory / "back.png", config },
                 .left   = { directory / "left.png", config },
@@ -156,30 +163,62 @@ struct TexturePalette
                 .bottom = { directory / "bottom.png", config },
             };
         }
+
+        // Scans the skybox assets directory and builds one entry per
+        // subdirectory found, sorted by name for a deterministic order.
+        static std::vector<SkyboxFaces>
+        load_all()
+        {
+            std::vector<SkyboxFaces> skyboxes;
+
+            const auto root = FilesystemPaths::textures / "skybox";
+
+            if (std::filesystem::is_directory(root))
+            {
+                for (const auto &entry : std::filesystem::directory_iterator(root))
+                {
+                    if (entry.is_directory())
+                    {
+                        skyboxes.push_back(
+                            from_directory(std::filesystem::path("skybox")
+                                            / entry.path().filename()));
+                    }
+                }
+            }
+
+            std::sort(skyboxes.begin(), skyboxes.end(),
+                      [](const SkyboxFaces &a, const SkyboxFaces &b)
+            { return a.name < b.name; });
+
+            return skyboxes;
+        }
     };
 
-    struct SkyboxPalette
+    Item                     column;
+    Item                     dirt;
+    Item                     metal;
+    Item                     cobblestone;
+    Item                     snail;
+    Item                     barrel;
+    Item                     transformer;
+    Item                     moai;
+    Item                     racoon;
+    std::vector<SkyboxFaces> skybox;
+
+    // Looks a skybox up by its directory name, falling back to the first one.
+    const SkyboxFaces &
+    skybox_named(std::string_view name) const
     {
-        SkyboxFaces ablaze;
-        SkyboxFaces blink;
-        SkyboxFaces blood;
-        SkyboxFaces dawn;
-        SkyboxFaces earth;
-        SkyboxFaces night;
-        SkyboxFaces space;
-        SkyboxFaces space2;
-    };
+        for (const auto &candidate : skybox)
+        {
+            if (candidate.name == name)
+            {
+                return candidate;
+            }
+        }
 
-    Item          column;
-    Item          dirt;
-    Item          metal;
-    Item          cobblestone;
-    Item          snail;
-    Item          barrel;
-    Item          transformer;
-    Item          moai;
-    Item          racoon;
-    SkyboxPalette skybox;
+        return skybox.at(0);
+    }
 };
 
 static const inline TexturePalette textures = {
@@ -192,16 +231,7 @@ static const inline TexturePalette textures = {
     .transformer = { "transformer.png" },
     .moai        = { "moai.png" },
     .racoon      = { "racoon_colors.png" },
-    .skybox = { //TODO: Generate faces from cubemap
-        .ablaze = TexturePalette::SkyboxFaces::from_directory("skybox/ablaze"),
-        .blink  = TexturePalette::SkyboxFaces::from_directory("skybox/blink"),
-        .blood  = TexturePalette::SkyboxFaces::from_directory("skybox/blood"),
-        .dawn   = TexturePalette::SkyboxFaces::from_directory("skybox/dawn"),
-        .earth  = TexturePalette::SkyboxFaces::from_directory("skybox/earth"),
-        .night  = TexturePalette::SkyboxFaces::from_directory("skybox/night"),
-        .space  = TexturePalette::SkyboxFaces::from_directory("skybox/space"),
-        .space2 = TexturePalette::SkyboxFaces::from_directory("skybox/space2"),
-    },
+    .skybox      = TexturePalette::SkyboxFaces::load_all(),
 };
 
 struct MeshPalette

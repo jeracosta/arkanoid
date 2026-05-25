@@ -154,6 +154,43 @@ class SettingsHudNode : public SoccernoidNode<>
     }
 
     void
+    skybox_combo_()
+    {
+        auto &settings = game()->settings;
+
+        const auto &skyboxes = textures.skybox;
+        if (skyboxes.empty())
+        {
+            return;
+        }
+
+        int current = settings.get<settings::render::Skybox>().value;
+        if (current < 0 || current >= static_cast<int>(skyboxes.size()))
+        {
+            current = 0;
+        }
+
+        // Names are loaded at runtime, so populate the combo manually.
+        if (ImGui::BeginCombo("Skybox", skyboxes[current].name.c_str()))
+        {
+            for (int i = 0; i < static_cast<int>(skyboxes.size()); ++i)
+            {
+                bool selected = i == current;
+                if (ImGui::Selectable(skyboxes[i].name.c_str(), selected))
+                {
+                    settings.set(settings::render::Skybox{ i });
+                }
+                if (selected)
+                {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+
+            ImGui::EndCombo();
+        }
+    }
+
+    void
     main_screen_()
     {
         begin_centered_panel_("Soccernoid");
@@ -209,6 +246,7 @@ class SettingsHudNode : public SoccernoidNode<>
 
         ImGui::SeparatorText("Render");
         font_combo_();
+        skybox_combo_();
         checkbox_<settings::render::ShowWireframes>("Wireframe");
         checkbox_<settings::render::ShowTextures>("Textures");
         checkbox_<settings::render::SmoothShading>("Smooth shading");

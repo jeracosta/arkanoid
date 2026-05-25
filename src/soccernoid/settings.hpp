@@ -258,6 +258,26 @@ struct ShowHitboxes
     operator==(const ShowHitboxes &) const = default;
 };
 
+// Index into the dynamically loaded TexturePalette::skybox array.
+struct Skybox
+{
+    int value = 0;
+
+    constexpr Skybox(int value = 0)
+        : value(value)
+    {
+    }
+
+    constexpr
+    operator int() const
+    {
+        return value;
+    }
+
+    constexpr bool
+    operator==(const Skybox &) const = default;
+};
+
 } // namespace soccernoid::settings::render
 
 namespace soccernoid::settings::ui {
@@ -313,6 +333,7 @@ using SettingsEventBus = ome::EventBus<settings::window::Fullscreen,
                                        settings::render::ShowTextures,
                                        settings::render::SmoothShading,
                                        settings::render::ShowHitboxes,
+                                       settings::render::Skybox,
                                        settings::GlobalLight>;
 
 class Settings : private SettingsEventBus

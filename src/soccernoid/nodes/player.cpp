@@ -112,6 +112,7 @@ PlayerNode::on_render_(ome::RenderFrame &frame)
 
     transform.position += ome::Vec3f{ 0.0f, 0.1f, 0.0f };
     transform.orientation.steer_pitch(-ome::pi / 4.0f);
+    transform.orientation.steer_roll(lean_);
 
     character_draw_.transform = transform;
     frame.draw_commands.push_back(character_draw_);
@@ -179,7 +180,11 @@ PlayerNode::PlayerNode(const Configuration &config)
     ome::Vec3f hitbox_size{ std::max(board[0], board[2]), racoon[1], racoon[2] };
 
     emplace_child<ome::HitboxNode>(hitbox_size).rename("Hitbox");
-    emplace_child<BoardNode>().position({ 0.0f, -0.30f, 0.0f }).rename("Board");
+
+    auto &board_node = emplace_child<BoardNode>();
+    board_node.position({ 0.0f, -0.30f, 0.0f }).rename("Board");
+    board_ = &board_node;
+
     emplace_child<AimArrowNode_>().rename("AimArrow");
 }
 
@@ -232,11 +237,27 @@ PlayerNode::clamp_hover_height_()
 }
 
 void
+PlayerNode::update_lean_()
+{
+    float vx     = kinematic<ome::Space::World>().velocity[0];
+    float target = std::clamp(vx / config_.max_speed, -1.0f, 1.0f) * max_lean_;
+
+    // Tilt toward the sideways direction of motion (visual only; the hitbox stays upright).
+    lean_ = -target;
+
+    if (board_)
+    {
+        board_->orientation(ome::Orientation().steer_roll(lean_));
+    }
+}
+
+void
 PlayerNode::on_tick_()
 {
     process_movement_();
     ome::KinematicNode::on_tick_();
     clamp_hover_height_();
+    update_lean_();
 }
 
 } // namespace soccernoid

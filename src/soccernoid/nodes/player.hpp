@@ -8,6 +8,8 @@
 
 namespace soccernoid {
 
+class BoardNode;
+
 class PlayerNode : public ome::KinematicNode
 {
   public:
@@ -64,6 +66,11 @@ class PlayerNode : public ome::KinematicNode
     static constexpr float hover_range_ = 4.0f;
     std::optional<float>   base_height_;
 
+    // Visual-only sideways lean toward the movement direction (does not affect the hitbox).
+    static constexpr float max_lean_ = 0.3f;
+    BoardNode             *board_    = nullptr;
+    float                  lean_     = 0.0f;
+
     void
     on_render_(ome::RenderFrame &frame) override;
 
@@ -72,6 +79,9 @@ class PlayerNode : public ome::KinematicNode
 
     void
     clamp_hover_height_();
+
+    void
+    update_lean_();
 
   public:
     PlayerNode(const Configuration &config);

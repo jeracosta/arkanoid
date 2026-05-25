@@ -22,7 +22,7 @@ class SettingsHudNode : public SoccernoidNode<>
         Controls,
     };
 
-    static constexpr float menu_font_size_   = 40.0f;
+    static constexpr float menu_font_size_   = 20.0f;
     static constexpr float panel_font_scale_ = 1.0f;
 
     std::array<ImFont *, static_cast<int>(TextFont::Count_)> menu_fonts_{};
@@ -302,14 +302,12 @@ class SettingsHudNode : public SoccernoidNode<>
 
         const auto font_path = FilesystemPaths::assets / "fonts";
 
-        menu_fonts_[font_index_(TextFont::Arial)]
-            = fonts->AddFontFromFileTTF((font_path / "NimbusSans-Regular.otf").string().c_str(),
-                                        menu_font_size_);
-        menu_fonts_[font_index_(TextFont::ComicSans)]
-            = fonts->AddFontFromFileTTF((font_path / "comici.ttf").string().c_str(), menu_font_size_);
-        menu_fonts_[font_index_(TextFont::DejaVuSans)]
-            = fonts->AddFontFromFileTTF((font_path / "DejaVuSans.ttf").string().c_str(),
-                                        menu_font_size_);
+        menu_fonts_[font_index_(TextFont::Arial)] = fonts->AddFontFromFileTTF(
+            (font_path / "NimbusSans-Regular.otf").string().c_str(), menu_font_size_);
+        menu_fonts_[font_index_(TextFont::ComicSans)] = fonts->AddFontFromFileTTF(
+            (font_path / "comici.ttf").string().c_str(), menu_font_size_);
+        menu_fonts_[font_index_(TextFont::DejaVuSans)] = fonts->AddFontFromFileTTF(
+            (font_path / "DejaVuSans.ttf").string().c_str(), menu_font_size_);
 
         update_menu_font_(game()->settings.get<settings::ui::TextFont>());
         hold(game()->settings.bind(&SettingsHudNode::update_menu_font_, this));

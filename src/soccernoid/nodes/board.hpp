@@ -91,6 +91,13 @@ class BoardNode : public ome::MeshNode
     }
 
   public:
+    // World-aligned size of the prepared board mesh (after recenter/resize/rotate).
+    static ome::Vec3f
+    mesh_size()
+    {
+        return board_mesh_()->size();
+    }
+
     BoardNode()
         : ome::MeshNode(board_mesh_(), board_material_())
     {

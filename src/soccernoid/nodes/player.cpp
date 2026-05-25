@@ -171,8 +171,13 @@ PlayerNode::process_movement_()
 PlayerNode::PlayerNode(const Configuration &config)
     : config_(config)
 {
-    emplace_child<ome::HitboxNode>(character_mesh_()->size()).rename("Hitbox");
-    emplace_child<BoardNode>().position({ 0.0f, -0.5f, 0.0f }).rename("Board");
+    // Height and depth from the raccoon, but horizontal width from the board's long side.
+    auto       racoon = character_mesh_()->size();
+    auto       board  = BoardNode::mesh_size();
+    ome::Vec3f hitbox_size{ std::max(board[0], board[2]), racoon[1], racoon[2] };
+
+    emplace_child<ome::HitboxNode>(hitbox_size).rename("Hitbox");
+    emplace_child<BoardNode>().position({ 0.0f, -0.30f, 0.0f }).rename("Board");
     emplace_child<AimArrowNode_>().rename("AimArrow");
 }
 

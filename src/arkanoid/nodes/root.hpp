@@ -42,7 +42,7 @@ class RootNode : public ome::Node
     void
     on_ready_() override
     {
-        log("¡Si capitán, estamos listos!");
+        log("Aye captain, we're ready!");
 
         // tree modifications during mounting get scheduled, so we shedule this print too.
         game()->schedule([this] { log_tree(); });

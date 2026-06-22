@@ -207,15 +207,15 @@ class SettingsHudNode : public ArkanoidNode<>
 
         const ImVec2 button_size{ ImGui::GetContentRegionAvail().x, 0.0f };
 
-        if (ImGui::Button("Configuración", button_size))
+        if (ImGui::Button("Settings", button_size))
         {
             screen_ = Screen::Settings;
         }
-        if (ImGui::Button("Controles", button_size))
+        if (ImGui::Button("Controls", button_size))
         {
             screen_ = Screen::Controls;
         }
-        if (ImGui::Button("Salir", button_size))
+        if (ImGui::Button("Quit", button_size))
         {
             game()->events.emit(AppTerminated{});
         }
@@ -229,7 +229,7 @@ class SettingsHudNode : public ArkanoidNode<>
         ImGui::SetNextWindowSize(ImVec2{ 760.0f, 0.0f }, ImGuiCond_FirstUseEver);
 
         bool open = true;
-        ImGui::Begin("Configuración", &open, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Begin("Settings", &open, ImGuiWindowFlags_NoSavedSettings);
 
         ImGui::Text("FPS: %.0f", game()->instant_frame_rate());
 
@@ -277,34 +277,35 @@ class SettingsHudNode : public ArkanoidNode<>
         };
 
         static constexpr Control controls[] = {
-            { "Flechas Izq / Der", "Mover al jugador" },
-            { "Flechas Arr / Ab", "Levitar más alto / más bajo" },
-            { "Enter", "Apuntar y disparar" },
-            { "Mouse", "Rotar la cámara" },
-            { "Rueda del mouse", "Acercar / alejar (FOV)" },
-            { "W A S D", "Mover la cámara (primera persona)" },
-            { "Espacio / Ctrl", "Subir / bajar la cámara" },
-            { "Shift", "Acelerar la cámara" },
-            { "V", "Cambiar vista" },
-            { "P", "Pausar / reanudar" },
-            { "+ / -", "Velocidad del juego" },
-            { "F11", "Pantalla completa" },
-            { "Esc", "Abrir / cerrar el menú" },
-            { "Q", "Salir del juego" },
+            { "Left / Right Arrows", "Move player" },
+            { "Up / Down Arrows", "Levitate higher / lower" },
+            { "Enter", "Aim and shoot" },
+            { "Mouse", "Rotate camera" },
+            { "Mouse wheel", "Zoom in / out (FOV)" },
+            { "W A S D", "Move camera (first person)" },
+            { "Space / Ctrl", "Raise / lower camera" },
+            { "Shift", "Speed up camera" },
+            { "V", "Change view" },
+            { "P", "Pause / resume" },
+            { "+ / -", "Game speed" },
+            { "R", "Reset level" },
+            { "F11", "Fullscreen" },
+            { "Esc", "Open / close menu" },
+            { "Q", "Quit game" },
         };
 
         bool open = true;
-        begin_centered_panel_("Controles", &open);
+        begin_centered_panel_("Controls", &open);
 
-        ImGui::SeparatorText("Controles");
+        ImGui::SeparatorText("Controls");
 
         constexpr auto table_flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerH
                                      | ImGuiTableFlags_SizingStretchProp;
 
         if (ImGui::BeginTable("controls", 2, table_flags))
         {
-            ImGui::TableSetupColumn("Tecla", ImGuiTableColumnFlags_WidthFixed, 540.0f);
-            ImGui::TableSetupColumn("Acción");
+            ImGui::TableSetupColumn("Key", ImGuiTableColumnFlags_WidthFixed, 540.0f);
+            ImGui::TableSetupColumn("Action");
             ImGui::TableHeadersRow();
 
             for (const auto &control : controls)

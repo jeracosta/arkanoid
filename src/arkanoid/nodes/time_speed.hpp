@@ -1,0 +1,78 @@
+#include "oh-my-engine/curve.hpp"
+#include "oh-my-engine/interpolation.hpp"
+#include "arkanoid/input.hpp"
+#include "arkanoid/nodes/arkanoid_node.hpp"
+#include "arkanoid/settings.hpp"
+
+namespace arkanoid {
+
+class TimeSpeedNode : public ArkanoidNode<>
+{
+  private:
+    using Paused = settings::time::Paused;
+    using Speed  = settings::time::Speed;
+
+    float scaling_factor_ = 1.1f;
+
+    std::shared_ptr<ome::Interpolation<float>> speed_curve_
+        = std::make_shared<ome::Interpolation<float>>(0.0f, 1.0f, ome::EasingCurve::smoothstep(1));
+
+    ome::CurveProcess<float> speed_interpolation_{ speed_curve_, 2.5f };
+
+    void
+    speed_by_(float factor_)
+    {
+        game()->settings.set<Speed>(game()->settings.get<Speed>().value * factor_);
+    }
+
+    void
+    set_speed_(Speed speed)
+    {
+        speed_curve_->to(speed.value);
+
+        log(std::format("Time speed: {}", speed.value));
+    }
+
+    void
+    set_paused_(Paused paused)
+    {
+        if (speed_interpolation_.is_reversed() == static_cast<bool>(paused))
+        {
+            return;
+        }
+
+        speed_interpolation_.reverse();
+
+        // Pause snaps to 0 instantly; unpause keeps the curve and ramps back up.
+        if (paused)
+        {
+            speed_interpolation_.complete();
+        }
+
+        log(paused ? "Paused" : "Resumed");
+    }
+
+  public:
+    void
+    on_mount_() override
+    {
+        hold(game()->input.bind(Action::TimeSpeedUp, [&] { speed_by_(scaling_factor_); }));
+        hold(game()->input.bind(Action::TimeSpeedDown, [&] { speed_by_(1.0f / scaling_factor_); }));
+
+        hold(game()->input.bind(Action::TogglePause, [&] {
+            game()->settings.set<Paused>(!game()->settings.get<Paused>());
+        }));
+
+        hold(game()->settings.bind([this](const Paused &paused) { set_paused_(paused); }));
+        hold(game()->settings.bind([this](const Speed &speed) { set_speed_(speed); }));
+    }
+
+    void
+    on_tick_() override
+    {
+        speed_interpolation_.update(game()->time.unscaled.delta());
+        game()->time.scale(speed_interpolation_.value());
+    }
+};
+
+} // namespace arkanoid

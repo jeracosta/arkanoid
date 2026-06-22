@@ -2,7 +2,7 @@
 
 #include "oh-my-engine/math/interval.hpp"
 #include "oh-my-engine/nodes/hitbox_node.hpp"
-#include "soccernoid/nodes/projectile.hpp"
+#include "arkanoid/nodes/projectile.hpp"
 
 namespace ome {
 
@@ -29,7 +29,7 @@ CollisionServer::process_collisions()
     {
         for (auto *node : nodes_)
         {
-            auto *projectile = dynamic_cast<soccernoid::ProjectileNode::HitboxNode *>(node);
+            auto *projectile = dynamic_cast<arkanoid::ProjectileNode::HitboxNode *>(node);
             if (!projectile)
             {
                 continue;

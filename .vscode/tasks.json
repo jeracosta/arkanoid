@@ -2,7 +2,7 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "Build Soccernoid",
+			"label": "Build game",
 			"type": "shell",
 			"command": "${workspaceFolder}/scripts/build.sh main",
 			"group": "build",
@@ -12,13 +12,13 @@
 			"detail": "cmake --build build --target main -j"
 		},
 		{
-			"label": "Build and Run Soccernoid",
+			"label": "Build and run game",
 			"type": "shell",
-			"command": "${workspaceFolder}/scripts/build.sh game && ${workspaceFolder}/build/soccernoid/bin/game",
+			"command": "${workspaceFolder}/scripts/build.sh game && ${workspaceFolder}/build/arkanoid/bin/game",
 			"problemMatcher": [
 				"$gcc"
 			],
-			"detail": "Build then run soccernoid"
+			"detail": "Build then run the game"
 		}
 	]
 }

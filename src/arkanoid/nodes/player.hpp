@@ -1,0 +1,99 @@
+#pragma once
+
+#include <optional>
+
+#include "oh-my-engine/draw_command.hpp"
+#include "oh-my-engine/nodes/kinematic_node.hpp"
+#include "oh-my-engine/nodes/mesh_node.hpp"
+
+namespace arkanoid {
+
+class BoardNode;
+
+class PlayerNode : public ome::KinematicNode
+{
+  public:
+    struct Configuration
+    {
+        float movement_force;
+        float max_speed;
+        float speed_decay;
+
+        static Configuration
+        make_harry();
+    };
+
+  private:
+    static std::shared_ptr<ome::Mesh>
+    character_mesh_();
+
+    static ome::Material
+    character_material_();
+
+    // Built once (the mesh is prepared a single time); on_render_ only updates its transform.
+    ome::DrawCommand character_draw_{ .mesh      = character_mesh_(),
+                                      .materials = { character_material_() },
+                                      .transform = {} };
+
+    Configuration config_;
+
+    bool aiming_;
+
+    static constexpr float aim_sweep_speed_     = 2.0f;
+    static constexpr float aim_sweep_amplitude_ = 0.7f;
+    static constexpr float shoot_force_         = 5.0f;
+
+    class AimArrowNode_ : public ome::Node
+    {
+      private:
+        float          current_angle_ = 0.0f;
+        ome::MeshNode *arrow_mesh_;
+
+        void
+        on_shoot_();
+
+      public:
+        AimArrowNode_();
+
+        void
+        on_mount_() override;
+
+        void
+        on_tick_() override;
+    };
+
+    // The board can hover between its starting height and hover_range_ above it.
+    static constexpr float hover_range_ = 4.0f;
+    std::optional<float>   base_height_;
+
+    // Visual-only sideways lean toward the movement direction (does not affect the hitbox).
+    static constexpr float max_lean_ = 0.3f;
+    BoardNode             *board_    = nullptr;
+    float                  lean_     = 0.0f;
+
+    void
+    on_render_(ome::RenderFrame &frame) override;
+
+    void
+    process_movement_();
+
+    void
+    clamp_hover_height_();
+
+    void
+    update_lean_();
+
+  public:
+    PlayerNode(const Configuration &config);
+
+    void
+    start_aiming();
+
+    void
+    shoot(ome::Vec3f direction);
+
+    void
+    on_tick_() override;
+};
+
+} // namespace arkanoid

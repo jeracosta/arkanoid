@@ -11,7 +11,7 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build" FORCE)
 endif()
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/soccernoid/bin")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/arkanoid/bin")
 
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
@@ -140,7 +140,7 @@ target_link_libraries(ome PUBLIC
 
 file(GLOB_RECURSE GAME_SOURCES
   CONFIGURE_DEPENDS
-  "${PROJECT_SOURCE_DIR}/src/soccernoid/*.cpp"
+  "${PROJECT_SOURCE_DIR}/src/arkanoid/*.cpp"
 )
 
 add_executable(game ${GAME_SOURCES})
@@ -165,5 +165,5 @@ endif()
 add_custom_command(TARGET game POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory
           "${PROJECT_SOURCE_DIR}/assets"
-          "${CMAKE_BINARY_DIR}/soccernoid/assets"
+          "${CMAKE_BINARY_DIR}/arkanoid/assets"
 )

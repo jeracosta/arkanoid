@@ -199,9 +199,7 @@ class SettingsHudNode : public ArkanoidNode<>
         ImGui::TextUnformatted("Arkanoid");
         ImGui::SetWindowFontScale(panel_font_scale_);
 
-        ImGui::TextDisabled("Introducción a la Computación Gráfica - FING, UdelaR - 2026");
-        ImGui::Spacing();
-        ImGui::TextDisabled("Desarrollado por Jerónimo Acosta, Florencia Artucio, Joaquín Sande");
+        ImGui::TextDisabled("Made by Jerónimo Acosta, Florencia Artucio, Joaquín Sande");
 
         ImGui::Spacing();
         ImGui::Separator();
